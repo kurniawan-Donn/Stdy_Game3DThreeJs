@@ -1,0 +1,1839 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Coin Rush 3D - Ruang Tamu</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      overflow: hidden;
+      background: #1a1410;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      color: #ffffff;
+      user-select: none;
+    }
+
+    canvas {
+      display: block;
+    }
+
+    /* HUD Skor di pojok kiri atas */
+    #hud {
+      position: fixed;
+      top: 16px;
+      left: 16px;
+      background: rgba(15, 23, 42, 0.72);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      border-radius: 10px;
+      padding: 12px 18px;
+      backdrop-filter: blur(6px);
+      pointer-events: none;
+    }
+
+    #hud .score-label {
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: #94a3b8;
+    }
+
+    #hud .score-value {
+      font-size: 28px;
+      font-weight: 700;
+      color: #facc15;
+      line-height: 1.2;
+    }
+
+    #hud .lives-row {
+      margin-top: 6px;
+      font-size: 14px;
+      color: #e2e8f0;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    #hud .lives-hearts {
+      font-size: 16px;
+      letter-spacing: 2px;
+    }
+
+    #hud .level-row {
+      margin-top: 4px;
+      font-size: 14px;
+      color: #e2e8f0;
+      font-weight: 600;
+    }
+
+    #hud .level-row span {
+      color: #38bdf8;
+    }
+
+    #hud .magnet-status {
+      margin-top: 4px;
+      font-size: 13px;
+      font-weight: 700;
+      color: #22d3ee;
+      display: none;
+    }
+
+    #hud .controls-hint {
+      margin-top: 6px;
+      font-size: 12px;
+      color: #cbd5e1;
+    }
+
+    /* Layar Game Over */
+    #game-over {
+      position: fixed;
+      inset: 0;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      background: rgba(10, 15, 28, 0.75);
+      backdrop-filter: blur(5px);
+      z-index: 10;
+    }
+
+    #game-over.active {
+      display: flex;
+    }
+
+    .modal {
+      background: #1e293b;
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      border-radius: 14px;
+      padding: 28px 36px;
+      text-align: center;
+      min-width: 280px;
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.45);
+    }
+
+    .modal h1 {
+      font-size: 28px;
+      color: #f87171;
+      margin-bottom: 16px;
+    }
+
+    .modal p {
+      font-size: 16px;
+      margin: 8px 0;
+      color: #e2e8f0;
+    }
+
+    .modal span {
+      font-weight: 700;
+      color: #facc15;
+    }
+
+    #restart-btn {
+      margin-top: 20px;
+      padding: 12px 26px;
+      font-size: 16px;
+      font-weight: 700;
+      color: #0f172a;
+      background: #facc15;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: transform 0.12s ease, background 0.12s ease;
+    }
+
+    #restart-btn:hover {
+      background: #fde047;
+      transform: translateY(-1px);
+    }
+
+    #restart-btn:active {
+      transform: translateY(0);
+    }
+  </style>
+</head>
+<body>
+  <div id="hud">
+    <div class="score-label">Skor</div>
+    <div class="score-value" id="score-text">0</div>
+    <div class="lives-row">
+      <span>Nyawa:</span>
+      <span class="lives-hearts" id="lives-text">❤️❤️❤️</span>
+    </div>
+    <div class="level-row">Level: <span id="level-text">1</span></div>
+    <div class="magnet-status" id="magnet-status">Magnet: 5.0s</div>
+    <div class="controls-hint">WASD / Panah: Gerak &bull; Spasi: Lompat</div>
+  </div>
+
+  <div id="game-over">
+    <div class="modal">
+      <h1>Game Over</h1>
+      <p>Skor: <span id="final-score">0</span></p>
+      <p>High Score: <span id="high-score">0</span></p>
+      <button id="restart-btn">Main Lagi</button>
+    </div>
+  </div>
+
+  <!-- Three.js versi pinned r128 dari cdnjs -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+
+  <script>
+    // --- Konstanta Ruangan & Game ---
+    const ROOM_WIDTH = 22;
+    const ROOM_DEPTH = 20;
+    const ROOM_HEIGHT = 8;
+    const ROOM_HALF_W = ROOM_WIDTH / 2;
+    const ROOM_HALF_D = ROOM_DEPTH / 2;
+
+    const PLAYER_RADIUS = 0.52;
+    const COIN_RADIUS = 0.5;
+    const VACUUM_RADIUS = 0.68;
+    const VACUUM_HEIGHT = 0.28;
+
+    const GRAVITY = -28;
+    const JUMP_FORCE = 8.8;
+    const CLIMB_TOLERANCE = 0.1;
+    const MAX_MOVE_SPEED = 9.5;
+    const ACCELERATION = 42;
+    const GROUND_FRICTION = 10;
+    const AIR_FRICTION = 2.5;
+    const BASE_OBSTACLE_SPEED = 4.2;
+    const MAX_LIVES = 3;
+    const INVULNERABLE_DURATION = 1.5;
+    const MAGNET_DURATION = 5;
+    const MAGNET_RADIUS = 8.5;
+    const MAGNET_PULL_SPEED = 14;
+    const POWERUP_SPAWN_INTERVAL = 10;
+
+    // --- State Global ---
+    let scene, camera, renderer;
+    let player, catParts;
+    let coin, powerUpMesh;
+    let obstacles = [];
+    let furnitureColliders = [];
+    let particles = [];
+    let particleGeo, particleMat;
+    let dustPoints, dustVelocities = [];
+    let keys = {};
+    let audioCtx = null;
+
+    const camTargetPos = new THREE.Vector3();
+    const camLookTarget = new THREE.Vector3();
+    const camForward = new THREE.Vector3();
+    const camRight = new THREE.Vector3();
+    const worldUp = new THREE.Vector3(0, 1, 0);
+
+    let score = 0;
+    let highScore = 0;
+    let coinsCollected = 0;
+    let level = 1;
+    let lives = MAX_LIVES;
+    let invulnerableTimer = 0;
+    let magnetTimer = 0;
+    let powerUpSpawnTimer = 6;
+    let powerUpActive = false;
+    let obstacleSpeed = BASE_OBSTACLE_SPEED;
+    let isGameOver = false;
+
+    let playerVel = new THREE.Vector3();
+    let isGrounded = true;
+    let groundHeight = 0;
+    let landingSquashTimer = 0;
+    let catYaw = Math.PI; // Menghadap ke -Z saat awal
+    let animClock = 0;
+    let walkCycle = 0;
+    let lastTime = 0;
+
+    // --- Elemen UI ---
+    const scoreTextEl = document.getElementById('score-text');
+    const livesTextEl = document.getElementById('lives-text');
+    const levelTextEl = document.getElementById('level-text');
+    const magnetStatusEl = document.getElementById('magnet-status');
+    const gameOverEl = document.getElementById('game-over');
+    const finalScoreEl = document.getElementById('final-score');
+    const highScoreEl = document.getElementById('high-score');
+    const restartBtn = document.getElementById('restart-btn');
+
+    // Inisialisasi scene, renderer, pencahayaan, ruangan, perabotan, dan karakter
+    function init() {
+      scene = new THREE.Scene();
+      scene.background = new THREE.Color(0x1f1914);
+      scene.fog = new THREE.Fog(0x2b221a, 18, 42);
+
+      camera = new THREE.PerspectiveCamera(
+        58,
+        window.innerWidth / window.innerHeight,
+        0.1,
+        80
+      );
+
+      renderer = new THREE.WebGLRenderer({ antialias: true });
+      renderer.setSize(window.innerWidth, window.innerHeight);
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+      if ('outputColorSpace' in renderer && THREE.SRGBColorSpace) {
+        renderer.outputColorSpace = THREE.SRGBColorSpace;
+      } else {
+        renderer.outputEncoding = THREE.sRGBEncoding;
+      }
+      renderer.toneMapping = THREE.ACESFilmicToneMapping;
+      renderer.toneMappingExposure = 1.05;
+      renderer.shadowMap.enabled = true;
+      renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+      document.body.appendChild(renderer.domElement);
+
+      setupLights();
+      createLivingRoom();
+      createFurniture();
+      createDustParticles();
+      createPlayerCat();
+      createCoin();
+      createPowerUp();
+      initParticles();
+      setupEvents();
+
+      resetGame();
+      lastTime = performance.now();
+      requestAnimationFrame(animate);
+    }
+
+    // --- Helper Warna sRGB untuk CanvasTexture ---
+    function setTextureSRGB(tex) {
+      if ('colorSpace' in tex && THREE.SRGBColorSpace) {
+        tex.colorSpace = THREE.SRGBColorSpace;
+      } else {
+        tex.encoding = THREE.sRGBEncoding;
+      }
+    }
+
+    // --- Tekstur Lantai Kayu Prosedural (Canvas) ---
+    function createWoodFloorTexture() {
+      const canvas = document.createElement('canvas');
+      canvas.width = 512;
+      canvas.height = 512;
+      const ctx = canvas.getContext('2d');
+
+      ctx.fillStyle = '#9c6b43';
+      ctx.fillRect(0, 0, 512, 512);
+
+      const rows = 8;
+      const plankH = 512 / rows;
+      const tones = ['#a47148', '#8f5f39', '#b07b4f', '#97663e', '#845633'];
+
+      for (let r = 0; r < rows; r++) {
+        const y = r * plankH;
+        const offset = (r % 2) * 128;
+        const cols = 2;
+        const plankW = 512 / cols;
+
+        for (let c = -1; c <= cols; c++) {
+          const x = c * plankW + offset;
+          const tone = tones[(r * 3 + c + 4) % tones.length];
+          ctx.fillStyle = tone;
+          ctx.fillRect(x, y, plankW, plankH);
+
+          // Serat kayu halus
+          ctx.strokeStyle = 'rgba(58, 34, 16, 0.16)';
+          ctx.lineWidth = 1.2;
+          for (let g = 0; g < 9; g++) {
+            const gy = y + 6 + g * (plankH / 10);
+            ctx.beginPath();
+            ctx.moveTo(x + 2, gy);
+            ctx.bezierCurveTo(
+              x + plankW * 0.33, gy + Math.sin(g + r) * 2.5,
+              x + plankW * 0.66, gy - Math.cos(g + c) * 2.5,
+              x + plankW - 2, gy
+            );
+            ctx.stroke();
+          }
+
+          // Garis sambungan antar papan
+          ctx.strokeStyle = 'rgba(42, 24, 12, 0.45)';
+          ctx.lineWidth = 2;
+          ctx.strokeRect(x, y, plankW, plankH);
+        }
+      }
+
+      const tex = new THREE.CanvasTexture(canvas);
+      tex.wrapS = THREE.RepeatWrapping;
+      tex.wrapT = THREE.RepeatWrapping;
+      tex.repeat.set(5, 5);
+      setTextureSRGB(tex);
+      return tex;
+    }
+
+    // --- Tekstur Karpet Prosedural (Canvas) ---
+    function createRugTexture() {
+      const canvas = document.createElement('canvas');
+      canvas.width = 256;
+      canvas.height = 256;
+      const ctx = canvas.getContext('2d');
+
+      ctx.fillStyle = '#c8b6a6';
+      ctx.fillRect(0, 0, 256, 256);
+
+      // Bingkai motif hangat
+      ctx.strokeStyle = '#8d6e63';
+      ctx.lineWidth = 14;
+      ctx.strokeRect(18, 18, 220, 220);
+
+      ctx.strokeStyle = '#a47e65';
+      ctx.lineWidth = 4;
+      ctx.strokeRect(34, 34, 188, 188);
+
+      // Pola anyaman lembut
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.06)';
+      for (let y = 0; y < 256; y += 6) {
+        ctx.fillRect(0, y, 256, 2);
+      }
+
+      const tex = new THREE.CanvasTexture(canvas);
+      setTextureSRGB(tex);
+      return tex;
+    }
+
+    // --- Pencahayaan Hangat (Maksimal 2 shadow caster aktif) ---
+    function setupLights() {
+      // 1. HemisphereLight hangat
+      const hemiLight = new THREE.HemisphereLight(0xfff4e0, 0x7d5836, 0.65);
+      hemiLight.position.set(0, ROOM_HEIGHT, 0);
+      scene.add(hemiLight);
+
+      // 2. DirectionalLight sinar matahari dari jendela di dinding barat (-X)
+      const sunLight = new THREE.DirectionalLight(0xffe8c2, 1.35);
+      sunLight.position.set(-16, 8.5, -1.5);
+      sunLight.target.position.set(2, 0, 0.5);
+      sunLight.castShadow = true;
+      sunLight.shadow.mapSize.width = 2048;
+      sunLight.shadow.mapSize.height = 2048;
+      sunLight.shadow.camera.near = 2;
+      sunLight.shadow.camera.far = 36;
+      sunLight.shadow.camera.left = -13;
+      sunLight.shadow.camera.right = 13;
+      sunLight.shadow.camera.top = 12;
+      sunLight.shadow.camera.bottom = -12;
+      sunLight.shadow.bias = -0.0006;
+      scene.add(sunLight);
+      scene.add(sunLight.target);
+
+      // 3. PointLight lembut dari lampu berdiri di sudut sofa (shadow caster ke-2)
+      const lampLight = new THREE.PointLight(0xffcb85, 1.15, 18, 2);
+      lampLight.position.set(-4.3, 3.6, 5.2);
+      lampLight.castShadow = true;
+      lampLight.shadow.mapSize.width = 1024;
+      lampLight.shadow.mapSize.height = 1024;
+      lampLight.shadow.bias = -0.001;
+      scene.add(lampLight);
+
+      // 4. PointLight pengisi lembut di dekat TV (tanpa shadow agar <= 3 shadow caster)
+      const fillLight = new THREE.PointLight(0xffe6cc, 0.45, 16, 2);
+      fillLight.position.set(4.5, 5.5, -5.5);
+      scene.add(fillLight);
+    }
+
+    // --- Ruang Tamu Tertutup: Lantai Kayu, 4 Dinding, Plafon, dan Jendela Besar ---
+    function createLivingRoom() {
+      // Lantai kayu
+      const woodTex = createWoodFloorTexture();
+      const floorMat = new THREE.MeshStandardMaterial({
+        map: woodTex,
+        roughness: 0.62,
+        metalness: 0.05
+      });
+      const floor = new THREE.Mesh(
+        new THREE.PlaneGeometry(ROOM_WIDTH, ROOM_DEPTH),
+        floorMat
+      );
+      floor.rotation.x = -Math.PI / 2;
+      floor.receiveShadow = true;
+      scene.add(floor);
+
+      // Plafon
+      const ceilingMat = new THREE.MeshStandardMaterial({
+        color: 0xf4efe6,
+        roughness: 0.9,
+        metalness: 0.0
+      });
+      const ceiling = new THREE.Mesh(
+        new THREE.PlaneGeometry(ROOM_WIDTH, ROOM_DEPTH),
+        ceilingMat
+      );
+      ceiling.rotation.x = Math.PI / 2;
+      ceiling.position.y = ROOM_HEIGHT;
+      scene.add(ceiling);
+
+      // Material dinding & lis kayu (baseboard)
+      const wallMat = new THREE.MeshStandardMaterial({
+        color: 0xe7ded0,
+        roughness: 0.88,
+        metalness: 0.02
+      });
+      const trimMat = new THREE.MeshStandardMaterial({
+        color: 0x5c3d28,
+        roughness: 0.6,
+        metalness: 0.05
+      });
+
+      const wallThick = 0.4;
+
+      // Dinding Utara (-Z)
+      const northWall = new THREE.Mesh(
+        new THREE.BoxGeometry(ROOM_WIDTH, ROOM_HEIGHT, wallThick),
+        wallMat
+      );
+      northWall.position.set(0, ROOM_HEIGHT / 2, -ROOM_HALF_D - wallThick / 2);
+      northWall.receiveShadow = true;
+      scene.add(northWall);
+
+      // Dinding Selatan (+Z)
+      const southWall = new THREE.Mesh(
+        new THREE.BoxGeometry(ROOM_WIDTH, ROOM_HEIGHT, wallThick),
+        wallMat
+      );
+      southWall.position.set(0, ROOM_HEIGHT / 2, ROOM_HALF_D + wallThick / 2);
+      southWall.receiveShadow = true;
+      scene.add(southWall);
+
+      // Dinding Timur (+X)
+      const eastWall = new THREE.Mesh(
+        new THREE.BoxGeometry(wallThick, ROOM_HEIGHT, ROOM_DEPTH),
+        wallMat
+      );
+      eastWall.position.set(ROOM_HALF_W + wallThick / 2, ROOM_HEIGHT / 2, 0);
+      eastWall.receiveShadow = true;
+      scene.add(eastWall);
+
+      // Dinding Barat (-X) dengan bukaan Jendela Besar (z: -4.2 .. +2.2, y: 1.8 .. 6.2)
+      const winZMin = -4.2;
+      const winZMax = 2.2;
+      const winYMin = 1.8;
+      const winYMax = 6.2;
+      const winW = winZMax - winZMin;
+      const winH = winYMax - winYMin;
+      const winCenterZ = (winZMin + winZMax) / 2;
+      const winCenterY = (winYMin + winYMax) / 2;
+
+      const westSegments = [
+        // Bagian bawah jendela
+        { w: ROOM_DEPTH, h: winYMin, y: winYMin / 2, z: 0 },
+        // Bagian atas jendela
+        { w: ROOM_DEPTH, h: ROOM_HEIGHT - winYMax, y: winYMax + (ROOM_HEIGHT - winYMax) / 2, z: 0 },
+        // Sisi kiri (utara) jendela
+        { w: winZMin - (-ROOM_HALF_D), h: winH, y: winCenterY, z: (-ROOM_HALF_D + winZMin) / 2 },
+        // Sisi kanan (selatan) jendela
+        { w: ROOM_HALF_D - winZMax, h: winH, y: winCenterY, z: (winZMax + ROOM_HALF_D) / 2 }
+      ];
+
+      for (const seg of westSegments) {
+        const mesh = new THREE.Mesh(
+          new THREE.BoxGeometry(wallThick, seg.h, seg.w),
+          wallMat
+        );
+        mesh.position.set(-ROOM_HALF_W - wallThick / 2, seg.y, seg.z);
+        mesh.receiveShadow = true;
+        mesh.castShadow = true;
+        scene.add(mesh);
+      }
+
+      // Pemandangan langit cerah di luar jendela
+      const outsideBackdrop = new THREE.Mesh(
+        new THREE.PlaneGeometry(winW + 4, winH + 4),
+        new THREE.MeshBasicMaterial({ color: 0xfff3d1 })
+      );
+      outsideBackdrop.rotation.y = Math.PI / 2;
+      outsideBackdrop.position.set(-ROOM_HALF_W - 1.2, winCenterY, winCenterZ);
+      scene.add(outsideBackdrop);
+
+      // Kusen Jendela Kayu
+      const frameThick = 0.18;
+      const frameDepth = 0.48;
+      const topFrame = new THREE.Mesh(
+        new THREE.BoxGeometry(frameDepth, frameThick, winW + frameThick * 2),
+        trimMat
+      );
+      topFrame.position.set(-ROOM_HALF_W - wallThick / 2, winYMax + frameThick / 2, winCenterZ);
+      scene.add(topFrame);
+
+      const botFrame = topFrame.clone();
+      botFrame.position.y = winYMin - frameThick / 2;
+      scene.add(botFrame);
+
+      const leftFrame = new THREE.Mesh(
+        new THREE.BoxGeometry(frameDepth, winH, frameThick),
+        trimMat
+      );
+      leftFrame.position.set(-ROOM_HALF_W - wallThick / 2, winCenterY, winZMin - frameThick / 2);
+      scene.add(leftFrame);
+
+      const rightFrame = leftFrame.clone();
+      rightFrame.position.z = winZMax + frameThick / 2;
+      scene.add(rightFrame);
+
+      // Palang tengah jendela
+      const midV = new THREE.Mesh(
+        new THREE.BoxGeometry(0.14, winH, 0.1),
+        trimMat
+      );
+      midV.position.set(-ROOM_HALF_W - wallThick / 2, winCenterY, winCenterZ);
+      midV.castShadow = true;
+      scene.add(midV);
+
+      const midH = new THREE.Mesh(
+        new THREE.BoxGeometry(0.14, 0.1, winW),
+        trimMat
+      );
+      midH.position.set(-ROOM_HALF_W - wallThick / 2, winCenterY, winCenterZ);
+      midH.castShadow = true;
+      scene.add(midH);
+
+      // Kaca jendela transparan halus
+      const glass = new THREE.Mesh(
+        new THREE.PlaneGeometry(winW, winH),
+        new THREE.MeshStandardMaterial({
+          color: 0xfff8e7,
+          transparent: true,
+          opacity: 0.16,
+          roughness: 0.1,
+          metalness: 0.1
+        })
+      );
+      glass.rotation.y = Math.PI / 2;
+      glass.position.set(-ROOM_HALF_W - 0.15, winCenterY, winCenterZ);
+      scene.add(glass);
+
+      // Baseboard kayu di 4 dinding
+      const baseH = 0.22;
+      const baseNorth = new THREE.Mesh(new THREE.BoxGeometry(ROOM_WIDTH, baseH, 0.08), trimMat);
+      baseNorth.position.set(0, baseH / 2, -ROOM_HALF_D + 0.04);
+      scene.add(baseNorth);
+
+      const baseSouth = baseNorth.clone();
+      baseSouth.position.z = ROOM_HALF_D - 0.04;
+      scene.add(baseSouth);
+
+      const baseEast = new THREE.Mesh(new THREE.BoxGeometry(0.08, baseH, ROOM_DEPTH), trimMat);
+      baseEast.position.set(ROOM_HALF_W - 0.04, baseH / 2, 0);
+      scene.add(baseEast);
+
+      const baseWest = baseEast.clone();
+      baseWest.position.x = -ROOM_HALF_W + 0.04;
+      scene.add(baseWest);
+    }
+
+    // Helper mendaftarkan collider AABB perabotan beserta topHeight dan status bisa dinaiki
+    function addFurnitureCollider(cx, cz, width, depth, topHeight, climbable = false) {
+      furnitureColliders.push({
+        minX: cx - width / 2,
+        maxX: cx + width / 2,
+        minZ: cz - depth / 2,
+        maxZ: cz + depth / 2,
+        topHeight,
+        climbable
+      });
+    }
+
+    // --- Perabotan Ruang Tamu (Bentuk Dasar + Material Realistis) ---
+    function createFurniture() {
+      furnitureColliders = [];
+
+      const woodDark = new THREE.MeshStandardMaterial({ color: 0x5d3a22, roughness: 0.55, metalness: 0.08 });
+      const woodWarm = new THREE.MeshStandardMaterial({ color: 0x8b5a36, roughness: 0.6, metalness: 0.05 });
+      const fabricSofa = new THREE.MeshStandardMaterial({ color: 0x4b6b78, roughness: 0.9, metalness: 0.02 });
+      const cushionMat = new THREE.MeshStandardMaterial({ color: 0xe6a15c, roughness: 0.85, metalness: 0.02 });
+      const metalDark = new THREE.MeshStandardMaterial({ color: 0x22262b, roughness: 0.35, metalness: 0.75 });
+      const metalBrass = new THREE.MeshStandardMaterial({ color: 0xd4a853, roughness: 0.3, metalness: 0.8 });
+
+      // 1. KARPET (datar di lantai, bukan penghalang)
+      const rugMesh = new THREE.Mesh(
+        new THREE.BoxGeometry(6.8, 0.03, 5.2),
+        new THREE.MeshStandardMaterial({
+          map: createRugTexture(),
+          roughness: 0.95,
+          metalness: 0.0
+        })
+      );
+      rugMesh.position.set(0, 0.015, 2.7);
+      rugMesh.receiveShadow = true;
+      scene.add(rugMesh);
+
+      // 2. SOFA (x: 0, z: 4.8)
+      const sofaGroup = new THREE.Group();
+      sofaGroup.position.set(0, 0, 4.8);
+
+      const sofaBase = new THREE.Mesh(new THREE.BoxGeometry(5.2, 0.55, 1.9), fabricSofa);
+      sofaBase.position.y = 0.42;
+      sofaBase.castShadow = true;
+      sofaBase.receiveShadow = true;
+      sofaGroup.add(sofaBase);
+
+      const sofaBack = new THREE.Mesh(new THREE.BoxGeometry(5.2, 1.05, 0.42), fabricSofa);
+      sofaBack.position.set(0, 1.15, 0.74);
+      sofaBack.castShadow = true;
+      sofaBack.receiveShadow = true;
+      sofaGroup.add(sofaBack);
+
+      const armL = new THREE.Mesh(new THREE.BoxGeometry(0.42, 0.85, 1.9), fabricSofa);
+      armL.position.set(-2.39, 0.72, 0);
+      armL.castShadow = true;
+      sofaGroup.add(armL);
+
+      const armR = armL.clone();
+      armR.position.x = 2.39;
+      sofaGroup.add(armR);
+
+      // Bantal aksen
+      const pil1 = new THREE.Mesh(new THREE.BoxGeometry(0.65, 0.55, 0.25), cushionMat);
+      pil1.position.set(-1.65, 0.95, 0.38);
+      pil1.rotation.set(-0.2, 0.18, 0.08);
+      pil1.castShadow = true;
+      sofaGroup.add(pil1);
+
+      const pil2 = pil1.clone();
+      pil2.position.set(1.65, 0.95, 0.38);
+      pil2.rotation.set(-0.2, -0.18, -0.08);
+      sofaGroup.add(pil2);
+
+      // Kaki sofa
+      for (const lx of [-2.3, 2.3]) {
+        for (const lz of [-0.75, 0.75]) {
+          const leg = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.04, 0.16, 8), woodDark);
+          leg.position.set(lx, 0.08, lz);
+          sofaGroup.add(leg);
+        }
+      }
+      scene.add(sofaGroup);
+      // Dudukan sofa bisa dinaiki (topHeight: 0.70), sandaran belakang lebih tinggi (1.68)
+      addFurnitureCollider(0, 4.58, 5.2, 1.48, 0.70, true);
+      addFurnitureCollider(0, 5.54, 5.2, 0.44, 1.68, false);
+
+      // 3. MEJA KOPI (x: 0, z: 1.3)
+      const tableGroup = new THREE.Group();
+      tableGroup.position.set(0, 0, 1.3);
+
+      const tableTop = new THREE.Mesh(new THREE.BoxGeometry(2.8, 0.12, 1.45), woodWarm);
+      tableTop.position.y = 0.62;
+      tableTop.castShadow = true;
+      tableTop.receiveShadow = true;
+      tableGroup.add(tableTop);
+
+      for (const tx of [-1.2, 1.2]) {
+        for (const tz of [-0.55, 0.55]) {
+          const leg = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.56, 0.1), woodDark);
+          leg.position.set(tx, 0.28, tz);
+          leg.castShadow = true;
+          tableGroup.add(leg);
+        }
+      }
+      // Dekorasi kecil di atas meja
+      const mug = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.11, 0.09, 0.18, 12),
+        new THREE.MeshStandardMaterial({ color: 0xf8fafc, roughness: 0.3 })
+      );
+      mug.position.set(0.55, 0.77, 0.15);
+      mug.castShadow = true;
+      tableGroup.add(mug);
+
+      scene.add(tableGroup);
+      addFurnitureCollider(0, 1.3, 2.9, 1.55, 0.68, true);
+
+      // 4. TV DI DINDING + KABINET TV (x: 0, z: -9.2)
+      const tvUnit = new THREE.Group();
+      tvUnit.position.set(0, 0, -9.25);
+
+      const cabinet = new THREE.Mesh(new THREE.BoxGeometry(4.4, 0.72, 1.0), woodDark);
+      cabinet.position.y = 0.36;
+      cabinet.castShadow = true;
+      cabinet.receiveShadow = true;
+      tvUnit.add(cabinet);
+
+      // Layar TV menempel di dinding utara
+      const tvFrame = new THREE.Mesh(new THREE.BoxGeometry(3.8, 2.1, 0.12), metalDark);
+      tvFrame.position.set(0, 2.45, -0.62);
+      tvFrame.castShadow = true;
+      tvUnit.add(tvFrame);
+
+      const tvScreen = new THREE.Mesh(
+        new THREE.PlaneGeometry(3.56, 1.88),
+        new THREE.MeshStandardMaterial({
+          color: 0x0f172a,
+          roughness: 0.15,
+          metalness: 0.45,
+          emissive: 0x0b1628,
+          emissiveIntensity: 0.4
+        })
+      );
+      tvScreen.position.set(0, 2.45, -0.55);
+      tvUnit.add(tvScreen);
+
+      scene.add(tvUnit);
+      addFurnitureCollider(0, -9.25, 4.5, 1.2, 0.72, true);
+
+      // 5. RAK BUKU (dinding timur: x: 9.8, z: -3.5)
+      const shelfGroup = new THREE.Group();
+      shelfGroup.position.set(9.8, 0, -3.5);
+
+      const shelfBody = new THREE.Mesh(new THREE.BoxGeometry(1.1, 4.2, 3.4), woodDark);
+      shelfBody.position.set(0.2, 2.1, 0);
+      shelfBody.castShadow = true;
+      shelfBody.receiveShadow = true;
+      shelfGroup.add(shelfBody);
+
+      const bookColors = [0xef4444, 0x3b82f6, 0x10b981, 0xf59e0b, 0x8b5cf6, 0xec4899];
+      for (let levelY = 0.75; levelY <= 3.55; levelY += 0.92) {
+        const plank = new THREE.Mesh(new THREE.BoxGeometry(1.18, 0.08, 3.25), woodWarm);
+        plank.position.set(0.14, levelY, 0);
+        shelfGroup.add(plank);
+
+        // Deretan buku
+        for (let bz = -1.2; bz <= 1.2; bz += 0.34) {
+          const bh = 0.45 + ((Math.abs(Math.sin(bz * 5 + levelY)) * 0.25));
+          const bookMat = new THREE.MeshStandardMaterial({
+            color: bookColors[Math.floor(Math.abs(bz * 10 + levelY)) % bookColors.length],
+            roughness: 0.75
+          });
+          const book = new THREE.Mesh(new THREE.BoxGeometry(0.65, bh, 0.22), bookMat);
+          book.position.set(-0.08, levelY + 0.04 + bh / 2, bz);
+          book.castShadow = true;
+          shelfGroup.add(book);
+        }
+      }
+      scene.add(shelfGroup);
+      addFurnitureCollider(9.8, -3.5, 1.4, 3.5, 4.2, false);
+
+      // 5b. RAK BUKU BAGIAN BAWAH (di samping rak tinggi, bisa dinaiki: topHeight 0.84)
+      const lowShelfGroup = new THREE.Group();
+      lowShelfGroup.position.set(9.75, 0, -0.5);
+
+      const lowShelfBody = new THREE.Mesh(new THREE.BoxGeometry(1.3, 0.84, 2.2), woodWarm);
+      lowShelfBody.position.y = 0.42;
+      lowShelfBody.castShadow = true;
+      lowShelfBody.receiveShadow = true;
+      lowShelfGroup.add(lowShelfBody);
+
+      const lowShelfTop = new THREE.Mesh(new THREE.BoxGeometry(1.38, 0.08, 2.28), woodDark);
+      lowShelfTop.position.y = 0.82;
+      lowShelfTop.castShadow = true;
+      lowShelfTop.receiveShadow = true;
+      lowShelfGroup.add(lowShelfTop);
+
+      scene.add(lowShelfGroup);
+      addFurnitureCollider(9.75, -0.5, 1.4, 2.3, 0.86, true);
+
+      // 5c. KURSI (x: 4.8, z: 2.6, bisa dinaiki: topHeight 0.58)
+      const chairGroup = new THREE.Group();
+      chairGroup.position.set(4.8, 0, 2.6);
+
+      const chairSeat = new THREE.Mesh(new THREE.BoxGeometry(1.35, 0.22, 1.35), fabricSofa);
+      chairSeat.position.y = 0.47;
+      chairSeat.castShadow = true;
+      chairSeat.receiveShadow = true;
+      chairGroup.add(chairSeat);
+
+      for (const cx of [-0.52, 0.52]) {
+        for (const cz of [-0.52, 0.52]) {
+          const cLeg = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.04, 0.36, 8), woodDark);
+          cLeg.position.set(cx, 0.18, cz);
+          cLeg.castShadow = true;
+          chairGroup.add(cLeg);
+        }
+      }
+      scene.add(chairGroup);
+      addFurnitureCollider(4.8, 2.6, 1.4, 1.4, 0.58, true);
+
+      // 6. LAMPU BERDIRI (x: -4.3, z: 5.2)
+      const lampGroup = new THREE.Group();
+      lampGroup.position.set(-4.3, 0, 5.2);
+
+      const lampBase = new THREE.Mesh(new THREE.CylinderGeometry(0.42, 0.46, 0.1, 16), metalBrass);
+      lampBase.position.y = 0.05;
+      lampBase.castShadow = true;
+      lampGroup.add(lampBase);
+
+      const lampPole = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, 3.4, 10), metalBrass);
+      lampPole.position.y = 1.75;
+      lampPole.castShadow = true;
+      lampGroup.add(lampPole);
+
+      const lampShade = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.32, 0.56, 0.65, 16, 1, true),
+        new THREE.MeshStandardMaterial({
+          color: 0xfff3db,
+          emissive: 0xffb85c,
+          emissiveIntensity: 0.75,
+          roughness: 0.6,
+          side: THREE.DoubleSide
+        })
+      );
+      lampShade.position.y = 3.55;
+      lampGroup.add(lampShade);
+
+      scene.add(lampGroup);
+      addFurnitureCollider(-4.3, 5.2, 1.0, 1.0, 3.8, false);
+
+      // 7. TANAMAN POT (dua sudut ruangan)
+      createPottedPlant(-9.1, -7.2);
+      createPottedPlant(9.0, 6.8);
+    }
+
+    function createPottedPlant(x, z) {
+      const plantGroup = new THREE.Group();
+      plantGroup.position.set(x, 0, z);
+
+      const pot = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.5, 0.36, 0.78, 14),
+        new THREE.MeshStandardMaterial({ color: 0xb85d3b, roughness: 0.75 })
+      );
+      pot.position.y = 0.39;
+      pot.castShadow = true;
+      pot.receiveShadow = true;
+      plantGroup.add(pot);
+
+      const soil = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.46, 0.46, 0.08, 12),
+        new THREE.MeshStandardMaterial({ color: 0x3b281c, roughness: 0.95 })
+      );
+      soil.position.y = 0.76;
+      plantGroup.add(soil);
+
+      const leafMat = new THREE.MeshStandardMaterial({ color: 0x2e7d32, roughness: 0.65 });
+      for (let i = 0; i < 6; i++) {
+        const angle = (i / 6) * Math.PI * 2;
+        const leaf = new THREE.Mesh(new THREE.ConeGeometry(0.24, 1.15, 6), leafMat);
+        leaf.position.set(Math.cos(angle) * 0.24, 1.25, Math.sin(angle) * 0.24);
+        leaf.rotation.z = -Math.cos(angle) * 0.48;
+        leaf.rotation.x = Math.sin(angle) * 0.48;
+        leaf.castShadow = true;
+        plantGroup.add(leaf);
+      }
+
+      const topLeaf = new THREE.Mesh(new THREE.ConeGeometry(0.22, 1.25, 6), leafMat);
+      topLeaf.position.y = 1.4;
+      topLeaf.castShadow = true;
+      plantGroup.add(topLeaf);
+
+      scene.add(plantGroup);
+      addFurnitureCollider(x, z, 1.1, 1.1, 1.9, false);
+    }
+
+    // --- Partikel Debu Cahaya Halus di Dekat Jendela ---
+    function createDustParticles() {
+      const count = 80;
+      const positions = new Float32Array(count * 3);
+      dustVelocities = [];
+
+      for (let i = 0; i < count; i++) {
+        positions[i * 3] = -10.2 + Math.random() * 6.5;
+        positions[i * 3 + 1] = 0.8 + Math.random() * 5.2;
+        positions[i * 3 + 2] = -4.2 + Math.random() * 6.4;
+        dustVelocities.push({
+          vx: (Math.random() - 0.3) * 0.15,
+          vy: (Math.random() - 0.5) * 0.12,
+          vz: (Math.random() - 0.5) * 0.15
+        });
+      }
+
+      const geo = new THREE.BufferGeometry();
+      geo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+
+      const mat = new THREE.PointsMaterial({
+        color: 0xfff3c4,
+        size: 0.08,
+        transparent: true,
+        opacity: 0.55,
+        depthWrite: false
+      });
+
+      dustPoints = new THREE.Points(geo, mat);
+      scene.add(dustPoints);
+    }
+
+    function updateDustParticles(dt) {
+      if (!dustPoints) return;
+      const posAttr = dustPoints.geometry.attributes.position;
+      const arr = posAttr.array;
+
+      for (let i = 0; i < dustVelocities.length; i++) {
+        const v = dustVelocities[i];
+        arr[i * 3] += v.vx * dt;
+        arr[i * 3 + 1] += v.vy * dt;
+        arr[i * 3 + 2] += v.vz * dt;
+
+        if (arr[i * 3] > -3.5) arr[i * 3] = -10.2;
+        if (arr[i * 3] < -10.5) arr[i * 3] = -3.8;
+        if (arr[i * 3 + 1] > 6.2) arr[i * 3 + 1] = 0.8;
+        if (arr[i * 3 + 1] < 0.7) arr[i * 3 + 1] = 6.0;
+        if (arr[i * 3 + 2] > 2.4) arr[i * 3 + 2] = -4.2;
+        if (arr[i * 3 + 2] < -4.3) arr[i * 3 + 2] = 2.2;
+      }
+      posAttr.needsUpdate = true;
+    }
+
+    // --- Karakter Kucing Low-Poly dalam satu THREE.Group ---
+    function createPlayerCat() {
+      player = new THREE.Group();
+
+      const furMain = new THREE.MeshStandardMaterial({ color: 0xf59e42, roughness: 0.75, metalness: 0.02 });
+      const furLight = new THREE.MeshStandardMaterial({ color: 0xfde6c4, roughness: 0.75, metalness: 0.02 });
+      const pinkMat = new THREE.MeshStandardMaterial({ color: 0xf472b6, roughness: 0.6 });
+      const eyeMat = new THREE.MeshStandardMaterial({ color: 0x111827, roughness: 0.2, metalness: 0.2 });
+
+      // Pivot badan agar bisa bernapas & condong saat bergerak
+      const bodyPivot = new THREE.Group();
+      player.add(bodyPivot);
+
+      // Badan
+      const torso = new THREE.Mesh(new THREE.BoxGeometry(0.46, 0.36, 0.72), furMain);
+      torso.position.set(0, 0.42, 0);
+      torso.castShadow = true;
+      torso.receiveShadow = true;
+      bodyPivot.add(torso);
+
+      // Perut terang
+      const belly = new THREE.Mesh(new THREE.BoxGeometry(0.34, 0.14, 0.62), furLight);
+      belly.position.set(0, 0.28, 0);
+      bodyPivot.add(belly);
+
+      // Kepala (menghadap +Z lokal)
+      const headGroup = new THREE.Group();
+      headGroup.position.set(0, 0.66, 0.36);
+
+      const head = new THREE.Mesh(new THREE.BoxGeometry(0.42, 0.36, 0.38), furMain);
+      head.castShadow = true;
+      headGroup.add(head);
+
+      const muzzle = new THREE.Mesh(new THREE.BoxGeometry(0.24, 0.15, 0.12), furLight);
+      muzzle.position.set(0, -0.06, 0.2);
+      headGroup.add(muzzle);
+
+      const nose = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.06, 0.05), pinkMat);
+      nose.position.set(0, -0.02, 0.26);
+      headGroup.add(nose);
+
+      // Mata
+      const eyeL = new THREE.Mesh(new THREE.BoxGeometry(0.07, 0.09, 0.05), eyeMat);
+      eyeL.position.set(-0.11, 0.04, 0.18);
+      headGroup.add(eyeL);
+
+      const eyeR = eyeL.clone();
+      eyeR.position.x = 0.11;
+      headGroup.add(eyeR);
+
+      // 2 Telinga
+      const earL = new THREE.Mesh(new THREE.ConeGeometry(0.1, 0.19, 4), furMain);
+      earL.position.set(-0.13, 0.25, 0.02);
+      earL.rotation.y = Math.PI / 4;
+      earL.rotation.z = 0.14;
+      earL.castShadow = true;
+      headGroup.add(earL);
+
+      const earR = new THREE.Mesh(new THREE.ConeGeometry(0.1, 0.19, 4), furMain);
+      earR.position.set(0.13, 0.25, 0.02);
+      earR.rotation.y = Math.PI / 4;
+      earR.rotation.z = -0.14;
+      earR.castShadow = true;
+      headGroup.add(earR);
+
+      bodyPivot.add(headGroup);
+
+      // 4 Kaki dengan pivot di bahu/pinggul
+      function makeLeg(x, z) {
+        const pivot = new THREE.Group();
+        pivot.position.set(x, 0.28, z);
+
+        const legMesh = new THREE.Mesh(new THREE.BoxGeometry(0.13, 0.28, 0.13), furMain);
+        legMesh.position.y = -0.14;
+        legMesh.castShadow = true;
+        pivot.add(legMesh);
+
+        const paw = new THREE.Mesh(new THREE.BoxGeometry(0.14, 0.07, 0.16), furLight);
+        paw.position.set(0, -0.25, 0.02);
+        pivot.add(paw);
+
+        bodyPivot.add(pivot);
+        return pivot;
+      }
+
+      const legFL = makeLeg(-0.14, 0.24);
+      const legFR = makeLeg(0.14, 0.24);
+      const legBL = makeLeg(-0.14, -0.24);
+      const legBR = makeLeg(0.14, -0.24);
+
+      // Ekor dengan pivot di pangkal
+      const tailPivot = new THREE.Group();
+      tailPivot.position.set(0, 0.5, -0.35);
+
+      const tailMesh = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.46, 0.1), furMain);
+      tailMesh.position.set(0, 0.2, -0.06);
+      tailMesh.rotation.x = -0.45;
+      tailMesh.castShadow = true;
+      tailPivot.add(tailMesh);
+
+      const tailTip = new THREE.Mesh(new THREE.BoxGeometry(0.11, 0.12, 0.11), furLight);
+      tailTip.position.set(0, 0.39, -0.15);
+      tailPivot.add(tailTip);
+
+      bodyPivot.add(tailPivot);
+
+      catParts = { bodyPivot, headGroup, legFL, legFR, legBL, legBR, tailPivot };
+      scene.add(player);
+    }
+
+    // --- Audio Web Audio API (tanpa file eksternal) ---
+    function ensureAudio() {
+      if (!audioCtx) {
+        const AudioCtx = window.AudioContext || window.webkitAudioContext;
+        if (AudioCtx) audioCtx = new AudioCtx();
+      }
+      if (audioCtx && audioCtx.state === 'suspended') {
+        audioCtx.resume();
+      }
+    }
+
+    function playTone(freqStart, freqEnd, duration, type = 'sine', volume = 0.15, delay = 0) {
+      if (!audioCtx) return;
+      const now = audioCtx.currentTime + delay;
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+
+      osc.type = type;
+      osc.frequency.setValueAtTime(freqStart, now);
+      osc.frequency.exponentialRampToValueAtTime(Math.max(freqEnd, 20), now + duration);
+
+      gain.gain.setValueAtTime(volume, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + duration);
+
+      osc.connect(gain);
+      gain.connect(audioCtx.destination);
+      osc.start(now);
+      osc.stop(now + duration);
+    }
+
+    function playCoinSound() {
+      playTone(660, 880, 0.09, 'sine', 0.14, 0);
+      playTone(990, 1320, 0.14, 'triangle', 0.12, 0.06);
+    }
+
+    function playJumpSound() {
+      playTone(260, 520, 0.12, 'sine', 0.12);
+    }
+
+    function playHitSound() {
+      playTone(190, 75, 0.22, 'sawtooth', 0.16);
+    }
+
+    function playGameOverSound() {
+      playTone(300, 220, 0.15, 'triangle', 0.16, 0);
+      playTone(220, 150, 0.18, 'triangle', 0.16, 0.14);
+      playTone(150, 90, 0.28, 'sawtooth', 0.14, 0.3);
+    }
+
+    function playPowerUpSound() {
+      playTone(440, 660, 0.1, 'sine', 0.14, 0);
+      playTone(660, 1046, 0.16, 'triangle', 0.14, 0.08);
+    }
+
+    // --- Partikel Koin ---
+    function initParticles() {
+      particleGeo = new THREE.BoxGeometry(0.12, 0.12, 0.12);
+      particleMat = new THREE.MeshBasicMaterial({ color: 0xfde047 });
+    }
+
+    function spawnCoinParticles(pos) {
+      for (let i = 0; i < 12; i++) {
+        const mesh = new THREE.Mesh(particleGeo, particleMat);
+        mesh.position.copy(pos);
+        scene.add(mesh);
+
+        const angle = Math.random() * Math.PI * 2;
+        const speed = 2.5 + Math.random() * 4;
+        particles.push({
+          mesh,
+          vel: new THREE.Vector3(
+            Math.cos(angle) * speed,
+            3 + Math.random() * 4,
+            Math.sin(angle) * speed
+          ),
+          life: 0.45,
+          maxLife: 0.45
+        });
+      }
+    }
+
+    function updateParticles(dt) {
+      for (let i = particles.length - 1; i >= 0; i--) {
+        const p = particles[i];
+        p.life -= dt;
+        if (p.life <= 0) {
+          scene.remove(p.mesh);
+          particles.splice(i, 1);
+          continue;
+        }
+        p.vel.y += GRAVITY * 0.5 * dt;
+        p.mesh.position.addScaledVector(p.vel, dt);
+        p.mesh.rotation.x += 6 * dt;
+        p.mesh.rotation.y += 6 * dt;
+        p.mesh.scale.setScalar(Math.max(p.life / p.maxLife, 0.01));
+      }
+    }
+
+    // --- Cek Apakah Titik (x, z) Bebas dari Dinding & Perabotan ---
+    function isPositionFree(x, z, radius) {
+      const margin = radius + 0.35;
+      if (
+        x < -ROOM_HALF_W + margin || x > ROOM_HALF_W - margin ||
+        z < -ROOM_HALF_D + margin || z > ROOM_HALF_D - margin
+      ) {
+        return false;
+      }
+
+      for (const box of furnitureColliders) {
+        const closestX = Math.max(box.minX, Math.min(x, box.maxX));
+        const closestZ = Math.max(box.minZ, Math.min(z, box.maxZ));
+        const dx = x - closestX;
+        const dz = z - closestZ;
+        if (dx * dx + dz * dz < (radius + 0.25) * (radius + 0.25)) {
+          return false;
+        }
+      }
+      return true;
+    }
+
+    function findFreeFloorPosition(radius, minPlayerDist = 2.5) {
+      const rangeX = ROOM_HALF_W - radius - 0.6;
+      const rangeZ = ROOM_HALF_D - radius - 0.6;
+      for (let attempts = 0; attempts < 60; attempts++) {
+        const x = (Math.random() * 2 - 1) * rangeX;
+        const z = (Math.random() * 2 - 1) * rangeZ;
+        if (
+          isPositionFree(x, z, radius) &&
+          Math.hypot(x - player.position.x, z - player.position.z) >= minPlayerDist
+        ) {
+          return { x, z };
+        }
+      }
+      return { x: -2.5, z: -2.5 };
+    }
+
+    // --- Koin & Power-Up ---
+    function createCoin() {
+      const geo = new THREE.CylinderGeometry(COIN_RADIUS, COIN_RADIUS, 0.14, 18);
+      const mat = new THREE.MeshStandardMaterial({
+        color: 0xfacc15,
+        roughness: 0.22,
+        metalness: 0.7
+      });
+      coin = new THREE.Mesh(geo, mat);
+      coin.rotation.x = Math.PI / 2;
+      coin.castShadow = true;
+      scene.add(coin);
+    }
+
+    function spawnCoin() {
+      const climbables = furnitureColliders.filter((b) => b.climbable);
+      // 35% peluang koin muncul di atas perabotan yang bisa dinaiki sebagai hadiah
+      if (climbables.length > 0 && Math.random() < 0.35) {
+        for (let attempts = 0; attempts < 20; attempts++) {
+          const box = climbables[Math.floor(Math.random() * climbables.length)];
+          const pad = COIN_RADIUS + 0.12;
+          if (box.maxX - box.minX <= pad * 2 || box.maxZ - box.minZ <= pad * 2) continue;
+
+          const x = box.minX + pad + Math.random() * (box.maxX - box.minX - pad * 2);
+          const z = box.minZ + pad + Math.random() * (box.maxZ - box.minZ - pad * 2);
+
+          // Pastikan tidak tumpang tindih dengan perabotan lain yang lebih tinggi (misal sandaran sofa)
+          let blockedByHigher = false;
+          for (const other of furnitureColliders) {
+            if (other !== box && other.topHeight > box.topHeight) {
+              if (
+                x >= other.minX - COIN_RADIUS && x <= other.maxX + COIN_RADIUS &&
+                z >= other.minZ - COIN_RADIUS && z <= other.maxZ + COIN_RADIUS
+              ) {
+                blockedByHigher = true;
+                break;
+              }
+            }
+          }
+          if (!blockedByHigher && Math.hypot(x - player.position.x, z - player.position.z) >= 2.0) {
+            coin.position.set(x, box.topHeight + COIN_RADIUS + 0.25, z);
+            return;
+          }
+        }
+      }
+
+      const pos = findFreeFloorPosition(COIN_RADIUS, 2.5);
+      coin.position.set(pos.x, COIN_RADIUS + 0.25, pos.z);
+    }
+
+    function createPowerUp() {
+      const geo = new THREE.OctahedronGeometry(0.42, 0);
+      const mat = new THREE.MeshStandardMaterial({
+        color: 0x22d3ee,
+        emissive: 0x0891b2,
+        emissiveIntensity: 0.55,
+        roughness: 0.25,
+        metalness: 0.45
+      });
+      powerUpMesh = new THREE.Mesh(geo, mat);
+      powerUpMesh.castShadow = true;
+      powerUpMesh.visible = false;
+      scene.add(powerUpMesh);
+    }
+
+    function spawnPowerUp() {
+      const pos = findFreeFloorPosition(0.55, 2.5);
+      powerUpMesh.position.set(pos.x, 0.8, pos.z);
+      powerUpMesh.visible = true;
+      powerUpActive = true;
+    }
+
+    // --- Rintangan: Robot Vacuum Cleaner ---
+    function createRobotVacuumMesh() {
+      const group = new THREE.Group();
+
+      const body = new THREE.Mesh(
+        new THREE.CylinderGeometry(VACUUM_RADIUS, VACUUM_RADIUS, VACUUM_HEIGHT, 20),
+        new THREE.MeshStandardMaterial({ color: 0x27272a, roughness: 0.35, metalness: 0.55 })
+      );
+      body.position.y = VACUUM_HEIGHT / 2 + 0.02;
+      body.castShadow = true;
+      body.receiveShadow = true;
+      group.add(body);
+
+      // Aksen cincin merah di atas
+      const ring = new THREE.Mesh(
+        new THREE.CylinderGeometry(VACUUM_RADIUS * 0.72, VACUUM_RADIUS * 0.72, 0.04, 18),
+        new THREE.MeshStandardMaterial({ color: 0xdc2626, roughness: 0.3, metalness: 0.3 })
+      );
+      ring.position.y = VACUUM_HEIGHT + 0.03;
+      group.add(ring);
+
+      // Sensor LiDAR & LED menyala
+      const sensor = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.16, 0.18, 0.09, 12),
+        new THREE.MeshStandardMaterial({
+          color: 0xef4444,
+          emissive: 0xef4444,
+          emissiveIntensity: 0.7,
+          roughness: 0.2
+        })
+      );
+      sensor.position.y = VACUUM_HEIGHT + 0.08;
+      group.add(sensor);
+
+      return group;
+    }
+
+    function spawnObstacle() {
+      const pos = findFreeFloorPosition(VACUUM_RADIUS, 3.8);
+      const mesh = createRobotVacuumMesh();
+      mesh.position.set(pos.x, 0, pos.z);
+      scene.add(mesh);
+
+      const axis = Math.random() < 0.5 ? 'x' : 'z';
+      obstacles.push({
+        mesh,
+        axis,
+        dir: Math.random() < 0.5 ? 1 : -1
+      });
+    }
+
+    // --- UI & Reset ---
+    function updateLivesUI() {
+      const filled = '❤️'.repeat(Math.max(lives, 0));
+      const empty = '🖤'.repeat(Math.max(MAX_LIVES - lives, 0));
+      livesTextEl.textContent = filled + empty;
+    }
+
+    function resetGame() {
+      score = 0;
+      coinsCollected = 0;
+      level = 1;
+      lives = MAX_LIVES;
+      invulnerableTimer = 0;
+      magnetTimer = 0;
+      powerUpSpawnTimer = 6;
+      powerUpActive = false;
+      obstacleSpeed = BASE_OBSTACLE_SPEED;
+      isGameOver = false;
+      isGrounded = true;
+      groundHeight = 0;
+      landingSquashTimer = 0;
+
+      powerUpMesh.visible = false;
+      magnetStatusEl.style.display = 'none';
+
+      player.visible = true;
+      player.position.set(-2.2, 0, -1.5);
+      playerVel.set(0, 0, 0);
+      catYaw = Math.PI;
+      player.rotation.y = catYaw;
+
+      for (const obs of obstacles) {
+        scene.remove(obs.mesh);
+      }
+      obstacles = [];
+
+      for (const p of particles) {
+        scene.remove(p.mesh);
+      }
+      particles = [];
+
+      levelTextEl.textContent = '1';
+      spawnObstacle();
+      spawnObstacle();
+      spawnCoin();
+
+      camera.position.set(-2.2, 5.8, 6.2);
+      camera.lookAt(player.position.x, 0.7, player.position.z);
+
+      scoreTextEl.textContent = '0';
+      updateLivesUI();
+      gameOverEl.classList.remove('active');
+    }
+
+    // --- Event Keyboard & Resize ---
+    function setupEvents() {
+      window.addEventListener('keydown', (e) => {
+        ensureAudio();
+        if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Space'].includes(e.code)) {
+          e.preventDefault();
+        }
+        keys[e.code] = true;
+      });
+
+      window.addEventListener('keyup', (e) => {
+        keys[e.code] = false;
+      });
+
+      window.addEventListener('blur', () => {
+        keys = {};
+      });
+
+      restartBtn.addEventListener('click', () => {
+        ensureAudio();
+        resetGame();
+      });
+
+      window.addEventListener('resize', () => {
+        camera.aspect = window.innerWidth / window.innerHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+      });
+    }
+
+    // --- Resolusi Tabrakan Lingkaran-vs-AABB di XZ untuk Karakter ---
+    function resolveRoomCollisions() {
+      // Batas 4 dinding ruangan
+      const minX = -ROOM_HALF_W + PLAYER_RADIUS;
+      const maxX = ROOM_HALF_W - PLAYER_RADIUS;
+      const minZ = -ROOM_HALF_D + PLAYER_RADIUS;
+      const maxZ = ROOM_HALF_D - PLAYER_RADIUS;
+
+      if (player.position.x < minX) { player.position.x = minX; playerVel.x = 0; }
+      if (player.position.x > maxX) { player.position.x = maxX; playerVel.x = 0; }
+      if (player.position.z < minZ) { player.position.z = minZ; playerVel.z = 0; }
+      if (player.position.z > maxZ) { player.position.z = maxZ; playerVel.z = 0; }
+
+      // AABB perabotan: hanya blokir horizontal jika kaki kucing lebih rendah dari topHeight - 0.1
+      for (const box of furnitureColliders) {
+        if (player.position.y >= box.topHeight - CLIMB_TOLERANCE) continue;
+
+        const closestX = Math.max(box.minX, Math.min(player.position.x, box.maxX));
+        const closestZ = Math.max(box.minZ, Math.min(player.position.z, box.maxZ));
+
+        const dx = player.position.x - closestX;
+        const dz = player.position.z - closestZ;
+        const distSq = dx * dx + dz * dz;
+
+        if (distSq < PLAYER_RADIUS * PLAYER_RADIUS) {
+          const dist = Math.sqrt(distSq);
+          if (dist > 0.0001) {
+            const overlap = PLAYER_RADIUS - dist;
+            const nx = dx / dist;
+            const nz = dz / dist;
+            player.position.x += nx * overlap;
+            player.position.z += nz * overlap;
+
+            const vn = playerVel.x * nx + playerVel.z * nz;
+            if (vn < 0) {
+              playerVel.x -= vn * nx;
+              playerVel.z -= vn * nz;
+            }
+          } else {
+            // Jika pusat berada di dalam AABB, dorong ke sisi terdekat
+            const pushL = Math.abs(player.position.x - box.minX);
+            const pushR = Math.abs(box.maxX - player.position.x);
+            const pushT = Math.abs(player.position.z - box.minZ);
+            const pushB = Math.abs(box.maxZ - player.position.z);
+            const minPush = Math.min(pushL, pushR, pushT, pushB);
+
+            if (minPush === pushL) player.position.x = box.minX - PLAYER_RADIUS;
+            else if (minPush === pushR) player.position.x = box.maxX + PLAYER_RADIUS;
+            else if (minPush === pushT) player.position.z = box.minZ - PLAYER_RADIUS;
+            else player.position.z = box.maxZ + PLAYER_RADIUS;
+          }
+        }
+      }
+    }
+
+    // --- Hitung Ketinggian Permukaan (Lantai / Atas Perabot) di posisi (x, z) ---
+    function getGroundHeight(x, z, referenceY) {
+      let highest = 0;
+      for (const box of furnitureColliders) {
+        if (x >= box.minX && x <= box.maxX && z >= box.minZ && z <= box.maxZ) {
+          if (box.topHeight > highest && referenceY >= box.topHeight - CLIMB_TOLERANCE) {
+            highest = box.topHeight;
+          }
+        }
+      }
+      return highest;
+    }
+
+    // --- Update Gerakan & Animasi Kucing ---
+    function updatePlayer(dt) {
+      let inputForward = 0;
+      let inputRight = 0;
+
+      if (keys['KeyW'] || keys['ArrowUp']) inputForward += 1;
+      if (keys['KeyS'] || keys['ArrowDown']) inputForward -= 1;
+      if (keys['KeyD'] || keys['ArrowRight']) inputRight += 1;
+      if (keys['KeyA'] || keys['ArrowLeft']) inputRight -= 1;
+
+      // Vektor gerakan relatif terhadap kamera pada bidang XZ
+      camera.getWorldDirection(camForward);
+      camForward.y = 0;
+      if (camForward.lengthSq() < 0.0001) camForward.set(0, 0, -1);
+      camForward.normalize();
+      camRight.crossVectors(camForward, worldUp).normalize();
+
+      let moveX = camForward.x * inputForward + camRight.x * inputRight;
+      let moveZ = camForward.z * inputForward + camRight.z * inputRight;
+      const moveLen = Math.hypot(moveX, moveZ);
+
+      if (moveLen > 0) {
+        moveX /= moveLen;
+        moveZ /= moveLen;
+
+        playerVel.x += moveX * ACCELERATION * dt;
+        playerVel.z += moveZ * ACCELERATION * dt;
+
+        const horizSpeed = Math.hypot(playerVel.x, playerVel.z);
+        if (horizSpeed > MAX_MOVE_SPEED) {
+          const scale = MAX_MOVE_SPEED / horizSpeed;
+          playerVel.x *= scale;
+          playerVel.z *= scale;
+        }
+
+        // Hitung sudut target dari vektor input & interpolasi jalur terpendek (-PI..PI)
+        const targetYaw = Math.atan2(moveX, moveZ);
+        let diff = targetYaw - catYaw;
+        while (diff > Math.PI) diff -= Math.PI * 2;
+        while (diff < -Math.PI) diff += Math.PI * 2;
+        catYaw += diff * Math.min(1, 12 * dt);
+        player.rotation.y = catYaw;
+      } else {
+        const friction = isGrounded ? GROUND_FRICTION : AIR_FRICTION;
+        const damping = Math.exp(-friction * dt);
+        playerVel.x *= damping;
+        playerVel.z *= damping;
+
+        if (Math.hypot(playerVel.x, playerVel.z) < 0.05) {
+          playerVel.x = 0;
+          playerVel.z = 0;
+        }
+      }
+
+      // Lompat dengan Spasi
+      if (keys['Space'] && isGrounded) {
+        playerVel.y = JUMP_FORCE;
+        isGrounded = false;
+        playJumpSound();
+      }
+
+      playerVel.y += GRAVITY * dt;
+
+      const prevY = player.position.y;
+      player.position.x += playerVel.x * dt;
+      player.position.z += playerVel.z * dt;
+      player.position.y += playerVel.y * dt;
+
+      resolveRoomCollisions();
+
+      const wasGrounded = isGrounded;
+      groundHeight = getGroundHeight(player.position.x, player.position.z, Math.max(prevY, player.position.y));
+
+      if (player.position.y <= groundHeight && playerVel.y <= 0) {
+        player.position.y = groundHeight;
+        playerVel.y = 0;
+        isGrounded = true;
+        if (!wasGrounded) {
+          landingSquashTimer = 0.16;
+        }
+      } else {
+        isGrounded = false;
+      }
+
+      animateCat(dt);
+
+      // Kedip saat kebal sementara
+      if (invulnerableTimer > 0) {
+        invulnerableTimer -= dt;
+        player.visible = Math.floor(invulnerableTimer * 12) % 2 === 0;
+        if (invulnerableTimer <= 0) {
+          invulnerableTimer = 0;
+          player.visible = true;
+        }
+      }
+    }
+
+    function animateCat(dt) {
+      animClock += dt;
+      const horizSpeed = Math.hypot(playerVel.x, playerVel.z);
+      const speedRatio = Math.min(horizSpeed / MAX_MOVE_SPEED, 1);
+
+      if (!isGrounded) {
+        // Kaki terlipat saat di udara
+        catParts.legFL.rotation.x = THREE.MathUtils.lerp(catParts.legFL.rotation.x, -0.75, 14 * dt);
+        catParts.legFR.rotation.x = THREE.MathUtils.lerp(catParts.legFR.rotation.x, -0.75, 14 * dt);
+        catParts.legBL.rotation.x = THREE.MathUtils.lerp(catParts.legBL.rotation.x, 0.75, 14 * dt);
+        catParts.legBR.rotation.x = THREE.MathUtils.lerp(catParts.legBR.rotation.x, 0.75, 14 * dt);
+        catParts.bodyPivot.position.y = 0;
+        catParts.bodyPivot.rotation.x = THREE.MathUtils.lerp(
+          catParts.bodyPivot.rotation.x,
+          THREE.MathUtils.clamp(-playerVel.y * 0.025, -0.25, 0.25),
+          10 * dt
+        );
+        catParts.tailPivot.rotation.z = Math.sin(animClock * 10) * 0.25;
+      } else if (horizSpeed > 0.35) {
+        // Berjalan: kaki depan-belakang berayun bergantian, ekor bergoyang, badan condong ke depan
+        walkCycle += dt * (6 + speedRatio * 9);
+        const swing = Math.sin(walkCycle) * 0.65 * speedRatio;
+        catParts.legFL.rotation.x = swing;
+        catParts.legBR.rotation.x = swing;
+        catParts.legFR.rotation.x = -swing;
+        catParts.legBL.rotation.x = -swing;
+
+        catParts.bodyPivot.position.y = Math.abs(Math.sin(walkCycle)) * 0.04 * speedRatio;
+        catParts.bodyPivot.rotation.x = THREE.MathUtils.lerp(
+          catParts.bodyPivot.rotation.x,
+          0.11 * speedRatio,
+          10 * dt
+        );
+        catParts.tailPivot.rotation.z = Math.sin(walkCycle * 1.1) * 0.38;
+      } else {
+        // Diam: kaki netral, efek bernapas tipis, ekor bergoyang pelan
+        const k = Math.min(1, 12 * dt);
+        catParts.legFL.rotation.x = THREE.MathUtils.lerp(catParts.legFL.rotation.x, 0, k);
+        catParts.legFR.rotation.x = THREE.MathUtils.lerp(catParts.legFR.rotation.x, 0, k);
+        catParts.legBL.rotation.x = THREE.MathUtils.lerp(catParts.legBL.rotation.x, 0, k);
+        catParts.legBR.rotation.x = THREE.MathUtils.lerp(catParts.legBR.rotation.x, 0, k);
+
+        catParts.bodyPivot.position.y = Math.sin(animClock * 2.6) * 0.018;
+        catParts.bodyPivot.rotation.x = THREE.MathUtils.lerp(catParts.bodyPivot.rotation.x, 0, k);
+        catParts.tailPivot.rotation.z = Math.sin(animClock * 2.4) * 0.16;
+      }
+
+      // Animasi pendaratan singkat (squash & stretch halus)
+      if (landingSquashTimer > 0) {
+        landingSquashTimer = Math.max(0, landingSquashTimer - dt);
+        const t = landingSquashTimer / 0.16;
+        catParts.bodyPivot.scale.set(1 + 0.12 * t, 1 - 0.16 * t, 1 + 0.12 * t);
+      } else {
+        catParts.bodyPivot.scale.set(1, 1, 1);
+      }
+    }
+
+    // --- Update Koin & Level ---
+    function updateCoin(dt) {
+      coin.rotation.z += 3.5 * dt;
+
+      if (magnetTimer > 0) {
+        const dx = player.position.x - coin.position.x;
+        const dz = player.position.z - coin.position.z;
+        const distXZ = Math.hypot(dx, dz);
+        if (distXZ > 0.05 && distXZ <= MAGNET_RADIUS) {
+          const pull = Math.min(MAGNET_PULL_SPEED * dt, distXZ);
+          coin.position.x += (dx / distXZ) * pull;
+          coin.position.z += (dz / distXZ) * pull;
+        }
+      }
+
+      const catCenterY = player.position.y + 0.45;
+      const dist = Math.hypot(
+        player.position.x - coin.position.x,
+        catCenterY - coin.position.y,
+        player.position.z - coin.position.z
+      );
+
+      if (dist < PLAYER_RADIUS + COIN_RADIUS) {
+        score += 10;
+        coinsCollected += 1;
+        scoreTextEl.textContent = String(score);
+
+        playCoinSound();
+        spawnCoinParticles(coin.position);
+
+        if (coinsCollected % 5 === 0) {
+          level += 1;
+          obstacleSpeed += 1.2;
+          levelTextEl.textContent = String(level);
+          spawnObstacle();
+        }
+
+        spawnCoin();
+      }
+    }
+
+    // --- Update Power-Up Magnet ---
+    function updatePowerUp(dt) {
+      if (magnetTimer > 0) {
+        magnetTimer -= dt;
+        if (magnetTimer <= 0) {
+          magnetTimer = 0;
+          magnetStatusEl.style.display = 'none';
+        } else {
+          magnetStatusEl.textContent = `Magnet: ${magnetTimer.toFixed(1)}s`;
+        }
+      }
+
+      if (powerUpActive) {
+        powerUpMesh.rotation.y += 2.6 * dt;
+        powerUpMesh.rotation.x += 1.4 * dt;
+
+        const dist = Math.hypot(
+          player.position.x - powerUpMesh.position.x,
+          (player.position.y + 0.45) - powerUpMesh.position.y,
+          player.position.z - powerUpMesh.position.z
+        );
+
+        if (dist < PLAYER_RADIUS + 0.55) {
+          powerUpActive = false;
+          powerUpMesh.visible = false;
+          magnetTimer = MAGNET_DURATION;
+          powerUpSpawnTimer = POWERUP_SPAWN_INTERVAL;
+          magnetStatusEl.style.display = 'block';
+          magnetStatusEl.textContent = `Magnet: ${magnetTimer.toFixed(1)}s`;
+          playPowerUpSound();
+        }
+      } else if (magnetTimer <= 0) {
+        powerUpSpawnTimer -= dt;
+        if (powerUpSpawnTimer <= 0) {
+          spawnPowerUp();
+        }
+      }
+    }
+
+    // --- Update Robot Vacuum Cleaner & Tabrakan ---
+    function updateObstacles(dt) {
+      const steps = obstacleSpeed * dt > 0.3 ? 2 : 1;
+      const subDt = dt / steps;
+
+      for (let s = 0; s < steps; s++) {
+        for (const obs of obstacles) {
+          const pos = obs.mesh.position;
+          const prevVal = pos[obs.axis];
+          pos[obs.axis] += obs.dir * obstacleSpeed * subDt;
+          obs.mesh.rotation.y += 2.5 * subDt;
+
+          if (!isPositionFree(pos.x, pos.z, VACUUM_RADIUS - 0.1)) {
+            pos[obs.axis] = prevVal;
+            obs.dir *= -1;
+          }
+
+          if (invulnerableTimer > 0) continue;
+
+          const dx = player.position.x - pos.x;
+          const dz = player.position.z - pos.z;
+          const dy = player.position.y - 0; // Robot vacuum selalu di lantai (y = 0..VACUUM_HEIGHT)
+          const hitDist = PLAYER_RADIUS + VACUUM_RADIUS - 0.08;
+          if (
+            dy < VACUUM_HEIGHT + 0.15 &&
+            dx * dx + dz * dz < hitDist * hitDist
+          ) {
+            handlePlayerDamage();
+            return;
+          }
+        }
+      }
+    }
+
+    function handlePlayerDamage() {
+      lives -= 1;
+      updateLivesUI();
+
+      if (lives <= 0) {
+        playGameOverSound();
+        triggerGameOver();
+        return;
+      }
+
+      playHitSound();
+      invulnerableTimer = INVULNERABLE_DURATION;
+      playerVel.y = 5.5;
+      isGrounded = false;
+    }
+
+    // --- Kamera Third-Person (Tidak Menembus Dinding & Plafon) ---
+    function updateCamera(dt) {
+      const desiredX = player.position.x;
+      const desiredY = Math.max(player.position.y, 0) + 5.6;
+      const desiredZ = player.position.z + 8.4;
+
+      const wallMargin = 0.65;
+      camTargetPos.set(
+        THREE.MathUtils.clamp(desiredX, -ROOM_HALF_W + wallMargin, ROOM_HALF_W - wallMargin),
+        THREE.MathUtils.clamp(desiredY, 1.2, ROOM_HEIGHT - 0.6),
+        THREE.MathUtils.clamp(desiredZ, -ROOM_HALF_D + wallMargin, ROOM_HALF_D - wallMargin)
+      );
+
+      const smoothFactor = 1 - Math.exp(-6.5 * dt);
+      camera.position.lerp(camTargetPos, smoothFactor);
+
+      camLookTarget.set(
+        player.position.x,
+        Math.max(player.position.y, 0) + 0.65,
+        player.position.z
+      );
+      camera.lookAt(camLookTarget);
+    }
+
+    function triggerGameOver() {
+      if (isGameOver) return;
+      isGameOver = true;
+      player.visible = true;
+
+      if (score > highScore) {
+        highScore = score;
+      }
+
+      finalScoreEl.textContent = String(score);
+      highScoreEl.textContent = String(highScore);
+      gameOverEl.classList.add('active');
+    }
+
+    // --- Loop Utama ---
+    function animate(now) {
+      requestAnimationFrame(animate);
+
+      const dt = Math.min((now - lastTime) / 1000, 0.05);
+      lastTime = now;
+
+      if (!isGameOver) {
+        updatePlayer(dt);
+        updateCoin(dt);
+        updatePowerUp(dt);
+        updateObstacles(dt);
+      }
+
+      updateParticles(dt);
+      updateDustParticles(dt);
+      updateCamera(dt);
+      renderer.render(scene, camera);
+    }
+
+    init();
+  </script>
+</body>
+</html>
