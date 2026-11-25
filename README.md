@@ -2,7 +2,7 @@
 
 Game 3D ringan berbasis browser: kendalikan seekor kucing low-poly di dalam ruang tamu, kumpulkan kristal, dan hindari robot vacuum. Seluruh game berada dalam **satu file `index.html`**, tanpa instalasi, tanpa build tool, dan tanpa aset eksternal.
 
-![Screenshot gameplay](screenshots/Screenshot.png)
+![Screenshot gameplay](screenshot/Screenshot.png)
 
 > Ganti gambar di atas dengan screenshot game kamu (simpan di folder `screenshots/`).
 
