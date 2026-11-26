@@ -112,8 +112,6 @@ export function createAudio() {
     ensure,
     play,
     playJump: () => playSfx(AUDIO.SFX.jump),
-    playHit: () => playSfx(AUDIO.SFX.hit),
-    playPowerUp: () => playSfx(AUDIO.SFX.powerUp),
     playPant: () => playSfx(AUDIO.SFX.pant),
     playMeow
   };

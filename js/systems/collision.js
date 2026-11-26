@@ -86,6 +86,27 @@ export function resolveCircleCollisions(position, vel, colliders, R, footY) {
   }
 }
 
+// Dorong kucing keluar dari penghalang bundar bergerak (pemilik, robot)
+// jika kakinya lebih rendah dari `height`.
+export function pushOutOfCircle(position, vel, cx, cz, radius, height) {
+  if (position.y >= height) return;
+  const minDist = PLAYER.RADIUS + radius;
+  const dx = position.x - cx;
+  const dz = position.z - cz;
+  const distSq = dx * dx + dz * dz;
+  if (distSq >= minDist * minDist) return;
+  const dist = Math.sqrt(distSq) || 0.0001;
+  const nx = dist > 0.0001 ? dx / dist : 1;
+  const nz = dist > 0.0001 ? dz / dist : 0;
+  position.x = cx + nx * minDist;
+  position.z = cz + nz * minDist;
+  const vn = vel.x * nx + vel.z * nz;
+  if (vn < 0) {
+    vel.x -= vn * nx;
+    vel.z -= vn * nz;
+  }
+}
+
 // Ketinggian permukaan (lantai = 0 atau atas perabot) di (x, z).
 export function getGroundHeight(colliders, x, z, referenceY) {
   let highest = 0;

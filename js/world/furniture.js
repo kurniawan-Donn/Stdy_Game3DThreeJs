@@ -5,7 +5,9 @@ import * as THREE from 'three';
 import { FURNITURE_LAYOUT, MATERIALS } from '../config.js';
 import { createRugTexture } from './textures.js';
 
-// Collider AABB: { minX, maxX, minZ, maxZ, topHeight, climbable }
+// Collider AABB: { minX, maxX, minZ, maxZ, topHeight, climbable, occludes, navBlocks }
+// occludes: menghalangi pandangan pemilik (default true)
+// navBlocks: menghalangi jalur pemilik (default true)
 function addFurnitureCollider(colliders, c) {
   colliders.push({
     minX: c.x - c.width / 2,
@@ -13,7 +15,9 @@ function addFurnitureCollider(colliders, c) {
     minZ: c.z - c.depth / 2,
     maxZ: c.z + c.depth / 2,
     topHeight: c.topHeight,
-    climbable: c.climbable === true
+    climbable: c.climbable === true,
+    occludes: c.occludes !== false,
+    navBlocks: c.navBlocks !== false
   });
 }
 
@@ -260,6 +264,9 @@ export function createFurniture(scene) {
   // 8. POJOK DAPUR: meja dapur (bisa dinaiki) + kulkas
   createKitchen(scene, colliders);
 
+  // 9. POS KERJA PEMILIK: meja, kursi, laptop
+  createWorkstation(scene, colliders, refs);
+
   return { colliders, refs };
 }
 
@@ -360,4 +367,77 @@ function createPottedPlant(scene, colliders, x, z) {
   scene.add(plantGroup);
   const collider = addColliders(colliders, [{ x, z, ...FURNITURE_LAYOUT.plants.collider }])[0];
   return { group: plantGroup, collider };
+}
+
+function createWorkstation(scene, colliders, refs) {
+  const L = FURNITURE_LAYOUT;
+  const d = L.workDesk.colliders[0];
+
+  const desk = new THREE.Group();
+  desk.position.set(L.workDesk.x, 0, L.workDesk.z);
+
+  const top = new THREE.Mesh(
+    new THREE.BoxGeometry(d.width, 0.05, d.depth),
+    new THREE.MeshStandardMaterial({ ...MATERIALS.deskTop })
+  );
+  top.position.y = d.topHeight - 0.025;
+  top.castShadow = true;
+  top.receiveShadow = true;
+  desk.add(top);
+
+  const legMat = new THREE.MeshStandardMaterial({ ...MATERIALS.deskLeg });
+  for (const lx of [-1, 1]) {
+    for (const lz of [-1, 1]) {
+      const leg = new THREE.Mesh(new THREE.BoxGeometry(0.05, d.topHeight - 0.05, 0.05), legMat);
+      leg.position.set(lx * (d.width / 2 - 0.06), (d.topHeight - 0.05) / 2, lz * (d.depth / 2 - 0.06));
+      leg.castShadow = true;
+      desk.add(leg);
+    }
+  }
+
+  // Laptop: alas + layar menyala (menghadap kursi, +Z)
+  const laptopMat = new THREE.MeshStandardMaterial({ ...MATERIALS.laptop });
+  const base = new THREE.Mesh(new THREE.BoxGeometry(0.42, 0.02, 0.3), laptopMat);
+  base.position.set(0, d.topHeight + 0.01, 0.12);
+  desk.add(base);
+  const lid = new THREE.Group();
+  lid.position.set(0, d.topHeight + 0.02, -0.03);
+  lid.rotation.x = -0.25;
+  const lidBack = new THREE.Mesh(new THREE.BoxGeometry(0.42, 0.28, 0.015), laptopMat);
+  lidBack.position.y = 0.14;
+  lid.add(lidBack);
+  const screen = new THREE.Mesh(
+    new THREE.PlaneGeometry(0.38, 0.24),
+    new THREE.MeshStandardMaterial({ ...MATERIALS.laptopScreen })
+  );
+  screen.position.set(0, 0.14, 0.009);
+  lid.add(screen);
+  desk.add(lid);
+
+  scene.add(desk);
+  addColliders(colliders, L.workDesk.colliders);
+
+  // Kursi kerja
+  const c = L.workChair.colliders[0];
+  const chairMat = new THREE.MeshStandardMaterial({ ...MATERIALS.deskChair });
+  const chair = new THREE.Group();
+  chair.position.set(L.workChair.x, 0, L.workChair.z);
+  const seat = new THREE.Mesh(new THREE.BoxGeometry(0.55, 0.08, 0.55), chairMat);
+  seat.position.y = c.topHeight - 0.04;
+  seat.castShadow = true;
+  chair.add(seat);
+  const back = new THREE.Mesh(new THREE.BoxGeometry(0.55, 0.6, 0.07), chairMat);
+  back.position.set(0, c.topHeight + 0.3, 0.27);
+  back.castShadow = true;
+  chair.add(back);
+  const post = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, c.topHeight - 0.1, 8), legMat);
+  post.position.y = (c.topHeight - 0.1) / 2 + 0.05;
+  chair.add(post);
+  const foot = new THREE.Mesh(new THREE.CylinderGeometry(0.28, 0.28, 0.04, 10), legMat);
+  foot.position.y = 0.03;
+  chair.add(foot);
+  scene.add(chair);
+  addColliders(colliders, L.workChair.colliders);
+
+  refs.workChair = chair;
 }

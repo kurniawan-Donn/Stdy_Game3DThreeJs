@@ -1,7 +1,7 @@
 // Kucing pemain: model low-poly, gerakan relatif kamera, lompat, dan animasi.
 import * as THREE from 'three';
-import { PLAYER, PHYSICS, CAT_ANIM, MATERIALS, NOISE } from '../config.js';
-import { resolveRoomCollisions, getGroundHeight } from '../systems/collision.js';
+import { PLAYER, PHYSICS, CAT_ANIM, MATERIALS, NOISE, OWNER, VACUUM } from '../config.js';
+import { resolveRoomCollisions, getGroundHeight, pushOutOfCircle } from '../systems/collision.js';
 import { canRun, trySpendHighJump, updateStamina, isExhausted } from '../systems/stamina.js';
 import { emitNoise } from '../systems/noise.js';
 
@@ -176,6 +176,36 @@ function updateCatAction(cat, dt) {
   }
 }
 
+// Menyelesaikan aksi yang sedang berjalan seketika: semua event yang belum
+// terjadi dijalankan (mis. gelas tetap dilepas), lalu aksi dihapus.
+export function finishCatAction(cat) {
+  const a = cat.action;
+  if (!a) return;
+  cat.action = null;
+  for (const ev of a.events) {
+    if (!ev.fired) {
+      ev.fired = true;
+      ev.fn();
+    }
+  }
+  if (a.onEnd) a.onEnd();
+}
+
+// Pose netral (dipakai setelah diangkat pemilik)
+export function resetCatPose(cat) {
+  const p = cat.parts;
+  for (const leg of [p.legFL, p.legFR, p.legBL, p.legBR]) leg.rotation.set(0, 0, 0);
+  p.headGroup.rotation.set(0, 0, 0);
+  p.bodyPivot.rotation.set(0, 0, 0);
+  p.bodyPivot.position.y = 0;
+  p.bodyPivot.scale.set(1, 1, 1);
+  cat.crouch = 0;
+  cat.moveMode = 'walk';
+  cat.profile = PLAYER.NORMAL_PROFILE;
+  cat.meowTimer = 0;
+  cat.landingSquashTimer = 0;
+}
+
 // Sudut yaw dari kucing ke titik (x, z)
 export function yawTowards(cat, x, z) {
   return Math.atan2(x - cat.mesh.position.x, z - cat.mesh.position.z);
@@ -307,6 +337,15 @@ export function updateCat(ctx, dt) {
   player.position.y += playerVel.y * dt;
 
   resolveRoomCollisions(player.position, playerVel, colliders);
+
+  // Penghalang bergerak: tubuh pemilik dan robot vacuum
+  const o = ctx.owner;
+  if (o && o.mesh.visible && !o.away) {
+    pushOutOfCircle(player.position, playerVel, o.mesh.position.x, o.mesh.position.z, OWNER.RADIUS, OWNER.BLOCK_HEIGHT);
+  }
+  for (const obs of ctx.obstacles) {
+    pushOutOfCircle(player.position, playerVel, obs.mesh.position.x, obs.mesh.position.z, VACUUM.RADIUS, VACUUM.BLOCK_HEIGHT);
+  }
 
   const wasGrounded = cat.isGrounded;
   cat.groundHeight = getGroundHeight(

@@ -1,7 +1,7 @@
-// Rintangan robot vacuum: bergerak bolak-balik di satu sumbu, memantul dari
-// dinding/perabot, dan melukai kucing saat bersentuhan.
+// Robot vacuum: bergerak bolak-balik di satu sumbu dan memantul dari
+// dinding/perabot. Tidak melukai kucing (sejak Fase 3).
 import * as THREE from 'three';
-import { VACUUM, PLAYER, MATERIALS } from '../config.js';
+import { VACUUM, MATERIALS } from '../config.js';
 import { isPositionFree } from '../systems/collision.js';
 import { findFreeFloorPosition } from '../systems/spawn.js';
 
@@ -59,11 +59,11 @@ export function clearObstacles(ctx) {
   ctx.obstacles.length = 0;
 }
 
-// Mengembalikan true jika kucing tertabrak pada frame ini
-// (sisa update robot di frame itu dihentikan, sama seperti versi awal).
+// Robot vacuum bergerak bolak-balik. Sejak Fase 3 robot TIDAK melukai kucing;
+// kucing hanya tertahan tubuh robot (lihat dynamicBlockers di cat.js).
+// Fitur menunggangi robot dikerjakan di Fase 6.
 export function updateObstacles(ctx, dt) {
   const { state, colliders, obstacles } = ctx;
-  const playerPos = ctx.cat.mesh.position;
   const speed = state.obstacleSpeed;
   const steps = speed * dt > VACUUM.SUBSTEP_THRESHOLD ? 2 : 1;
   const subDt = dt / steps;
@@ -79,20 +79,6 @@ export function updateObstacles(ctx, dt) {
         pos[obs.axis] = prevVal;
         obs.dir *= -1;
       }
-
-      if (state.invulnerableTimer > 0) continue;
-
-      const dx = playerPos.x - pos.x;
-      const dz = playerPos.z - pos.z;
-      const dy = playerPos.y - 0; // Robot vacuum selalu di lantai (y = 0..HEIGHT)
-      const hitDist = PLAYER.RADIUS + VACUUM.RADIUS - VACUUM.HIT_SHRINK;
-      if (
-        dy < VACUUM.HEIGHT + VACUUM.HIT_HEIGHT_MARGIN &&
-        dx * dx + dz * dz < hitDist * hitDist
-      ) {
-        return true;
-      }
     }
   }
-  return false;
 }

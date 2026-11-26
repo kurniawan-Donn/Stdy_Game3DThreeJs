@@ -57,7 +57,6 @@ export const PLAYER = {
   TURN_SPEED: 12,
   JUMP_FORCE: 7.7, // lompat biasa (gratis), puncak ±1,06 m
   HIGH_JUMP_FORCE: 8.8, // Shift + Spasi, puncak ±1,38 m, biaya STAMINA.HIGH_JUMP_COST
-  HIT_BOUNCE_VELOCITY: 5.5,
   // Profil (seberapa mudah terlihat; dipakai penglihatan pemilik di Fase 3)
   NORMAL_PROFILE: 1.0,
   SNEAK_PROFILE: 0.5
@@ -91,7 +90,12 @@ export const DEBUG = {
   NOISE_RING_COLOR: 0x38bdf8,
   NOISE_RING_OPACITY: 0.8,
   INTERACT_RING_COLOR: 0xfacc15,
-  INTERACT_RING_OPACITY: 0.5
+  INTERACT_RING_OPACITY: 0.5,
+  CONE_COLOR: 0xfacc15,
+  CONE_SEEN_COLOR: 0xef4444,
+  LOS_CLEAR_COLOR: 0x22c55e,
+  LOS_BLOCKED_COLOR: 0xef4444,
+  PATH_COLOR: 0xe879f9
 };
 
 // --- Animasi kucing ---
@@ -157,8 +161,7 @@ export const CAT_ANIM = {
 
 // --- Aturan game ---
 export const GAME = {
-  MAX_LIVES: 3,
-  INVULNERABLE_DURATION: 1.5
+  MAX_LIVES: 3
 };
 
 // --- Ikan camilan (menggantikan kristal; GDD §11) ---
@@ -186,25 +189,7 @@ export const VACUUM = {
   MIN_PLAYER_DIST: 3.8,
   SUBSTEP_THRESHOLD: 0.3, // jika langkah per frame > ini, pecah jadi 2 sub-step
   WALL_CHECK_SHRINK: 0.1,
-  HIT_SHRINK: 0.08,
-  HIT_HEIGHT_MARGIN: 0.15
-};
-
-// --- Power-up magnet (DINONAKTIFKAN sejak Fase 2; dihapus di Fase 5, diganti catnip) ---
-export const POWERUP = {
-  SIZE: 0.42,
-  SPAWN_RADIUS: 0.55,
-  PICKUP_RADIUS: 0.55,
-  HOVER_Y: 0.8,
-  SPIN_Y: 2.6,
-  SPIN_X: 1.4,
-  FIRST_SPAWN_DELAY: 6,
-  SPAWN_INTERVAL: 10,
-  MIN_PLAYER_DIST: 2.5,
-  MAGNET_DURATION: 5,
-  MAGNET_RADIUS: 8.5,
-  MAGNET_PULL_SPEED: 14,
-  MAGNET_MIN_DIST: 0.05
+  BLOCK_HEIGHT: 0.43 // kucing di bawah ketinggian ini tertahan tubuh robot
 };
 
 // --- Pencarian posisi spawn bebas ---
@@ -350,7 +335,25 @@ export const MATERIALS = {
   soilSpill: { color: 0x3b281c, roughness: 1.0 },
   tvOn: { color: 0xffffff, emissiveIntensity: 1.0, roughness: 0.3 },
   // Item & rintangan
-  powerUp: { color: 0x22d3ee, emissive: 0x0891b2, emissiveIntensity: 0.55, roughness: 0.25, metalness: 0.45 },
+  // Pemilik rumah
+  ownerSkin: { color: 0xe0ac80, roughness: 0.7 },
+  ownerHair: { color: 0x3b2618, roughness: 0.85 },
+  ownerShirt: { color: 0x5b8bd6, roughness: 0.85 },
+  ownerPants: { color: 0x9ca3af, roughness: 0.9 },
+  ownerShoes: { color: 0xf3f4f6, roughness: 0.6 },
+  ownerMug: { color: 0xef4444, roughness: 0.4 },
+  // Pos kerja, pintu, keranjang
+  deskTop: { color: 0xd6c2a3, roughness: 0.55, metalness: 0.05 },
+  deskLeg: { color: 0x374151, roughness: 0.4, metalness: 0.6 },
+  deskChair: { color: 0x1f2937, roughness: 0.6, metalness: 0.2 },
+  laptop: { color: 0x9ca3af, roughness: 0.35, metalness: 0.6 },
+  laptopScreen: { color: 0xbfdbfe, emissive: 0x60a5fa, emissiveIntensity: 0.8, roughness: 0.3 },
+  door: { color: 0xc8a27a, roughness: 0.6 },
+  doorFrame: { color: 0x5c3d28, roughness: 0.6 },
+  doorHandle: { color: 0xd4a853, roughness: 0.3, metalness: 0.8 },
+  corridor: { color: 0x0b0a09 },
+  basket: { color: 0xb07a3f, roughness: 0.9 },
+  basketCushion: { color: 0xe8a0a8, roughness: 0.95 },
   vacuumBody: { color: 0x27272a, roughness: 0.35, metalness: 0.55 },
   vacuumRing: { color: 0xdc2626, roughness: 0.3, metalness: 0.3 },
   vacuumSensor: { color: 0xef4444, emissive: 0xef4444, emissiveIntensity: 0.7, roughness: 0.2 }
@@ -366,7 +369,7 @@ export const FURNITURE_LAYOUT = {
     x: 0, z: 4.8,
     colliders: [
       { x: 0, z: 4.58, width: 5.2, depth: 1.48, topHeight: 0.70, climbable: true }, // dudukan
-      { x: 0, z: 5.54, width: 5.2, depth: 0.44, topHeight: 1.68, climbable: false } // sandaran
+      { x: 0, z: 5.54, width: 5.2, depth: 0.44, topHeight: 1.68, climbable: true } // sandaran: tempat tinggi (Shift+Spasi dari dudukan)
     ]
   },
   coffeeTable: {
@@ -391,11 +394,11 @@ export const FURNITURE_LAYOUT = {
   },
   floorLamp: {
     x: -4.3, z: 5.2,
-    colliders: [{ x: -4.3, z: 5.2, width: 1.0, depth: 1.0, topHeight: 3.8, climbable: false }]
+    colliders: [{ x: -4.3, z: 5.2, width: 1.0, depth: 1.0, topHeight: 3.8, climbable: false, occludes: false }] // tiang tipis: tidak menghalangi pandangan
   },
   plants: {
     positions: [{ x: -9.1, z: -7.2 }, { x: 9.0, z: 6.8 }],
-    collider: { width: 1.1, depth: 1.1, topHeight: 1.9, climbable: false }
+    collider: { width: 1.1, depth: 1.1, topHeight: 1.9, climbable: false, occludes: false } // daun: tidak menghalangi pandangan
   },
   // Pojok dapur di sudut barat laut, menghadap kamera (meja dapur bisa
   // dinaiki dengan lompat biasa)
@@ -405,7 +408,17 @@ export const FURNITURE_LAYOUT = {
   },
   fridge: {
     x: -5.6, z: -9.45,
-    colliders: [{ x: -5.6, z: -9.45, width: 1.0, depth: 0.9, topHeight: 2.0, climbable: false }]
+    colliders: [{ x: -5.6, z: -9.45, width: 1.0, depth: 0.9, topHeight: 2.0, climbable: true }] // tempat tinggi (Shift+Spasi dari meja dapur)
+  },
+  // Pos kerja pemilik: meja (bisa dinaiki), kursi, laptop. Pemilik duduk
+  // menghadap dinding utara (membelakangi ruangan).
+  workDesk: {
+    x: 6, z: -9.2,
+    colliders: [{ x: 6, z: -9.2, width: 1.8, depth: 0.9, topHeight: 0.76, climbable: true }]
+  },
+  workChair: {
+    x: 6, z: -8.05,
+    colliders: [{ x: 6, z: -8.05, width: 0.7, depth: 0.7, topHeight: 0.5, climbable: false, occludes: false, navBlocks: false }]
   }
 };
 
@@ -450,15 +463,10 @@ export const AUDIO = {
   FADE_TO: 0.001,
   SFX: {
     jump: [[260, 520, 0.12, 'sine', 0.12, 0]],
-    hit: [[190, 75, 0.22, 'sawtooth', 0.16, 0]],
     gameOver: [
       [300, 220, 0.15, 'triangle', 0.16, 0],
       [220, 150, 0.18, 'triangle', 0.16, 0.14],
       [150, 90, 0.28, 'sawtooth', 0.14, 0.3]
-    ],
-    powerUp: [
-      [440, 660, 0.1, 'sine', 0.14, 0],
-      [660, 1046, 0.16, 'triangle', 0.14, 0.08]
     ],
     pant: [
       [320, 220, 0.12, 'triangle', 0.08, 0],
@@ -488,6 +496,16 @@ export const AUDIO = {
     ],
     star: [[880, 1320, 0.25, 'triangle', 0.12, 0]],
     timerTick: [[1000, 1000, 0.05, 'square', 0.04, 0]],
+    suspicious: [[520, 700, 0.15, 'sine', 0.08, 0]], // "?"
+    alarm: [
+      [880, 880, 0.08, 'square', 0.08, 0],
+      [1175, 1175, 0.16, 'square', 0.08, 0.09]
+    ], // "!"
+    caught: [
+      [90, 40, 0.5, 'sine', 0.35, 0],
+      [180, 60, 0.3, 'triangle', 0.18, 0]
+    ], // dentum KETAHUAN!
+    flush: [[300, 120, 0.8, 'sine', 0.06, 0.1]],
     win: [
       [523, 523, 0.12, 'triangle', 0.14, 0],
       [659, 659, 0.12, 'triangle', 0.14, 0.12],
@@ -506,7 +524,10 @@ export const AUDIO = {
     ],
     tissue: [{ DURATION: 0.35, VOLUME: 0.1, FILTER: 'lowpass', FREQ: 1500, Q: 0.7, DELAY: 0 }],
     potThud: [{ DURATION: 0.4, VOLUME: 0.2, FILTER: 'lowpass', FREQ: 400, Q: 0.7, DELAY: 0 }],
-    tvOn: [{ DURATION: 0.9, VOLUME: 0.07, FILTER: 'bandpass', FREQ: 3000, Q: 0.5, DELAY: 0.08 }]
+    tvOn: [{ DURATION: 0.9, VOLUME: 0.07, FILTER: 'bandpass', FREQ: 3000, Q: 0.5, DELAY: 0.08 }],
+    caught: [{ DURATION: 0.35, VOLUME: 0.25, FILTER: 'lowpass', FREQ: 300, Q: 0.7, DELAY: 0 }],
+    door: [{ DURATION: 0.4, VOLUME: 0.05, FILTER: 'bandpass', FREQ: 900, Q: 4, DELAY: 0 }],
+    flush: [{ DURATION: 1.2, VOLUME: 0.08, FILTER: 'lowpass', FREQ: 1200, Q: 0.7, DELAY: 0 }]
   },
   // Suara meong sintetis: sawtooth melalui filter bandpass dengan nada naik-turun
   MEOW_VOICE: {
@@ -571,9 +592,19 @@ export const MEOW = {
 
 // --- Pemilik rumah (GDD §8) ---
 export const OWNER = {
-  VISION_ANGLE_DEG: 70,
+  VISION_ANGLE_DEG: 70, // lebar total kerucut pandang
   VISION_RANGE: 8,
-  TOILET_DURATION: 20 // keluar ruangan
+  TOILET_DURATION: 20, // keluar ruangan
+  RADIUS: 0.32, // tubuh (navigasi & penghalang kucing)
+  BLOCK_HEIGHT: 1.2, // kucing di bawah ketinggian ini tertahan tubuh pemilik
+  EYE_HEIGHT_STAND: 1.6,
+  EYE_HEIGHT_SIT: 1.2,
+  WALK_SPEED: 1.8, // rutinitas
+  INVESTIGATE_SPEED: 2.8,
+  CHASE_SPEED: 7.5, // > kucing jalan (6), < kucing lari (9,5)
+  TURN_SPEED: 8, // laju putar badan
+  HEAD_MAX_YAW_DEG: 80,
+  HEAD_TURN_SPEED: 7
 };
 
 // --- Akhir level & tabungan Chaos (GDD §10) ---
@@ -752,4 +783,143 @@ export const HUD = {
 // --- Simpanan (localStorage) ---
 export const SAVE = {
   KEY: 'meongMayhem.save.v1'
+};
+
+// =====================================================================
+// FASE 3 — pemilik rumah, navigasi, persepsi, curiga, KETAHUAN
+// =====================================================================
+
+// --- Rutinitas pemilik (GDD §8) ---
+// Yaw: arah hadap = atan2(dx, dz); π = menghadap -Z (utara).
+export const OWNER_ROUTINE = {
+  WORK_MIN: 35,
+  WORK_MAX: 55,
+  GLANCE_INTERVAL_MIN: 12, // saat kerja, sesekali menoleh ke belakang
+  GLANCE_INTERVAL_MAX: 20,
+  GLANCE_DURATION: 2.5,
+  STRETCH_CHANCE: 0.3, // peluang meregang di tengah sesi kerja
+  STRETCH_DURATION: 4,
+  // Setelah sesi kerja, pilih satu kegiatan (acak berbobot)
+  ACTIVITIES: [
+    { id: 'drink', weight: 40, duration: 8 },
+    { id: 'window', weight: 35, duration: 10 },
+    { id: 'toilet', weight: 25, maxPerLevel: 1 }
+  ],
+  SPOTS: {
+    desk: { x: 6, z: -8.05, yaw: Math.PI }, // duduk di kursi kerja
+    kitchen: { x: -7.5, z: -8.1, yaw: Math.PI }, // di luar jarak aman tanaman pot
+    window: { x: -10.2, z: -1.0, yaw: -Math.PI / 2 },
+    door: { x: 10.35, z: 3.5, yaw: Math.PI / 2 }
+  },
+  SIT_HEIGHT: 0.48 // tinggi pinggul saat duduk
+};
+
+// --- Pintu (keluar ke toilet) di dinding timur ---
+export const DOOR = {
+  Z: 3.5,
+  WIDTH: 1.1,
+  HEIGHT: 2.15,
+  OPEN_ANGLE: 1.6,
+  OPEN_SPEED: 3, // rad/detik
+  OUTSIDE_X: 11.9 // titik di balik pintu tempat pemilik "menghilang"
+};
+
+// --- Keranjang kucing (tempat muncul kembali setelah tertangkap) ---
+export const BASKET = {
+  x: -8.3,
+  z: 7.6,
+  RADIUS: 0.6,
+  HEIGHT: 0.28
+};
+
+// --- Area gelap: jangkauan pandang pemilik ×DARK_RANGE_MULT ---
+export const DARK_ZONES = [
+  { x: 0, z: 7.8, width: 6, depth: 4 }, // di belakang sofa
+  { x: 9.2, z: -7.6, width: 3.6, depth: 4.4 } // sudut timur laut dekat rak tinggi
+];
+export const DARK_ZONE_VISUAL = { COLOR: 0x000000, OPACITY: 0.32 };
+
+// --- Grid navigasi + A* ---
+export const NAV = {
+  CELL_SIZE: 0.25,
+  CLEARANCE: 0.42, // radius pemilik + jarak aman dari perabot/dinding
+  REPLAN_INTERVAL: 0.3, // detik, saat mengejar
+  ARRIVE_DIST: 0.12,
+  MAX_ITERATIONS: 20000
+};
+
+// --- Persepsi (GDD §8) ---
+export const PERCEPTION = {
+  CLOSE_RANGE: 1.5, // selalu terlihat (kecuali line-of-sight terhalang)
+  SNEAK_RANGE_MULT: 0.5,
+  DARK_RANGE_MULT: 0.7,
+  LOS_EPSILON: 0.05,
+  SUPPORT_TOLERANCE: 0.15, // kucing dianggap berdiri di atas perabot jika selisih tingginya sekecil ini
+  // Titik tubuh kucing yang dicek line-of-sight (lokal: y tinggi, z depan)
+  SAMPLE_POINTS: [
+    { y: 0.66, z: 0.36 }, // kepala
+    { y: 0.42, z: 0 }, // badan
+    { y: 0.45, z: -0.3 } // pantat
+  ]
+};
+
+// --- Meter curiga & state machine ---
+export const SUSPICION = {
+  MAX: 100,
+  INVESTIGATE_AT: 40,
+  GAIN_NEAR: 60, // per detik saat kucing terlihat di <= GAIN_NEAR_DIST
+  GAIN_FAR: 15, // per detik di jangkauan maksimum
+  GAIN_NEAR_DIST: 2,
+  DECAY: 8, // per detik saat tidak melihat apa-apa
+  NOISE_PER_METER: 4, // curiga += radius suara × ini
+  NOISE_CAP: 80, // suara saja tidak bisa memicu "!"
+  MEOW_GAIN: 15,
+  FOOTSTEP_MULT: 0.15, // langkah/mendarat: curiga += radius × NOISE_PER_METER × ini
+  ANNOYED_MULT: 1.5, // saat jengkel (meong 3x dalam 30 detik)
+  CURIOUS_LOOK_TIME: 1.5, // berhenti & menatap sebelum menyelidiki
+  INVESTIGATE_LOOK_TIME: 3, // menoleh ke sekeliling di titik penyelidikan
+  LOSE_TRACK_TIME: 5, // mengejar → rutinitas jika tidak melihat kucing selama ini
+  AFTER_CHASE_LEVEL: 30 // meter setelah kehilangan jejak
+};
+
+// --- Mengejar & meraih ---
+export const CHASE = {
+  CATCH_RADIUS: 1.2, // jarak horizontal untuk meraih
+  REACH_HEIGHT: 1.2, // kucing di atas ketinggian ini tidak bisa diraih
+  WAIT_UNDER_HIGH: 4, // menunggu di bawah tempat tinggi lalu menyerah
+  UNDER_HIGH_DIST: 2.2 // dianggap 'di bawah' kucing jika sedekat ini (horizontal)
+};
+
+// --- Alur KETAHUAN (GDD §9) ---
+export const CAPTURE = {
+  TIME_SCALE: 0.3, // slow motion
+  SLOWMO_DURATION: 1.6, // detik nyata
+  DESATURATE_TIME: 1.0,
+  FADE_OUT: 0.6,
+  BLACK_HOLD: 0.5,
+  FADE_IN: 0.6,
+  INVULNERABLE: 3, // detik kebal setelah muncul di keranjang
+  LIFT_HEIGHT: 1.25, // tinggi kucing saat diangkat
+  LIFT_DISTANCE: 0.45, // di depan badan pemilik
+  SHAKE_AMPLITUDE: 0.2,
+  SHAKE_DURATION: 0.45,
+  VIGNETTE_MAX: 0.85
+};
+
+// --- Animasi pemilik ---
+export const OWNER_ANIM = {
+  WALK_STRIDE: 2.6, // radian siklus per meter
+  WALK_LEG_SWING: 0.55,
+  WALK_ARM_SWING: 0.45,
+  RUN_ARM_SWING: 0.9,
+  TYPE_FREQ: 16,
+  TYPE_AMP: 0.08,
+  LOOK_AROUND_SPEED: 1.6, // menoleh kiri-kanan saat menyelidiki
+  LOOK_AROUND_YAW: 1.1,
+  POSE_LERP: 10
+};
+
+// --- Indikator ?/! di atas kepala ---
+export const OWNER_INDICATOR = {
+  HEIGHT: 2.15 // di atas lantai, relatif posisi pemilik
 };

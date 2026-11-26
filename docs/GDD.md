@@ -139,14 +139,42 @@ Pemilik menjalankan **rutinitas waypoint**:
 
 | Kegiatan | Catatan |
 |---|---|
-| Kerja di laptop | Kegiatan paling lama |
-| Ambil minum di dapur | |
-| Lihat ke luar jendela | |
-| Ke toilet | **Keluar ruangan selama 20 detik** |
+| Kerja di laptop | Kegiatan paling lama: 35–55 detik di meja kerja (dinding utara), duduk membelakangi ruangan. Setiap 12–20 detik **menoleh ke belakang** 2,5 detik; kadang meregang 4 detik |
+| Ambil minum di dapur | 8 detik (peluang 40%) |
+| Lihat ke luar jendela | 10 detik (peluang 35%) |
+| Ke toilet | Peluang 25%, **maksimal sekali per level**. Jalan ke pintu di dinding timur, pintu terbuka, **keluar ruangan selama 20 detik**, lalu kembali (bunyi siraman) |
+
+Setelah sesi kerja, pemilik memilih satu kegiatan secara acak berbobot, lalu kembali bekerja. Selama di toilet, pemilik tidak melihat dan tidak mendengar apa pun.
+
+Pemilik berjalan memakai grid navigasi (A* + penghalusan jalur) dan tidak menembus perabot. Tubuh pemilik dan robot vacuum menghalangi kucing.
 
 ### Penglihatan
-- Kerucut pandang **70°**, jangkauan **8 m**.
-- Jangkauan berkurang jika kucing **mengendap** atau berada di **area gelap**.
+- Kerucut pandang **70°**, jangkauan **8 m**, diukur dari mata (1,6 m berdiri, 1,2 m duduk) ke arah kepala menoleh.
+- Kucing hanya terlihat jika ada **line-of-sight** ke titik tubuhnya (kepala, badan, pantat). Perabot menghalangi pandangan; lampu berdiri dan tanaman tidak. Perabot yang sedang dipijak kucing tidak menutupi kucing itu sendiri.
+- Pengubah jangkauan: **mengendap ×0,5**, **area gelap ×0,7**.
+- **Jarak < 1,5 m:** selalu terlihat, kecuali line-of-sight terhalang total.
+- **Area gelap** (sementara; visual lengkap di Fase 5): di belakang sofa dan di sudut timur laut dekat rak tinggi, ditandai bayangan gelap di lantai.
+
+### Pendengaran
+- Pemilik mendengar suara (`emitNoise`) jika berada di dalam radiusnya.
+- Kenakalan: curiga **+ radius × 4** (gelas 10 m → +40), lalu pergi **menyelidiki** titik suara.
+- Langkah & mendarat: curiga **+ radius × 4 × 0,15**; pemilik hanya menoleh (CURIGA).
+- Meong: curiga **+15**, lalu menyelidiki.
+- Suara saja **tidak bisa melebihi 80**, jadi tidak pernah langsung memicu "!".
+- **Jengkel** (meong 3× dalam 30 detik): semua kenaikan curiga ×1,5.
+
+### Meter curiga & state
+| State | Ikon | Perilaku |
+|---|---|---|
+| RUTINITAS | – | Menjalankan rutinitas |
+| CURIGA | ? | Berhenti dan menatap 1,5 detik. Meter ≥ 40 → menyelidiki; meter 0 → kembali rutinitas |
+| MENYELIDIKI | ? | Berjalan (2,8 m/s) ke titik terakhir, menoleh ke sekeliling 3 detik |
+| MENGEJAR | ! | Berlari 7,5 m/s (lebih cepat dari kucing jalan 6, lebih lambat dari lari 9,5). Kehilangan jejak 5 detik → rutinitas (meter 30) |
+
+- Meter 0–100. Naik saat kucing terlihat: **60/detik** di ≤ 2 m, turun linear sampai **15/detik** di jangkauan maksimum, dikali visibilitas. Turun **8/detik** saat tidak melihat apa-apa. Penuh (100) → "!".
+- **Kepergok sedang berbuat nakal** = meter langsung 100 ("!").
+- **Meraih:** jarak horizontal ≤ 1,2 m dan kaki kucing ≤ 1,2 m dari lantai (lantai, meja, sofa).
+- **Tempat tinggi (> 1,2 m):** sandaran sofa (1,68 m) dan atas kulkas (2,0 m), dicapai dengan `Shift` + `Spasi` dari dudukan sofa / meja dapur. Pemilik menunggu di bawah **4 detik**, lalu menyerah. Rak buku tinggi tetap tidak bisa dinaiki.
 
 ## 9. Ketahuan
 
@@ -160,7 +188,9 @@ Urutan saat kucing terlihat pemilik:
    - vignette gelap
    - teks **"KETAHUAN!"**
    - fade ke hitam
-4. **Setelah fade** → kucing berada di **keranjang**, **nyawa −1**.
+4. **Setelah fade** → kucing berada di **keranjang** (sudut barat daya), **nyawa −1**, pemilik kembali ke rutinitas dengan meter 0, dan kucing **kebal 3 detik** (berkedip).
+
+Detail: slow motion **0,3×** selama 1,6 detik nyata, desaturasi bertahap 1 detik, teks dengan efek dentum, bunyi dentum, getaran kamera, pemilik mengangkat kucing. Fade keluar 0,6 detik, hitam 0,5 detik, fade masuk 0,6 detik. Efek layar memakai CSS (filter + overlay), bukan post-processing.
 
 Total **3 nyawa**.
 
@@ -195,8 +225,8 @@ Fitur dari prototipe *Coin Rush 3D* diubah sebagai berikut. Perubahan ini dikerj
 | Fitur prototipe | Nasib | Fase |
 |---|---|---|
 | Kristal/koin | Diganti **ikan**, yang muncul acak di lantai dan di atas perabot | 2 ✅ |
-| Power-up magnet | **Dinonaktifkan** di Fase 2 (tak berguna tanpa kristal). Kodenya **dihapus** di Fase 5, digantikan catnip | 2 ✅ / 5 |
-| Robot vacuum melukai kucing | **Tidak melukai lagi**, menjadi kendaraan | 6 |
+| Power-up magnet | **Dinonaktifkan** di Fase 2, kodenya **dihapus** di Fase 3. Catnip menyusul di Fase 5 | 2 ✅ / 3 ✅ |
+| Robot vacuum melukai kucing | **Tidak melukai lagi** (Fase 3), hanya menghalangi. Menjadi kendaraan di Fase 6 | 3 ✅ / 6 |
 | Naik level karena mengumpulkan koin | **Dihapus** (jumlah dan kecepatan robot tetap) | 2 ✅ |
 | Skor & high score | Diganti **Chaos** dan tabungan Chaos | 2 ✅ |
 
@@ -267,24 +297,29 @@ Belum ada. Tambahkan di sini jika muncul keputusan desain yang belum ditentukan.
 - [x] Ikan menggantikan kristal; magnet dinonaktifkan (dimajukan dari Fase 5)
 
 ### Fase 3 — Pemilik rumah (AI)
-- [ ] Model pemilik prosedural dan rutinitas waypoint (bagian 8)
-- [ ] Penglihatan: kerucut pandang, jangkauan, line of sight, pengaruh mengendap
-- [ ] Pendengaran: mendatangi sumber suara dan meongan, status jengkel
-- [ ] Meter curiga dengan ikon "?" dan "!", serta perilaku mengejar
+- [x] Model pemilik prosedural (~1,7 m) dengan animasi jalan, lari, duduk mengetik, minum, meregang, melihat jendela, menoleh
+- [x] Pos kerja (meja, kursi berputar, laptop), pintu ke toilet, keranjang kucing
+- [x] Rutinitas waypoint (bagian 8), termasuk toilet 20 detik di luar ruangan
+- [x] Grid navigasi + A* + penghalusan jalur
+- [x] Penglihatan: kerucut pandang, jangkauan, line of sight, pengaruh mengendap & area gelap
+- [x] Pendengaran: mendatangi sumber suara dan meongan, status jengkel
+- [x] Meter curiga dengan ikon "?" dan "!", serta perilaku mengejar & menunggu di bawah tempat tinggi
+- [x] Robot vacuum tidak melukai; sisa kode magnet dihapus
+- [x] Overlay `F3`: kerucut pandang, line-of-sight, jalur A*, state & meter di atas kepala pemilik
 
 ### Fase 4 — Ketahuan & nyawa
-- [ ] Sekuens tertangkap: slow motion, desaturasi, vignette, teks "KETAHUAN!", fade hitam
-- [ ] Respawn di keranjang, nyawa −1, total 3 nyawa
+- [x] Sekuens tertangkap: slow motion, desaturasi, vignette, teks "KETAHUAN!", fade hitam — dikerjakan di Fase 3
+- [x] Respawn di keranjang, nyawa −1, total 3 nyawa, kebal 3 detik — dikerjakan di Fase 3
 - [x] Level gagal saat nyawa habis (50% Chaos ke tabungan) — dikerjakan di Fase 2
 
 ### Fase 5 — Sembunyi & camilan
 - [ ] Kardus (ketahuan jika bergerak saat dilihat)
-- [ ] Area gelap yang mengurangi jangkauan pandang pemilik
-- [ ] Catnip (zoomies 6 detik) menggantikan magnet; hapus kode magnet (`entities/powerup.js`)
+- [ ] Area gelap: visual & pencahayaan yang lebih jelas (efek jangkauan ×0,7 sudah ada sejak Fase 3)
+- [ ] Catnip (zoomies 6 detik) menggantikan magnet (kode magnet sudah dihapus di Fase 3)
 - [ ] Tidur di sinar matahari untuk memulihkan stamina
 
 ### Fase 6 — Hal lucu
-- [ ] Robot vacuum tidak melukai dan bisa ditunggangi
+- [ ] Robot vacuum bisa ditunggangi (tidak melukai sejak Fase 3)
 - [x] Animasi mendorong gelas sambil menatap kamera — dikerjakan di Fase 2
 - [ ] Loaf pose setelah diam 5 detik
 - [ ] Bola benang yang bisa ditendang sebagai pengalih

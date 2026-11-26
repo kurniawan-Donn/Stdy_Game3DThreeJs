@@ -1,14 +1,29 @@
 // Overlay debug khusus developer (tombol F3, default mati; bukan fitur game).
 // Menampilkan lingkaran radius noise di lantai, jangkauan interaksi di sekitar
-// kucing, dan panel teks status gerak/stamina/meong.
+// kucing, kerucut pandang pemilik, garis line-of-sight (hijau = terlihat,
+// merah = terhalang), jalur A* pemilik, dan panel teks status.
+// State & meter pemilik di atas kepalanya ditampilkan oleh ui/ownerIndicator.js.
 import * as THREE from 'three';
-import { DEBUG, INTERACT, NOISE, PLAYER, STAMINA, MEOW } from '../config.js';
+import { DEBUG, INTERACT, NOISE, PLAYER, STAMINA, MEOW, OWNER } from '../config.js';
 import { isExhausted } from '../systems/stamina.js';
 import { recentMeowCount, isAnnoying } from '../systems/meow.js';
 import { comboTimeLeft } from '../systems/chaos.js';
 import { remainingMischief } from '../entities/mischief/index.js';
 
 const RING_Y = 0.03;
+const CONE_SEGMENTS = 16;
+const MAX_PATH_POINTS = 64;
+
+function makeLine(maxPoints, color, segments) {
+  const geo = new THREE.BufferGeometry();
+  geo.setAttribute('position', new THREE.BufferAttribute(new Float32Array(maxPoints * 3), 3));
+  geo.setDrawRange(0, 0);
+  const mat = new THREE.LineBasicMaterial({ color, depthTest: false, transparent: true, fog: false, vertexColors: color === null });
+  const line = segments ? new THREE.LineSegments(geo, mat) : new THREE.Line(geo, mat);
+  line.frustumCulled = false;
+  line.renderOrder = 999;
+  return line;
+}
 
 export function createDebugOverlay(scene) {
   const group = new THREE.Group();
@@ -31,7 +46,21 @@ export function createDebugOverlay(scene) {
   interactRing.scale.setScalar(INTERACT.RADIUS);
   group.add(interactRing);
 
+  // Kerucut pandang pemilik (kipas di lantai)
+  const cone = makeLine(CONE_SEGMENTS + 3, DEBUG.CONE_COLOR, false);
+  group.add(cone);
+  // Garis line-of-sight ke titik tubuh kucing (warna per verteks)
+  const los = makeLine(16, null, true);
+  los.geometry.setAttribute('color', new THREE.BufferAttribute(new Float32Array(16 * 3), 3));
+  group.add(los);
+  // Jalur A* pemilik
+  const path = makeLine(MAX_PATH_POINTS + 1, DEBUG.PATH_COLOR, false);
+  group.add(path);
+
   const overlay = {
+    cone,
+    los,
+    path,
     enabled: DEBUG.ENABLED_AT_START,
     group,
     ringGeo,
@@ -93,6 +122,8 @@ export function updateDebugOverlay(ctx) {
     ring.material.opacity = DEBUG.NOISE_RING_OPACITY * (1 - ev.age / NOISE.EVENT_LIFETIME);
   }
 
+  updateOwnerDebug(ctx, overlay);
+
   const speed = Math.hypot(cat.vel.x, cat.vel.z);
   const lastNoise = events.length ? events[events.length - 1] : null;
   overlay.panel.textContent = [
@@ -108,4 +139,60 @@ export function updateDebugOverlay(ctx) {
     `aksi      : ${cat.action ? cat.action.type + ' ' + cat.action.t.toFixed(2) + 's' : '-'}`,
     `fisika    : ${ctx.physics.bodies.length} benda, waktu ${ctx.state.timeLeft.toFixed(1)}s`
   ].join('\n');
+}
+
+const LOS_CLEAR = new THREE.Color(DEBUG.LOS_CLEAR_COLOR);
+const LOS_BLOCKED = new THREE.Color(DEBUG.LOS_BLOCKED_COLOR);
+
+function updateOwnerDebug(ctx, overlay) {
+  const o = ctx.owner;
+  const show = o && !o.away;
+  overlay.cone.visible = show;
+  overlay.los.visible = show;
+  overlay.path.visible = show && !!(o.path && o.path.length);
+  if (!show) return;
+
+  // Kerucut pandang: mata → busur sejauh jangkauan efektif → mata
+  const range = o.sense ? o.sense.range : OWNER.VISION_RANGE;
+  const half = THREE.MathUtils.degToRad(OWNER.VISION_ANGLE_DEG / 2);
+  const cp = overlay.cone.geometry.attributes.position;
+  const y = RING_Y + 0.01;
+  let n = 0;
+  cp.setXYZ(n++, o.eye.x, y, o.eye.z);
+  for (let i = 0; i <= CONE_SEGMENTS; i++) {
+    const a = o.lookYaw - half + (2 * half * i) / CONE_SEGMENTS;
+    cp.setXYZ(n++, o.eye.x + Math.sin(a) * range, y, o.eye.z + Math.cos(a) * range);
+  }
+  cp.setXYZ(n++, o.eye.x, y, o.eye.z);
+  cp.needsUpdate = true;
+  overlay.cone.geometry.setDrawRange(0, n);
+  overlay.cone.material.color.set(o.seen ? DEBUG.CONE_SEEN_COLOR : DEBUG.CONE_COLOR);
+
+  // Line-of-sight
+  const lp = overlay.los.geometry.attributes.position;
+  const lc = overlay.los.geometry.attributes.color;
+  let m = 0;
+  for (const ray of (o.sense && o.sense.rays) || []) {
+    const col = ray.clear ? LOS_CLEAR : LOS_BLOCKED;
+    lp.setXYZ(m, o.eye.x, o.eye.y, o.eye.z);
+    lc.setXYZ(m++, col.r, col.g, col.b);
+    lp.setXYZ(m, ray.to.x, ray.to.y, ray.to.z);
+    lc.setXYZ(m++, col.r, col.g, col.b);
+  }
+  lp.needsUpdate = true;
+  lc.needsUpdate = true;
+  overlay.los.geometry.setDrawRange(0, m);
+
+  // Jalur A*
+  if (o.path && o.path.length) {
+    const pp = overlay.path.geometry.attributes.position;
+    let k = 0;
+    pp.setXYZ(k++, o.mesh.position.x, y, o.mesh.position.z);
+    for (const wp of o.path) {
+      if (k > MAX_PATH_POINTS) break;
+      pp.setXYZ(k++, wp.x, y, wp.z);
+    }
+    pp.needsUpdate = true;
+    overlay.path.geometry.setDrawRange(0, k);
+  }
 }

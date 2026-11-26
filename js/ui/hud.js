@@ -20,7 +20,6 @@ export function createHud() {
   const meterEl = document.getElementById('chaos-meter');
   const comboEl = document.getElementById('combo-status');
   const livesTextEl = document.getElementById('lives-text');
-  const magnetStatusEl = document.getElementById('magnet-status');
   const staminaFillEl = document.getElementById('stamina-fill');
   const meowStatusEl = document.getElementById('meow-status');
   const promptEl = document.getElementById('interact-prompt');
@@ -117,16 +116,6 @@ export function createHud() {
       const filled = '❤️'.repeat(Math.max(lives, 0));
       const empty = '🖤'.repeat(Math.max(GAME.MAX_LIVES - lives, 0));
       livesTextEl.textContent = filled + empty;
-    },
-    // Magnet dinonaktifkan sejak Fase 2 (dipakai entities/powerup.js; dihapus di Fase 5)
-    showMagnet() {
-      magnetStatusEl.style.display = 'block';
-    },
-    hideMagnet() {
-      magnetStatusEl.style.display = 'none';
-    },
-    setMagnetTime(seconds) {
-      magnetStatusEl.textContent = `Magnet: ${seconds.toFixed(1)}s`;
     }
   };
 }

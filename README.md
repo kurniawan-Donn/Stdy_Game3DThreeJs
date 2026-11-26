@@ -42,10 +42,10 @@ Ditulis dengan JavaScript ES modules biasa, tanpa build tool dan tanpa aset ekst
 2. Setiap objek hanya bisa dipakai **sekali per level**.
 3. Lakukan kenakalan beruntun dalam **10 detik** untuk bonus **COMBO ×1,5**.
 4. Capai **300 Chaos** dalam **4 menit** untuk menang. ★ = 100%, ★★ = 150%, ★★★ = 200% target.
-5. Robot vacuum masih melukai: tiap tabrakan mengurangi **1 nyawa** (total 3). Nyawa habis = level gagal, dan hanya 50% Chaos yang masuk tabungan.
+5. Jangan sampai dipergoki **pemilik rumah**. Ikon **?** berarti curiga, **!** berarti mengejar. Tertangkap = **KETAHUAN!**, kucing dikembalikan ke keranjang dan **nyawa −1** (total 3). Nyawa habis = level gagal, dan hanya 50% Chaos yang masuk tabungan.
 6. Makan ikan untuk mengisi stamina.
 
-> Pemilik rumah yang berpatroli sedang dikembangkan (Fase 3). Lihat [docs/GDD.md](docs/GDD.md) untuk desain lengkap dan peta pengembangan.
+> Tips: mengendap (`C`) memperpendek jarak pandang pemilik, perabot menghalangi pandangannya, dan pemilik tidak bisa meraihmu di sandaran sofa atau atas kulkas (lompat tinggi). Lihat [docs/GDD.md](docs/GDD.md) untuk desain lengkap.
 
 ## 🚀 Menjalankan Game
 
@@ -102,8 +102,8 @@ Ringkasan dari peta pengembangan di [docs/GDD.md](docs/GDD.md):
 - [x] Fase 0: Fondasi (ES modules, config, GDD)
 - [x] Fase 1: Kontrol kucing lengkap (lari, mengendap, stamina, meong, sistem suara)
 - [x] Fase 2: Kenakalan, Chaos, combo, timer level, layar hasil
-- [ ] Fase 3: Pemilik rumah (AI): rutinitas, penglihatan, pendengaran, curiga
-- [ ] Fase 4: Ketahuan & nyawa (sekuens tertangkap, keranjang)
+- [x] Fase 3: Pemilik rumah (AI): rutinitas, penglihatan, pendengaran, curiga
+- [x] Fase 4: Ketahuan & nyawa (sekuens tertangkap, keranjang)
 - [ ] Fase 5: Sembunyi (kardus, area gelap) & camilan (catnip, tidur di sinar matahari)
 - [ ] Fase 6: Hal lucu (tunggangi robot vacuum, loaf pose, bola benang)
 - [ ] Fase 7: Level & tutorial

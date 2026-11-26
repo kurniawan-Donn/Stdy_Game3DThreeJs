@@ -15,18 +15,24 @@ import { createFishPickup, updateFish } from './entities/fish.js';
 import { updateObstacles } from './entities/vacuum.js';
 import { createParticleSystem, updateParticles } from './entities/particles.js';
 import { createMischiefSystem, updateMischief } from './entities/mischief/index.js';
-import { onFishEaten, handlePlayerDamage, resetGame } from './systems/progression.js';
-import { createNoiseSystem, updateNoise } from './systems/noise.js';
+import { onFishEaten, resetGame } from './systems/progression.js';
+import { createNoiseSystem, updateNoise, onNoise } from './systems/noise.js';
 import { createStamina, isExhausted } from './systems/stamina.js';
 import { createMeow, updateMeow } from './systems/meow.js';
 import { createInteractionSystem, updateInteraction } from './systems/interaction.js';
 import { createPhysicsWorld, updatePhysics } from './systems/physics.js';
 import { comboTimeLeft } from './systems/chaos.js';
 import { updateLevelTimer } from './systems/level.js';
+import { createNavGrid } from './systems/navGrid.js';
+import { createCapture, updateCapture } from './systems/capture.js';
+import { createOwner, updateOwner, ownerHearNoise } from './entities/owner/index.js';
+import { createDoor, updateDoor, createBasket, createDarkZones } from './world/house.js';
 import { createHud } from './ui/hud.js';
 import { createResultsScreen } from './ui/results.js';
 import { createFloatingText } from './ui/floatingText.js';
 import { createDebugOverlay, updateDebugOverlay } from './ui/debugOverlay.js';
+import { createScreenEffects } from './ui/screenEffects.js';
+import { createOwnerIndicator } from './ui/ownerIndicator.js';
 
 function init() {
   const canvas = document.getElementById('game-canvas');
@@ -36,9 +42,13 @@ function init() {
   setupLights(scene);
   createLivingRoom(scene);
   const { colliders, refs } = createFurniture(scene);
+  const door = createDoor(scene);
+  createBasket(scene);
+  createDarkZones(scene);
   const dust = createDust(scene);
   const cat = createCat(scene);
   const fish = createFishPickup(scene);
+  const owner = createOwner(scene);
   const particles = createParticleSystem();
   const interaction = createInteractionSystem(scene);
   const mischief = createMischiefSystem(scene);
@@ -52,6 +62,12 @@ function init() {
     renderer,
     colliders,
     furnitureRefs: refs,
+    nav: createNavGrid(colliders),
+    door,
+    owner,
+    capture: createCapture(),
+    screenFx: createScreenEffects(canvas),
+    ownerIndicator: createOwnerIndicator(),
     dust,
     cat,
     fish,
@@ -80,6 +96,7 @@ function init() {
     resetGame(ctx);
   });
   bindResize(camera, renderer);
+  onNoise(ctx.noise, (ev, c) => ownerHearNoise(c, ev));
 
   resetGame(ctx);
   startLoop(ctx);
@@ -91,31 +108,44 @@ function startLoop(ctx) {
   function animate(now) {
     requestAnimationFrame(animate);
 
-    const dt = Math.min((now - lastTime) / 1000, PHYSICS.MAX_DT);
+    const dt = Math.min((now - lastTime) / 1000, PHYSICS.MAX_DT); // waktu nyata
     lastTime = now;
+    const capturing = ctx.capture.active;
+    const wdt = dt * ctx.capture.timeScale; // waktu dunia (slow motion saat tertangkap)
 
     if (!ctx.state.isGameOver) {
-      ctx.time += dt;
-      updateCat(ctx, dt);
-      updateMeow(ctx, dt);
-      updateInteraction(ctx, dt);
-      updateMischief(ctx, dt);
-      if (updateFish(ctx, dt)) onFishEaten(ctx);
-      if (updateObstacles(ctx, dt)) handlePlayerDamage(ctx);
-      updateNoise(ctx.noise, dt);
+      if (capturing) {
+        // Input dikunci; dunia tetap bergerak pelan di sekitar kucing
+        updateCapture(ctx, dt);
+        updateOwner(ctx, wdt);
+        updateMischief(ctx, wdt);
+        updateObstacles(ctx, wdt);
+      } else {
+        ctx.time += dt;
+        updateCat(ctx, dt);
+        updateMeow(ctx, dt);
+        updateInteraction(ctx, dt);
+        updateMischief(ctx, dt);
+        if (updateFish(ctx, dt)) onFishEaten(ctx);
+        updateObstacles(ctx, dt);
+        updateOwner(ctx, dt);
+        updateNoise(ctx.noise, dt);
 
-      ctx.hud.setStamina(ctx.stamina.value, STAMINA.MAX, isExhausted(ctx.stamina));
-      ctx.hud.setMeowCooldown(ctx.meow.cooldown);
-      ctx.hud.setCombo(comboTimeLeft(ctx), COMBO.MULTIPLIER);
-      updateLevelTimer(ctx, dt);
+        ctx.hud.setStamina(ctx.stamina.value, STAMINA.MAX, isExhausted(ctx.stamina));
+        ctx.hud.setMeowCooldown(ctx.meow.cooldown);
+        ctx.hud.setCombo(comboTimeLeft(ctx), COMBO.MULTIPLIER);
+        updateLevelTimer(ctx, dt);
+      }
+      updateDoor(ctx.door, wdt);
     }
 
-    updatePhysics(ctx, dt);
-    updateParticles(ctx.particles, ctx.scene, dt);
-    updateDust(ctx.dust, dt);
+    updatePhysics(ctx, wdt);
+    updateParticles(ctx.particles, ctx.scene, wdt);
+    updateDust(ctx.dust, wdt);
     updateDebugOverlay(ctx);
     updateCamera(ctx.camera, ctx.cat.mesh.position, dt, ctx.cameraShake);
     ctx.floatText.update(ctx.camera, dt);
+    ctx.ownerIndicator.update(ctx);
     ctx.renderer.render(ctx.scene, ctx.camera);
 
     endFrame(ctx.input);

@@ -1,6 +1,6 @@
-// Nyawa, camilan, dan reset level.
+// Camilan dan reset level. (Nyawa berkurang lewat systems/capture.js.)
 // (Skor & kenaikan level berbasis koin dihapus di Fase 2; diganti Chaos.)
-import { GAME, PLAYER, VACUUM, STAMINA, FISH } from '../config.js';
+import { VACUUM, STAMINA, FISH } from '../config.js';
 import { resetRunState, currentLevel } from '../core/state.js';
 import { resetCamera } from '../core/camera.js';
 import { resetCat } from '../entities/cat.js';
@@ -13,7 +13,9 @@ import { resetMeow } from './meow.js';
 import { clearNoise } from './noise.js';
 import { hideInteraction } from './interaction.js';
 import { clearBodies } from './physics.js';
-import { endLevel } from './level.js';
+import { resetCapture } from './capture.js';
+import { resetOwner } from '../entities/owner/index.js';
+import { resetDoor } from '../world/house.js';
 
 // Dipanggil saat kucing memakan ikan camilan.
 export function onFishEaten(ctx) {
@@ -22,23 +24,6 @@ export function onFishEaten(ctx) {
   audio.play('fishEat');
   spawnPickupParticles(ctx.particles, ctx.scene, fish.mesh.position);
   hideFish(fish, FISH.RESPAWN_DELAY);
-}
-
-// Dipanggil saat kucing tertabrak robot vacuum (sampai Fase 6).
-export function handlePlayerDamage(ctx) {
-  const { state, hud, audio, cat } = ctx;
-  state.lives -= 1;
-  hud.setLives(state.lives);
-
-  if (state.lives <= 0) {
-    endLevel(ctx, 'outOfLives');
-    return;
-  }
-
-  audio.playHit();
-  state.invulnerableTimer = GAME.INVULNERABLE_DURATION;
-  cat.vel.y = PLAYER.HIT_BOUNCE_VELOCITY;
-  cat.isGrounded = false;
 }
 
 export function resetGame(ctx) {
@@ -56,6 +41,9 @@ export function resetGame(ctx) {
   clearParticles(ctx.particles, ctx.scene);
   clearBodies(ctx);
   resetMischief(ctx);
+  resetCapture(ctx);
+  resetDoor(ctx.door);
+  resetOwner(ctx);
 
   for (let i = 0; i < VACUUM.INITIAL_COUNT; i++) {
     spawnObstacle(ctx);
