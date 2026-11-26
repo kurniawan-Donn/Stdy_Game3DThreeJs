@@ -22,6 +22,7 @@ Alternatif: `python -m http.server 8000`. Three.js dimuat dari CDN, jadi butuh i
 index.html              Canvas, elemen UI (HUD, game over), importmap Three.js
 css/style.css           Semua gaya UI
 package.json            Script "start" (npx serve)
+docs/GDD.md             Game Design Document + peta pengembangan (Fase 0–9)
 js/
   main.js               Entry point: membuat objek konteks `ctx`, menjalankan game loop
   config.js             SEMUA angka penyetelan (lihat aturan di bawah)
@@ -66,12 +67,12 @@ js/
 2. Satu modul, satu tanggung jawab. Entitas baru masuk `js/entities/`, aturan atau logika lintas entitas masuk `js/systems/`.
 3. Versi Three.js di-pin di importmap (`three@0.128.0`). Jangan upgrade tanpa diskusi, karena API seperti `outputEncoding` berubah di versi baru.
 4. Refactor tidak boleh mengubah perilaku. Setelah perubahan, cek console browser dan mainkan sebentar.
+5. **Baca [docs/GDD.md](docs/GDD.md) sebelum mengerjakan fitur gameplay. Jika implementasi menyimpang dari GDD, tanyakan dulu.** Hal yang tercantum di bagian "Pertanyaan terbuka" GDD juga harus ditanyakan sebelum diputuskan. Centang checklist di peta pengembangan GDD saat sebuah item selesai.
 
 ## Konsep game ke depan
 
-Game ini akan dikembangkan menjadi **game stealth-chaos tentang kucing nakal di rumah**:
+Desain lengkapnya ada di **[docs/GDD.md](docs/GDD.md)**: *Meong Mayhem*. Ringkasnya, pemain adalah kucing yang ditinggal di rumah bersama pemilik yang bekerja dari rumah. Tugasnya mengumpulkan poin Chaos dengan berbuat nakal sebelum waktu habis, tanpa dipergoki pemilik.
 
-- Pemain mengendalikan **kucing nakal** yang menyelinap di dalam rumah untuk membuat kekacauan: menjatuhkan barang dari meja/rak, mencakar sofa, dan sebagainya. Kekacauan menghasilkan poin.
-- **Pemilik rumah berpatroli** di ruangan dengan rute dan pandangan tertentu. Kalau kucing ketahuan saat berbuat nakal, ada hukumannya. Kucing harus memanfaatkan perabotan (naik ke sofa, rak, bersembunyi) untuk menghindar.
-- Sistem yang sudah ada menjadi fondasinya: gerak dan lompat kucing ke atas perabot (`cat.js`, `collision.js`), rintangan yang berpatroli (`vacuum.js` sebagai prototipe perilaku patroli), dan tata letak perabot di `FURNITURE_LAYOUT` (calon titik interaksi dan rute patroli).
-- Rencana penempatan: pemilik rumah sebagai entitas baru di `js/entities/owner.js`, logika deteksi atau pandangan di `js/systems/`, dan semua angkanya (kecepatan patroli, jarak pandang, sudut pandang) di `config.js`.
+Catatan teknis untuk menuju desain itu:
+- Fondasi yang sudah ada: gerak dan lompat kucing ke atas perabot (`cat.js`, `collision.js`), rintangan yang bergerak (`vacuum.js`), dan tata letak perabot di `FURNITURE_LAYOUT`.
+- Pemilik rumah direncanakan sebagai entitas baru di `js/entities/owner.js`, logika penglihatan dan pendengaran di `js/systems/`, dan semua angkanya di `config.js`.
