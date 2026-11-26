@@ -17,15 +17,15 @@ function bitePose(p, t) {
 
 export function createKitchenFish(ctx, spec) {
   const plate = new THREE.Mesh(
-    new THREE.CylinderGeometry(0.22, 0.18, 0.03, 20),
+    new THREE.CylinderGeometry(KITCHEN_FISH.PLATE_RADIUS, KITCHEN_FISH.PLATE_RADIUS * 0.8, 0.015, 20),
     new THREE.MeshStandardMaterial({ ...MATERIALS.plate })
   );
-  plate.position.set(spec.x, spec.y + 0.015, spec.z);
+  plate.position.set(spec.x, spec.y + 0.0075, spec.z);
   plate.receiveShadow = true;
   ctx.mischief.group.add(plate);
 
-  const fish = createFishMesh(1);
-  fish.position.set(spec.x, spec.y + 0.07, spec.z);
+  const fish = createFishMesh(KITCHEN_FISH.MODEL_SCALE);
+  fish.position.set(spec.x, spec.y + 0.035, spec.z);
   fish.rotation.y = 0.6;
   ctx.mischief.group.add(fish);
 
@@ -34,9 +34,9 @@ export function createKitchenFish(ctx, spec) {
   function bite() {
     const head = ctx.cat.parts.headGroup;
     head.add(fish);
-    fish.position.set(0, -0.1, 0.28);
+    fish.position.set(0, KITCHEN_FISH.MOUTH_OFFSET.y, KITCHEN_FISH.MOUTH_OFFSET.z);
     fish.rotation.set(0, Math.PI / 2, 0);
-    fish.scale.setScalar(0.8);
+    fish.scale.setScalar(KITCHEN_FISH.MOUTH_SCALE);
     inst.carryT = KITCHEN_FISH.CARRY_DURATION;
     ctx.audio.play('bite');
     scoreMischief(ctx, 'kitchenFish', plate.position);
@@ -46,7 +46,7 @@ export function createKitchenFish(ctx, spec) {
     label: 'Curi ikan',
     position: plate.position,
     surfaceY: spec.y,
-    markerHeight: 0.35,
+    markerHeight: KITCHEN_FISH.MARKER_HEIGHT,
     onInteract: (c) => {
       inst.done = true;
       startCatAction(c.cat, {

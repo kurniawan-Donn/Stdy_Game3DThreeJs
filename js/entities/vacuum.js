@@ -14,25 +14,25 @@ function createRobotVacuumMesh() {
     new THREE.CylinderGeometry(R, R, H, 20),
     new THREE.MeshStandardMaterial({ ...MATERIALS.vacuumBody })
   );
-  body.position.y = H / 2 + 0.02;
+  body.position.y = H / 2 + 0.005;
   body.castShadow = true;
   body.receiveShadow = true;
   group.add(body);
 
   // Aksen cincin merah di atas
   const ring = new THREE.Mesh(
-    new THREE.CylinderGeometry(R * 0.72, R * 0.72, 0.04, 18),
+    new THREE.CylinderGeometry(R * 0.72, R * 0.72, H * 0.15, 18),
     new THREE.MeshStandardMaterial({ ...MATERIALS.vacuumRing })
   );
-  ring.position.y = H + 0.03;
+  ring.position.y = H + H * 0.08;
   group.add(ring);
 
   // Sensor LiDAR & LED menyala
   const sensor = new THREE.Mesh(
-    new THREE.CylinderGeometry(0.16, 0.18, 0.09, 12),
+    new THREE.CylinderGeometry(R * 0.24, R * 0.27, H * 0.35, 12),
     new THREE.MeshStandardMaterial({ ...MATERIALS.vacuumSensor })
   );
-  sensor.position.y = H + 0.08;
+  sensor.position.y = H + H * 0.2;
   group.add(sensor);
 
   return group;

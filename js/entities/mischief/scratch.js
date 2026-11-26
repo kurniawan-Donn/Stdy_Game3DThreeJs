@@ -41,11 +41,11 @@ export function createScratch(ctx, spec) {
     const h = spec.markYMax - spec.markYMin;
     for (let i = 0; i < SCRATCH.MARK_COUNT; i++) {
       const offset = (i / (SCRATCH.MARK_COUNT - 1) - 0.5) * SCRATCH.MARK_SPREAD;
-      const mark = new THREE.Mesh(new THREE.BoxGeometry(0.025, h * (0.8 + Math.random() * 0.2), 0.012), markMat);
+      const mark = new THREE.Mesh(new THREE.BoxGeometry(SCRATCH.MARK_WIDTH, h * (0.8 + Math.random() * 0.2), SCRATCH.MARK_WIDTH * 0.5), markMat);
       mark.position.set(
-        point.x + tangent.x * offset + normal.x * 0.012,
+        point.x + tangent.x * offset + normal.x * SCRATCH.MARK_WIDTH * 0.5,
         midY,
-        point.z + tangent.z * offset + normal.z * 0.012
+        point.z + tangent.z * offset + normal.z * SCRATCH.MARK_WIDTH * 0.5
       );
       mark.rotation.y = Math.atan2(normal.x, normal.z);
       mark.rotation.z = 0.25;
@@ -74,7 +74,7 @@ export function createScratch(ctx, spec) {
     label: LABELS[spec.target] || 'Cakar',
     position,
     surfaceY: 0, // dilakukan dari lantai
-    markerHeight: spec.markYMax + 0.35,
+    markerHeight: spec.markYMax + SCRATCH.MARKER_OFFSET,
     track: (c) => {
       const p = c.cat.mesh.position;
       closestOnBox(box, p.x, p.z, position);
@@ -90,7 +90,7 @@ export function createScratch(ctx, spec) {
       const normal = Math.abs(dx) > Math.abs(dz)
         ? new THREE.Vector3(Math.sign(dx) || 1, 0, 0)
         : new THREE.Vector3(0, 0, Math.sign(dz) || 1);
-      const fluffAt = point.clone().addScaledVector(normal, 0.1);
+      const fluffAt = point.clone().addScaledVector(normal, SCRATCH.FLUFF_OFFSET);
       fluffAt.y = (spec.markYMin + spec.markYMax) / 2;
 
       const puff = () => spawnDebris(c, {

@@ -45,7 +45,7 @@ Ditulis dengan JavaScript ES modules biasa, tanpa build tool dan tanpa aset ekst
 5. Jangan sampai dipergoki **pemilik rumah**. Ikon **?** berarti curiga, **!** berarti mengejar. Tertangkap = **KETAHUAN!**, kucing dikembalikan ke keranjang dan **nyawa −1** (total 3). Nyawa habis = level gagal, dan hanya 50% Chaos yang masuk tabungan.
 6. Makan ikan untuk mengisi stamina.
 
-> Tips: mengendap (`C`) memperpendek jarak pandang pemilik, perabot menghalangi pandangannya, dan pemilik tidak bisa meraihmu di sandaran sofa atau atas kulkas (lompat tinggi). Lihat [docs/GDD.md](docs/GDD.md) untuk desain lengkap.
+> Tips: mengendap (`C`) memperpendek jarak pandang pemilik, perabot menghalangi pandangannya, dan pemilik tidak bisa meraihmu di atas kulkas atau rak buku (lompat tinggi bertahap dari konter / rak rendah). Lihat [docs/GDD.md](docs/GDD.md) untuk desain lengkap.
 
 ## 🚀 Menjalankan Game
 

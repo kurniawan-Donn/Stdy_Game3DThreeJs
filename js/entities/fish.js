@@ -6,7 +6,7 @@ import { findFreeFloorPosition } from '../systems/spawn.js';
 import { createFishMesh } from './fishModel.js';
 
 export function createFishPickup(scene) {
-  const mesh = createFishMesh(1.3);
+  const mesh = createFishMesh(FISH.MODEL_SCALE);
   mesh.visible = false;
   scene.add(mesh);
   return { mesh, active: false, respawnTimer: 0, clock: 0, baseY: 0 };

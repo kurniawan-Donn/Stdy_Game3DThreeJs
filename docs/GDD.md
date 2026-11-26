@@ -3,13 +3,32 @@
 > Dokumen ini adalah acuan desain gameplay. Baca sebelum mengerjakan fitur gameplay.
 > Jika implementasi perlu menyimpang dari dokumen ini, tanyakan dulu.
 >
-> Semua angka di dokumen ini adalah **nilai awal** dan akan disetel ulang lewat playtest. Sumber kebenaran angkanya adalah `js/config.js`. Satuan jarak: 1 unit dunia = 1 meter.
+> Semua angka di dokumen ini adalah **nilai awal** dan akan disetel ulang lewat playtest. Sumber kebenaran angkanya adalah `js/config.js`. Satuan jarak: 1 unit dunia = 1 meter, dengan **skala dunia nyata** (lihat bagian 1a).
 
 ## 1. Konsep
 
 Seekor kucing ditinggal di rumah bersama pemiliknya yang sedang bekerja dari rumah. Pemain mengumpulkan **poin Chaos** dengan berbuat nakal sebelum waktu habis, **tanpa dipergoki pemilik**.
 
 Genre: stealth-chaos, sudut pandang orang ketiga, 3D low-poly.
+
+## 1a. Skala dunia
+
+Semua benda memakai ukuran nyata (tabel `REAL_SCALE` di `config.js`):
+
+| Benda | Ukuran (m) |
+|---|---|
+| Kucing | tinggi bahu 0,25 · sampai telinga 0,35 · badan 0,45 · ekor 0,30 |
+| Pemilik | tinggi 1,70 |
+| Sofa | dudukan 0,45 · sandaran 0,85 · dalam 0,9 · lebar 2,0 |
+| Meja kopi / meja kerja / kursi | 0,45 / 0,75 / 0,45 (dudukan) |
+| Konter dapur / kulkas | 0,90 / 1,80 |
+| Rak TV / rak buku | 0,50 / 1,80 (lebar 0,8, dalam 0,3) |
+| Rak rendah (batu loncatan ke rak buku) | 0,90 |
+| Robot vacuum | Ø 0,34 × 0,09 |
+| Gelas / pot / kardus | 0,12 / 0,40 / 0,40–0,50 |
+| Pintu / plafon | 2,0 × 0,85 / 2,7 |
+
+Ruang tamu berukuran **8,8 × 8 m** (tata letak prototipe 22 × 20 m dikali `WORLD_SCALE` 0,4), sehingga waktu tempuh kucing antar-objek terasa sama seperti sebelum skala diperbaiki. Kecepatan dan jarak persepsi ikut disesuaikan dengan perbandingan yang sama.
 
 ## 2. Loop inti
 
@@ -39,13 +58,15 @@ pilih misi kenakalan → menyelinap → lakukan kenakalan → kabur & sembunyi �
 
 | Mode | Kecepatan | Radius suara langkah | Profil |
 |---|---|---|---|
-| Jalan | 6 m/s | 1 m | normal (1,0) |
-| Lari (`Shift`) | 9,5 m/s | 5 m | normal (1,0) |
-| Mengendap (`C`) | 2,8 m/s | 0 (senyap) | rendah (0,5) |
+| Jalan | 2,5 m/s | 0,4 m | normal (1,0) |
+| Lari (`Shift`) | 4,0 m/s | 2 m | normal (1,0) |
+| Mengendap (`C`) | 1,2 m/s | 0 (senyap) | rendah (0,5) |
 
-- **Lompat biasa:** gratis, puncak sekitar 1 m. Cukup untuk naik ke meja, dudukan sofa, kursi, rak rendah, dan kabinet TV.
-- **Lompat tinggi:** puncak sekitar 1,4 m, biaya stamina (bagian 6).
-- **Mendarat** dari lompatan menimbulkan suara dengan radius 2 m.
+- **Lompat biasa:** gratis, puncak sekitar 0,58 m. Cukup untuk dudukan sofa, meja kopi, kursi, dan rak TV.
+- **Lompat tinggi:** puncak sekitar 1,0 m, biaya stamina (bagian 6). Cukup untuk sandaran sofa, konter dapur, meja kerja, dan rak rendah.
+- **Tempat tinggi** (atas kulkas dan rak buku, 1,8 m) hanya bisa dicapai bertahap: konter → kulkas, rak rendah → rak buku.
+- Tanpa input di udara kucing cepat mengerem, dan ada toleransi kecil saat mendarat di tepi sempit (sandaran sofa, atas rak), sehingga lompatan pendek bisa presisi.
+- **Mendarat** dari lompatan menimbulkan suara dengan radius 0,8 m.
 - Aturan mode:
   - Jika `Shift` dan `C` ditahan bersamaan, mengendap yang berlaku.
   - Mengendap hanya berlaku di tanah. Melompat membatalkan mengendap.
@@ -71,12 +92,14 @@ Setiap kenakalan memberi Chaos dan memancarkan suara dengan radius tertentu. Pem
 
 | Kenakalan | Chaos | Radius suara |
 |---|---|---|
-| Tumpahkan tisu | 15 | 2 m |
-| Cakar sofa | 20 | 4 m |
-| Injak remote (TV menyala) | 30 | 6 m |
-| Jatuhkan gelas sampai pecah | 40 | 10 m |
-| Gulingkan pot | 50 | 8 m |
-| Curi ikan di dapur | 80 | 3 m |
+| Tumpahkan tisu | 15 | 0,8 m |
+| Cakar sofa | 20 | 1,6 m |
+| Injak remote (TV menyala) | 30 | 2,4 m |
+| Jatuhkan gelas sampai pecah | 40 | 4 m |
+| Gulingkan pot | 50 | 3,2 m |
+| Curi ikan di dapur | 80 | 1,2 m |
+
+Radius suara berskala 0,4 terhadap nilai awal (2/4/6/10/8/3 m) mengikuti skala ruangan.
 
 **Combo:** kenakalan yang dilakukan beruntun, masing-masing dalam jarak **10 detik** dari kenakalan sebelumnya, mendapat bonus **×1,5**. Hasilnya dibulatkan (mis. tisu 15 × 1,5 = 23).
 
@@ -90,15 +113,15 @@ Setiap kenakalan memberi Chaos dan memancarkan suara dengan radius tertentu. Pem
 
 | Kenakalan | Jumlah | Lokasi | Total Chaos dasar |
 |---|---|---|---|
-| Gelas | 4 | meja kopi, kabinet TV, rak rendah, meja dapur | 160 |
-| Pot | 2 | dua tanaman di sudut ruangan | 100 |
-| Ikan dapur | 1 | meja dapur | 80 |
+| Gelas | 4 | meja kopi, rak TV, rak rendah, konter dapur | 160 |
+| Pot | 2 | tanaman di dinding barat (selatan jendela) dan sudut tenggara | 100 |
+| Ikan dapur | 1 | konter dapur | 80 |
 | Cakar | 2 | sofa, kursi | 40 |
 | Tisu | 2 | meja kopi, rak rendah | 30 |
 | Remote | 1 | dudukan sofa | 30 |
 | **Total** | **12** | | **440** (maks. ±660 dengan combo) |
 
-**Pojok dapur:** meja dapur (bisa dinaiki dengan lompat biasa) dan kulkas di sudut barat laut ruangan, menghadap kamera. Tempat ini juga menjadi waypoint "ambil minum" pemilik di Fase 3.
+**Pojok dapur:** konter dapur (bisa dinaiki dengan lompat tinggi) dan kulkas (tempat tinggi, dari konter) di sudut barat laut ruangan, menghadap kamera. Tempat ini juga menjadi waypoint "ambil minum" pemilik di Fase 3.
 
 ### Animasi khas
 - **Gelas:** kucing mendorong gelas pelan dengan kaki depan, menoleh ke kamera sebentar, lalu gelas meluncur jatuh dan pecah. Pecahan berhamburan, mulai memudar setelah 3 detik, dan kamera bergetar kecil.
@@ -128,14 +151,14 @@ Setiap kenakalan memberi Chaos dan memancarkan suara dengan radius tertentu. Pem
 
 ## 7. Mengeong
 
-- Cooldown **8 detik**, radius suara **12 m**.
+- Cooldown **8 detik**, radius suara **4,8 m**.
 - Pemilik yang mendengar akan **mendatangi titik suara**, dan rasa curiganya naik sedikit. Mengeong tidak langsung memicu "!".
 - Jika kucing mengeong **3 kali dalam 30 detik**, pemilik menjadi **jengkel**: rasa curiganya naik lebih cepat.
 
 ## 8. Pemilik rumah
 
 ### Saat tidak curiga
-Pemilik menjalankan **rutinitas waypoint**:
+Pemilik menjalankan **rutinitas waypoint** (jalan santai 1,1 m/s):
 
 | Kegiatan | Catatan |
 |---|---|
@@ -149,16 +172,16 @@ Setelah sesi kerja, pemilik memilih satu kegiatan secara acak berbobot, lalu kem
 Pemilik berjalan memakai grid navigasi (A* + penghalusan jalur) dan tidak menembus perabot. Tubuh pemilik dan robot vacuum menghalangi kucing.
 
 ### Penglihatan
-- Kerucut pandang **70°**, jangkauan **8 m**, diukur dari mata (1,6 m berdiri, 1,2 m duduk) ke arah kepala menoleh.
-- Kucing hanya terlihat jika ada **line-of-sight** ke titik tubuhnya (kepala, badan, pantat). Perabot menghalangi pandangan; lampu berdiri dan tanaman tidak. Perabot yang sedang dipijak kucing tidak menutupi kucing itu sendiri.
+- Kerucut pandang **70°**, jangkauan **3,2 m**, diukur dari mata (1,6 m berdiri, 1,2 m duduk) ke arah kepala menoleh.
+- Kucing hanya terlihat jika ada **line-of-sight** ke titik tubuhnya (kepala 0,28 m, punggung 0,23 m, pantat 0,20 m). Kucing kecil mudah tertutup meja kopi, sofa, dan perabot lain. Perabot menghalangi pandangan; lampu berdiri dan tanaman tidak. Perabot yang sedang dipijak kucing tidak menutupi kucing itu sendiri.
 - Pengubah jangkauan: **mengendap ×0,5**, **area gelap ×0,7**.
-- **Jarak < 1,5 m:** selalu terlihat, kecuali line-of-sight terhalang total.
+- **Jarak < 0,6 m:** selalu terlihat, kecuali line-of-sight terhalang total.
 - **Area gelap** (sementara; visual lengkap di Fase 5): di belakang sofa dan di sudut timur laut dekat rak tinggi, ditandai bayangan gelap di lantai.
 
 ### Pendengaran
 - Pemilik mendengar suara (`emitNoise`) jika berada di dalam radiusnya.
-- Kenakalan: curiga **+ radius × 4** (gelas 10 m → +40), lalu pergi **menyelidiki** titik suara.
-- Langkah & mendarat: curiga **+ radius × 4 × 0,15**; pemilik hanya menoleh (CURIGA).
+- Kenakalan: curiga **+ radius × 10** (gelas 4 m → +40), lalu pergi **menyelidiki** titik suara.
+- Langkah & mendarat: curiga **+ radius × 10 × 0,15**; pemilik hanya menoleh (CURIGA).
 - Meong: curiga **+15**, lalu menyelidiki.
 - Suara saja **tidak bisa melebihi 80**, jadi tidak pernah langsung memicu "!".
 - **Jengkel** (meong 3× dalam 30 detik): semua kenaikan curiga ×1,5.
@@ -168,13 +191,13 @@ Pemilik berjalan memakai grid navigasi (A* + penghalusan jalur) dan tidak menemb
 |---|---|---|
 | RUTINITAS | – | Menjalankan rutinitas |
 | CURIGA | ? | Berhenti dan menatap 1,5 detik. Meter ≥ 40 → menyelidiki; meter 0 → kembali rutinitas |
-| MENYELIDIKI | ? | Berjalan (2,8 m/s) ke titik terakhir, menoleh ke sekeliling 3 detik |
-| MENGEJAR | ! | Berlari 7,5 m/s (lebih cepat dari kucing jalan 6, lebih lambat dari lari 9,5). Kehilangan jejak 5 detik → rutinitas (meter 30) |
+| MENYELIDIKI | ? | Berjalan (1,5 m/s) ke titik terakhir, menoleh ke sekeliling 3 detik |
+| MENGEJAR | ! | Berlari 3,15 m/s (lebih cepat dari kucing jalan 2,5, lebih lambat dari lari 4,0). Kehilangan jejak 5 detik → rutinitas (meter 30) |
 
-- Meter 0–100. Naik saat kucing terlihat: **60/detik** di ≤ 2 m, turun linear sampai **15/detik** di jangkauan maksimum, dikali visibilitas. Turun **8/detik** saat tidak melihat apa-apa. Penuh (100) → "!".
+- Meter 0–100. Naik saat kucing terlihat: **60/detik** di ≤ 0,8 m, turun linear sampai **15/detik** di jangkauan maksimum, dikali visibilitas. Turun **8/detik** saat tidak melihat apa-apa. Penuh (100) → "!".
 - **Kepergok sedang berbuat nakal** = meter langsung 100 ("!").
-- **Meraih:** jarak horizontal ≤ 1,2 m dan kaki kucing ≤ 1,2 m dari lantai (lantai, meja, sofa).
-- **Tempat tinggi (> 1,2 m):** sandaran sofa (1,68 m) dan atas kulkas (2,0 m), dicapai dengan `Shift` + `Spasi` dari dudukan sofa / meja dapur. Pemilik menunggu di bawah **4 detik**, lalu menyerah. Rak buku tinggi tetap tidak bisa dinaiki.
+- **Meraih:** jarak horizontal ≤ 0,9 m (badan + lengan) dan kaki kucing ≤ 1,2 m dari lantai (lantai, meja, sofa termasuk sandarannya, konter, meja kerja).
+- **Tempat tinggi (> 1,2 m):** atas kulkas (1,8 m, dari konter) dan atas rak buku (1,8 m, dari rak rendah), dicapai dengan `Shift` + `Spasi`. Pemilik menunggu di bawah **4 detik**, lalu menyerah.
 
 ## 9. Ketahuan
 

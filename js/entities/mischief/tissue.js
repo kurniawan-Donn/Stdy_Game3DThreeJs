@@ -7,7 +7,7 @@ import { addBody } from '../../systems/physics.js';
 import { scoreMischief } from '../../systems/chaos.js';
 import { registerMischief, dirFromCat, swipePose } from './common.js';
 
-const BOX = { W: 0.32, H: 0.14, D: 0.2 };
+const BOX = TISSUE.BOX_SIZE;
 
 export function createTissue(ctx, spec) {
   const box = new THREE.Group();
@@ -19,8 +19,8 @@ export function createTissue(ctx, spec) {
   box.add(boxMesh);
 
   const tissueMat = new THREE.MeshStandardMaterial({ ...MATERIALS.tissue });
-  const puff = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.07, 0.09), tissueMat);
-  puff.position.y = BOX.H / 2 + 0.03;
+  const puff = new THREE.Mesh(new THREE.BoxGeometry(BOX.W * 0.4, BOX.H * 0.5, BOX.D * 0.45), tissueMat);
+  puff.position.y = BOX.H / 2 + BOX.H * 0.2;
   box.add(puff);
 
   box.position.set(spec.x, spec.y + BOX.H / 2, spec.z);
@@ -46,7 +46,7 @@ export function createTissue(ctx, spec) {
     boxBody.angVel.set(dir.z * TISSUE.BOX_SPIN, 0, -dir.x * TISSUE.BOX_SPIN);
 
     // Lembar-lembar tisu
-    const sheetGeo = new THREE.BoxGeometry(TISSUE.SHEET_SIZE, 0.006, TISSUE.SHEET_SIZE);
+    const sheetGeo = new THREE.BoxGeometry(TISSUE.SHEET_SIZE, 0.003, TISSUE.SHEET_SIZE);
     for (let i = 0; i < TISSUE.SHEET_COUNT; i++) {
       const sheet = new THREE.Mesh(sheetGeo, tissueMat);
       sheet.position.copy(origin).y += BOX.H / 2;
@@ -61,7 +61,7 @@ export function createTissue(ctx, spec) {
       const body = addBody(ctx, {
         mesh: sheet,
         radius: TISSUE.SHEET_SIZE * 0.4,
-        bottomOffset: 0.003,
+        bottomOffset: 0.0015,
         restitution: TISSUE.SHEET_RESTITUTION,
         friction: TISSUE.SHEET_FRICTION
       });
@@ -78,7 +78,7 @@ export function createTissue(ctx, spec) {
     label: 'Tumpahkan tisu',
     position: box.position,
     surfaceY: spec.y,
-    markerHeight: 0.35,
+    markerHeight: TISSUE.MARKER_HEIGHT,
     onInteract: (c) => {
       inst.done = true;
       startCatAction(c.cat, {

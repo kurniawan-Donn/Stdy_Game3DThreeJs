@@ -85,16 +85,16 @@ export function createBasket(scene) {
   wall.castShadow = true;
   group.add(wall);
 
-  const rim = new THREE.Mesh(new THREE.TorusGeometry(BASKET.RADIUS, 0.04, 8, 24), wickerMat);
+  const rim = new THREE.Mesh(new THREE.TorusGeometry(BASKET.RADIUS, 0.018, 8, 24), wickerMat);
   rim.rotation.x = Math.PI / 2;
   rim.position.y = BASKET.HEIGHT;
   group.add(rim);
 
   const cushion = new THREE.Mesh(
-    new THREE.CylinderGeometry(BASKET.RADIUS * 0.85, BASKET.RADIUS * 0.85, 0.08, 20),
+    new THREE.CylinderGeometry(BASKET.RADIUS * 0.85, BASKET.RADIUS * 0.85, 0.04, 20),
     new THREE.MeshStandardMaterial({ ...MATERIALS.basketCushion })
   );
-  cushion.position.y = 0.05;
+  cushion.position.y = 0.025;
   cushion.receiveShadow = true;
   group.add(cushion);
 
@@ -113,7 +113,7 @@ export function createDarkZones(scene) {
   for (const z of DARK_ZONES) {
     const plane = new THREE.Mesh(new THREE.PlaneGeometry(z.width, z.depth), mat);
     plane.rotation.x = -Math.PI / 2;
-    plane.position.set(z.x, 0.02, z.z);
+    plane.position.set(z.x, 0.012, z.z);
     scene.add(plane);
   }
 }

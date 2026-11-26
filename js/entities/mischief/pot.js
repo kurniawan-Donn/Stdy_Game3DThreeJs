@@ -35,7 +35,7 @@ export function createPot(ctx, spec) {
     spill.scale.set(1.3, 0.8, 1);
     spill.position.set(
       basePos.x + inst.dir.x * POT.SPILL_DISTANCE,
-      0.012,
+      0.006,
       basePos.z + inst.dir.z * POT.SPILL_DISTANCE
     );
     spill.receiveShadow = true;
@@ -43,14 +43,14 @@ export function createPot(ctx, spec) {
     inst.spill = spill;
 
     ctx.audio.play('potThud');
-    scoreMischief(ctx, 'pot', basePos.clone().setY(0.6));
+    scoreMischief(ctx, 'pot', basePos.clone().setY(POT.CHAOS_TEXT_HEIGHT));
   }
 
   registerMischief(ctx, inst, {
     label: 'Gulingkan pot',
     position: group.position,
     surfaceY: 0,
-    markerHeight: 2.1,
+    markerHeight: POT.MARKER_HEIGHT,
     onInteract: (c) => {
       inst.done = true;
       inst.dir.copy(dirFromCat(c, group.position));

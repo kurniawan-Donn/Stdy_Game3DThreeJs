@@ -1,8 +1,9 @@
 // Perabotan ruang tamu dari bentuk dasar + collider AABB-nya.
-// Posisi & collider diambil dari FURNITURE_LAYOUT (config.js);
-// dimensi detail mesh adalah data model dan tetap di sini.
+// Posisi, ukuran & collider diambil dari FURNITURE_LAYOUT / REAL_SCALE
+// (config.js); model dibangun dari dimensi collider sehingga visual dan
+// tabrakan selalu cocok. Detail kecil (kaki, bantal, buku) tetap di sini.
 import * as THREE from 'three';
-import { FURNITURE_LAYOUT, MATERIALS } from '../config.js';
+import { FURNITURE_LAYOUT, MATERIALS, REAL_SCALE } from '../config.js';
 import { createRugTexture } from './textures.js';
 
 // Collider AABB: { minX, maxX, minZ, maxZ, topHeight, climbable, occludes, navBlocks }
@@ -31,9 +32,15 @@ function addColliders(colliders, list) {
   return added;
 }
 
+function shadowed(mesh, receive = true) {
+  mesh.castShadow = true;
+  mesh.receiveShadow = receive;
+  return mesh;
+}
+
 // Membangun semua perabot ke dalam scene.
 // Mengembalikan { colliders, refs }; refs berisi mesh/collider yang dipakai
-// objek kenakalan (layar TV, collider sofa & kursi, tanaman).
+// objek kenakalan (layar TV, collider sofa & kursi, tanaman, kursi kerja).
 export function createFurniture(scene) {
   const colliders = [];
   const refs = { plants: [] };
@@ -48,220 +55,204 @@ export function createFurniture(scene) {
 
   // 1. KARPET (datar di lantai, bukan penghalang)
   const rugMesh = new THREE.Mesh(
-    new THREE.BoxGeometry(L.rug.width, 0.03, L.rug.depth),
+    new THREE.BoxGeometry(L.rug.width, 0.01, L.rug.depth),
     new THREE.MeshStandardMaterial({ map: createRugTexture(), ...MATERIALS.rug })
   );
-  rugMesh.position.set(L.rug.x, 0.015, L.rug.z);
+  rugMesh.position.set(L.rug.x, 0.005, L.rug.z);
   rugMesh.receiveShadow = true;
   scene.add(rugMesh);
 
-  // 2. SOFA
-  const sofaGroup = new THREE.Group();
-  sofaGroup.position.set(L.sofa.x, 0, L.sofa.z);
+  // 2. SOFA: dudukan menghadap -Z, sandaran di sisi +Z
+  {
+    const [seatC, backC] = L.sofa.colliders;
+    const g = new THREE.Group();
+    g.position.set(L.sofa.x, 0, L.sofa.z);
+    const W = seatC.width;
+    const LEG = 0.08;
+    const seatZ = seatC.z - L.sofa.z;
+    const backZ = backC.z - L.sofa.z;
+    const frontEdge = seatZ - seatC.depth / 2;
+    const backEdge = backZ + backC.depth / 2;
 
-  const sofaBase = new THREE.Mesh(new THREE.BoxGeometry(5.2, 0.55, 1.9), fabricSofa);
-  sofaBase.position.y = 0.42;
-  sofaBase.castShadow = true;
-  sofaBase.receiveShadow = true;
-  sofaGroup.add(sofaBase);
 
-  const sofaBack = new THREE.Mesh(new THREE.BoxGeometry(5.2, 1.05, 0.42), fabricSofa);
-  sofaBack.position.set(0, 1.15, 0.74);
-  sofaBack.castShadow = true;
-  sofaBack.receiveShadow = true;
-  sofaGroup.add(sofaBack);
+    const base = shadowed(new THREE.Mesh(new THREE.BoxGeometry(W, seatC.topHeight - LEG, seatC.depth), fabricSofa));
+    base.position.set(0, LEG + (seatC.topHeight - LEG) / 2, seatZ);
+    g.add(base);
 
-  const armL = new THREE.Mesh(new THREE.BoxGeometry(0.42, 0.85, 1.9), fabricSofa);
-  armL.position.set(-2.39, 0.72, 0);
-  armL.castShadow = true;
-  sofaGroup.add(armL);
+    const backH = backC.topHeight - LEG;
+    const back = shadowed(new THREE.Mesh(new THREE.BoxGeometry(W, backH, backC.depth), fabricSofa));
+    back.position.set(0, LEG + backH / 2, backZ);
+    g.add(back);
 
-  const armR = armL.clone();
-  armR.position.x = 2.39;
-  sofaGroup.add(armR);
+    const armW = 0.14;
+    for (const side of [-1, 1]) {
+      const arm = shadowed(new THREE.Mesh(new THREE.BoxGeometry(armW, 0.16, seatC.depth), fabricSofa));
+      arm.position.set(side * (W / 2 - armW / 2), seatC.topHeight + 0.08, seatZ);
+      g.add(arm);
 
-  // Bantal aksen
-  const pil1 = new THREE.Mesh(new THREE.BoxGeometry(0.65, 0.55, 0.25), cushionMat);
-  pil1.position.set(-1.65, 0.95, 0.38);
-  pil1.rotation.set(-0.2, 0.18, 0.08);
-  pil1.castShadow = true;
-  sofaGroup.add(pil1);
+      const pillow = shadowed(new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.26, 0.09), cushionMat), false);
+      pillow.position.set(side * 0.58, seatC.topHeight + 0.13, backZ - backC.depth / 2 - 0.05);
+      pillow.rotation.set(-0.2, side * 0.18, side * 0.08);
+      g.add(pillow);
 
-  const pil2 = pil1.clone();
-  pil2.position.set(1.65, 0.95, 0.38);
-  pil2.rotation.set(-0.2, -0.18, -0.08);
-  sofaGroup.add(pil2);
-
-  // Kaki sofa
-  for (const lx of [-2.3, 2.3]) {
-    for (const lz of [-0.75, 0.75]) {
-      const leg = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.04, 0.16, 8), woodDark);
-      leg.position.set(lx, 0.08, lz);
-      sofaGroup.add(leg);
+      for (const edge of [frontEdge + 0.08, backEdge - 0.08]) {
+        const leg = new THREE.Mesh(new THREE.CylinderGeometry(0.025, 0.018, LEG, 8), woodDark);
+        leg.position.set(side * (W / 2 - 0.08), LEG / 2, edge);
+        g.add(leg);
+      }
     }
+    scene.add(g);
+    refs.sofaSeat = addColliders(colliders, L.sofa.colliders)[0];
   }
-  scene.add(sofaGroup);
-  refs.sofaSeat = addColliders(colliders, L.sofa.colliders)[0];
 
   // 3. MEJA KOPI
-  const tableGroup = new THREE.Group();
-  tableGroup.position.set(L.coffeeTable.x, 0, L.coffeeTable.z);
-
-  const tableTop = new THREE.Mesh(new THREE.BoxGeometry(2.8, 0.12, 1.45), woodWarm);
-  tableTop.position.y = 0.62;
-  tableTop.castShadow = true;
-  tableTop.receiveShadow = true;
-  tableGroup.add(tableTop);
-
-  for (const tx of [-1.2, 1.2]) {
-    for (const tz of [-0.55, 0.55]) {
-      const leg = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.56, 0.1), woodDark);
-      leg.position.set(tx, 0.28, tz);
-      leg.castShadow = true;
-      tableGroup.add(leg);
+  {
+    const c = L.coffeeTable.colliders[0];
+    const g = new THREE.Group();
+    g.position.set(L.coffeeTable.x, 0, L.coffeeTable.z);
+    const TOP = 0.04;
+    const top = shadowed(new THREE.Mesh(new THREE.BoxGeometry(c.width, TOP, c.depth), woodWarm));
+    top.position.y = c.topHeight - TOP / 2;
+    g.add(top);
+    for (const lx of [-1, 1]) {
+      for (const lz of [-1, 1]) {
+        const leg = shadowed(new THREE.Mesh(new THREE.BoxGeometry(0.04, c.topHeight - TOP, 0.04), woodDark), false);
+        leg.position.set(lx * (c.width / 2 - 0.05), (c.topHeight - TOP) / 2, lz * (c.depth / 2 - 0.05));
+        g.add(leg);
+      }
     }
+    // Dekorasi kecil di atas meja
+    const mug = shadowed(new THREE.Mesh(
+      new THREE.CylinderGeometry(0.04, 0.034, 0.09, 12),
+      new THREE.MeshStandardMaterial({ ...MATERIALS.mug })
+    ), false);
+    mug.position.set(-0.3, c.topHeight + 0.045, 0.12);
+    g.add(mug);
+    scene.add(g);
+    addColliders(colliders, L.coffeeTable.colliders);
   }
-  // Dekorasi kecil di atas meja
-  const mug = new THREE.Mesh(
-    new THREE.CylinderGeometry(0.11, 0.09, 0.18, 12),
-    new THREE.MeshStandardMaterial({ ...MATERIALS.mug })
-  );
-  mug.position.set(0.55, 0.77, 0.15);
-  mug.castShadow = true;
-  tableGroup.add(mug);
 
-  scene.add(tableGroup);
-  addColliders(colliders, L.coffeeTable.colliders);
+  // 4. RAK TV + TV DI DINDING UTARA
+  {
+    const c = L.tvUnit.colliders[0];
+    const g = new THREE.Group();
+    g.position.set(L.tvUnit.x, 0, L.tvUnit.z);
+    const cabinet = shadowed(new THREE.Mesh(new THREE.BoxGeometry(c.width, c.topHeight, c.depth), woodDark));
+    cabinet.position.y = c.topHeight / 2;
+    g.add(cabinet);
 
-  // 4. TV DI DINDING + KABINET TV
-  const tvUnit = new THREE.Group();
-  tvUnit.position.set(L.tvUnit.x, 0, L.tvUnit.z);
+    const wallZ = -c.depth / 2 + 0.03; // TV menempel dinding
+    const tvFrame = shadowed(new THREE.Mesh(new THREE.BoxGeometry(1.2, 0.7, 0.05), metalDark), false);
+    tvFrame.position.set(0, 1.2, wallZ);
+    g.add(tvFrame);
 
-  const cabinet = new THREE.Mesh(new THREE.BoxGeometry(4.4, 0.72, 1.0), woodDark);
-  cabinet.position.y = 0.36;
-  cabinet.castShadow = true;
-  cabinet.receiveShadow = true;
-  tvUnit.add(cabinet);
+    const tvScreen = new THREE.Mesh(
+      new THREE.PlaneGeometry(1.12, 0.63),
+      new THREE.MeshStandardMaterial({ ...MATERIALS.tvScreen })
+    );
+    tvScreen.position.set(0, 1.2, wallZ + 0.027);
+    g.add(tvScreen);
+    refs.tvScreen = tvScreen;
 
-  // Layar TV menempel di dinding utara
-  const tvFrame = new THREE.Mesh(new THREE.BoxGeometry(3.8, 2.1, 0.12), metalDark);
-  tvFrame.position.set(0, 2.45, -0.62);
-  tvFrame.castShadow = true;
-  tvUnit.add(tvFrame);
+    scene.add(g);
+    addColliders(colliders, L.tvUnit.colliders);
+  }
 
-  const tvScreen = new THREE.Mesh(
-    new THREE.PlaneGeometry(3.56, 1.88),
-    new THREE.MeshStandardMaterial({ ...MATERIALS.tvScreen })
-  );
-  tvScreen.position.set(0, 2.45, -0.55);
-  tvUnit.add(tvScreen);
-  refs.tvScreen = tvScreen;
+  // 5. RAK BUKU TINGGI (dinding timur; tempat tinggi, atasnya bisa dinaiki)
+  {
+    const c = L.tallShelf.colliders[0];
+    const g = new THREE.Group();
+    g.position.set(L.tallShelf.x, 0, L.tallShelf.z);
+    // c.width = sumbu X (dalam rak), c.depth = sumbu Z (lebar rak)
+    const body = shadowed(new THREE.Mesh(new THREE.BoxGeometry(c.width, c.topHeight, c.depth), woodDark));
+    body.position.y = c.topHeight / 2;
+    g.add(body);
 
-  scene.add(tvUnit);
-  addColliders(colliders, L.tvUnit.colliders);
+    const bookColors = MATERIALS.bookColors;
+    const front = -c.width / 2; // sisi rak yang menghadap ruangan (-X)
+    for (let levelY = 0.3; levelY <= c.topHeight - 0.3; levelY += 0.36) {
+      const plank = new THREE.Mesh(new THREE.BoxGeometry(c.width * 0.9, 0.02, c.depth * 0.94), woodWarm);
+      plank.position.set(front + c.width * 0.45 - 0.01, levelY, 0);
+      g.add(plank);
 
-  // 5. RAK BUKU TINGGI (dinding timur)
-  const shelfGroup = new THREE.Group();
-  shelfGroup.position.set(L.tallShelf.x, 0, L.tallShelf.z);
-
-  const shelfBody = new THREE.Mesh(new THREE.BoxGeometry(1.1, 4.2, 3.4), woodDark);
-  shelfBody.position.set(0.2, 2.1, 0);
-  shelfBody.castShadow = true;
-  shelfBody.receiveShadow = true;
-  shelfGroup.add(shelfBody);
-
-  const bookColors = MATERIALS.bookColors;
-  for (let levelY = 0.75; levelY <= 3.55; levelY += 0.92) {
-    const plank = new THREE.Mesh(new THREE.BoxGeometry(1.18, 0.08, 3.25), woodWarm);
-    plank.position.set(0.14, levelY, 0);
-    shelfGroup.add(plank);
-
-    // Deretan buku
-    for (let bz = -1.2; bz <= 1.2; bz += 0.34) {
-      const bh = 0.45 + ((Math.abs(Math.sin(bz * 5 + levelY)) * 0.25));
-      const bookMat = new THREE.MeshStandardMaterial({
-        color: bookColors[Math.floor(Math.abs(bz * 10 + levelY)) % bookColors.length],
-        ...MATERIALS.book
-      });
-      const book = new THREE.Mesh(new THREE.BoxGeometry(0.65, bh, 0.22), bookMat);
-      book.position.set(-0.08, levelY + 0.04 + bh / 2, bz);
-      book.castShadow = true;
-      shelfGroup.add(book);
+      // Deretan buku
+      for (let bz = -c.depth / 2 + 0.06; bz <= c.depth / 2 - 0.06; bz += 0.065) {
+        const bh = 0.18 + Math.abs(Math.sin(bz * 17 + levelY * 3)) * 0.08;
+        const bookMat = new THREE.MeshStandardMaterial({
+          color: bookColors[Math.floor(Math.abs(bz * 40 + levelY * 7)) % bookColors.length],
+          ...MATERIALS.book
+        });
+        const book = shadowed(new THREE.Mesh(new THREE.BoxGeometry(c.width * 0.6, bh, 0.05), bookMat), false);
+        book.position.set(front + c.width * 0.32, levelY + 0.01 + bh / 2, bz);
+        g.add(book);
+      }
     }
+    scene.add(g);
+    addColliders(colliders, L.tallShelf.colliders);
   }
-  scene.add(shelfGroup);
-  addColliders(colliders, L.tallShelf.colliders);
 
-  // 5b. RAK BUKU RENDAH (bisa dinaiki)
-  const lowShelfGroup = new THREE.Group();
-  lowShelfGroup.position.set(L.lowShelf.x, 0, L.lowShelf.z);
+  // 5b. RAK RENDAH (batu loncatan ke rak buku tinggi)
+  {
+    const c = L.lowShelf.colliders[0];
+    const g = new THREE.Group();
+    g.position.set(L.lowShelf.x, 0, L.lowShelf.z);
+    const body = shadowed(new THREE.Mesh(new THREE.BoxGeometry(c.width - 0.02, c.topHeight - 0.03, c.depth - 0.02), woodWarm));
+    body.position.y = (c.topHeight - 0.03) / 2;
+    g.add(body);
+    const top = shadowed(new THREE.Mesh(new THREE.BoxGeometry(c.width, 0.03, c.depth), woodDark));
+    top.position.y = c.topHeight - 0.015;
+    g.add(top);
+    scene.add(g);
+    addColliders(colliders, L.lowShelf.colliders);
+  }
 
-  const lowShelfBody = new THREE.Mesh(new THREE.BoxGeometry(1.3, 0.84, 2.2), woodWarm);
-  lowShelfBody.position.y = 0.42;
-  lowShelfBody.castShadow = true;
-  lowShelfBody.receiveShadow = true;
-  lowShelfGroup.add(lowShelfBody);
-
-  const lowShelfTop = new THREE.Mesh(new THREE.BoxGeometry(1.38, 0.08, 2.28), woodDark);
-  lowShelfTop.position.y = 0.82;
-  lowShelfTop.castShadow = true;
-  lowShelfTop.receiveShadow = true;
-  lowShelfGroup.add(lowShelfTop);
-
-  scene.add(lowShelfGroup);
-  addColliders(colliders, L.lowShelf.colliders);
-
-  // 5c. KURSI (bisa dinaiki)
-  const chairGroup = new THREE.Group();
-  chairGroup.position.set(L.chair.x, 0, L.chair.z);
-
-  const chairSeat = new THREE.Mesh(new THREE.BoxGeometry(1.35, 0.22, 1.35), fabricSofa);
-  chairSeat.position.y = 0.47;
-  chairSeat.castShadow = true;
-  chairSeat.receiveShadow = true;
-  chairGroup.add(chairSeat);
-
-  for (const cx of [-0.52, 0.52]) {
-    for (const cz of [-0.52, 0.52]) {
-      const cLeg = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.04, 0.36, 8), woodDark);
-      cLeg.position.set(cx, 0.18, cz);
-      cLeg.castShadow = true;
-      chairGroup.add(cLeg);
+  // 5c. KURSI
+  {
+    const c = L.chair.colliders[0];
+    const g = new THREE.Group();
+    g.position.set(L.chair.x, 0, L.chair.z);
+    const seat = shadowed(new THREE.Mesh(new THREE.BoxGeometry(c.width, 0.08, c.depth), fabricSofa));
+    seat.position.y = c.topHeight - 0.04;
+    g.add(seat);
+    for (const lx of [-1, 1]) {
+      for (const lz of [-1, 1]) {
+        const leg = shadowed(new THREE.Mesh(new THREE.CylinderGeometry(0.022, 0.016, c.topHeight - 0.08, 8), woodDark), false);
+        leg.position.set(lx * (c.width / 2 - 0.05), (c.topHeight - 0.08) / 2, lz * (c.depth / 2 - 0.05));
+        g.add(leg);
+      }
     }
+    scene.add(g);
+    refs.chair = addColliders(colliders, L.chair.colliders)[0];
   }
-  scene.add(chairGroup);
-  refs.chair = addColliders(colliders, L.chair.colliders)[0];
 
   // 6. LAMPU BERDIRI
-  const lampGroup = new THREE.Group();
-  lampGroup.position.set(L.floorLamp.x, 0, L.floorLamp.z);
-
-  const lampBase = new THREE.Mesh(new THREE.CylinderGeometry(0.42, 0.46, 0.1, 16), metalBrass);
-  lampBase.position.y = 0.05;
-  lampBase.castShadow = true;
-  lampGroup.add(lampBase);
-
-  const lampPole = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, 3.4, 10), metalBrass);
-  lampPole.position.y = 1.75;
-  lampPole.castShadow = true;
-  lampGroup.add(lampPole);
-
-  const lampShade = new THREE.Mesh(
-    new THREE.CylinderGeometry(0.32, 0.56, 0.65, 16, 1, true),
-    new THREE.MeshStandardMaterial({ ...MATERIALS.lampShade, side: THREE.DoubleSide })
-  );
-  lampShade.position.y = 3.55;
-  lampGroup.add(lampShade);
-
-  scene.add(lampGroup);
-  addColliders(colliders, L.floorLamp.colliders);
+  {
+    const c = L.floorLamp.colliders[0];
+    const g = new THREE.Group();
+    g.position.set(L.floorLamp.x, 0, L.floorLamp.z);
+    const lampBase = shadowed(new THREE.Mesh(new THREE.CylinderGeometry(0.16, 0.18, 0.04, 16), metalBrass), false);
+    lampBase.position.y = 0.02;
+    g.add(lampBase);
+    const poleH = c.topHeight - 0.22;
+    const lampPole = shadowed(new THREE.Mesh(new THREE.CylinderGeometry(0.018, 0.018, poleH, 8), metalBrass), false);
+    lampPole.position.y = poleH / 2 + 0.04;
+    g.add(lampPole);
+    const lampShade = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.12, 0.2, 0.24, 16, 1, true),
+      new THREE.MeshStandardMaterial({ ...MATERIALS.lampShade, side: THREE.DoubleSide })
+    );
+    lampShade.position.y = c.topHeight - 0.12;
+    g.add(lampShade);
+    scene.add(g);
+    addColliders(colliders, L.floorLamp.colliders);
+  }
 
   // 7. TANAMAN POT (dua sudut ruangan)
   for (const p of L.plants.positions) {
     refs.plants.push(createPottedPlant(scene, colliders, p.x, p.z));
   }
 
-  // 8. POJOK DAPUR: meja dapur (bisa dinaiki) + kulkas
+  // 8. POJOK DAPUR: konter (lompat tinggi) + kulkas (tempat tinggi)
   createKitchen(scene, colliders);
 
   // 9. POS KERJA PEMILIK: meja, kursi, laptop
@@ -279,30 +270,26 @@ function createKitchen(scene, colliders) {
   const counterGroup = new THREE.Group();
   counterGroup.position.set(L.kitchenCounter.x, 0, L.kitchenCounter.z);
 
-  const bodyH = c.topHeight - 0.06;
-  const body = new THREE.Mesh(
-    new THREE.BoxGeometry(c.width - 0.1, bodyH, c.depth - 0.1),
+  const bodyH = c.topHeight - 0.04;
+  const body = shadowed(new THREE.Mesh(
+    new THREE.BoxGeometry(c.width - 0.04, bodyH, c.depth - 0.04),
     new THREE.MeshStandardMaterial({ ...MATERIALS.counterBody })
-  );
+  ));
   body.position.y = bodyH / 2;
-  body.castShadow = true;
-  body.receiveShadow = true;
   counterGroup.add(body);
 
-  const top = new THREE.Mesh(
-    new THREE.BoxGeometry(c.width, 0.06, c.depth),
+  const top = shadowed(new THREE.Mesh(
+    new THREE.BoxGeometry(c.width, 0.04, c.depth),
     new THREE.MeshStandardMaterial({ ...MATERIALS.counterTop })
-  );
-  top.position.y = c.topHeight - 0.03;
-  top.castShadow = true;
-  top.receiveShadow = true;
+  ));
+  top.position.y = c.topHeight - 0.02;
   counterGroup.add(top);
 
   // Garis pintu lemari
   const doorMat = new THREE.MeshStandardMaterial({ ...MATERIALS.counterTop });
   for (let i = -1; i <= 1; i++) {
-    const seam = new THREE.Mesh(new THREE.BoxGeometry(0.02, bodyH * 0.8, 0.01), doorMat);
-    seam.position.set(i * 1.0, bodyH / 2, front * ((c.depth - 0.1) / 2 + 0.005));
+    const seam = new THREE.Mesh(new THREE.BoxGeometry(0.012, bodyH * 0.8, 0.006), doorMat);
+    seam.position.set(i * (c.width / 3), bodyH / 2, front * ((c.depth - 0.04) / 2 + 0.003));
     counterGroup.add(seam);
   }
 
@@ -311,18 +298,18 @@ function createKitchen(scene, colliders) {
 
   // Kulkas
   const f = L.fridge.colliders[0];
-  const fridgeMat = new THREE.MeshStandardMaterial({ ...MATERIALS.fridge });
-  const fridge = new THREE.Mesh(new THREE.BoxGeometry(f.width, f.topHeight, f.depth), fridgeMat);
+  const fridge = shadowed(new THREE.Mesh(
+    new THREE.BoxGeometry(f.width, f.topHeight, f.depth),
+    new THREE.MeshStandardMaterial({ ...MATERIALS.fridge })
+  ));
   fridge.position.set(L.fridge.x, f.topHeight / 2, L.fridge.z);
-  fridge.castShadow = true;
-  fridge.receiveShadow = true;
   scene.add(fridge);
 
   const handle = new THREE.Mesh(
-    new THREE.BoxGeometry(0.05, 0.6, 0.05),
+    new THREE.BoxGeometry(0.025, 0.4, 0.025),
     new THREE.MeshStandardMaterial({ ...MATERIALS.metalDark })
   );
-  handle.position.set(L.fridge.x + f.width / 2 - 0.15, 1.2, L.fridge.z + front * (f.depth / 2 + 0.03));
+  handle.position.set(L.fridge.x + f.width / 2 - 0.08, f.topHeight * 0.6, L.fridge.z + front * (f.depth / 2 + 0.015));
   scene.add(handle);
 
   addColliders(colliders, L.fridge.colliders);
@@ -331,36 +318,37 @@ function createKitchen(scene, colliders) {
 function createPottedPlant(scene, colliders, x, z) {
   const plantGroup = new THREE.Group();
   plantGroup.position.set(x, 0, z);
+  const potH = REAL_SCALE.pot.HEIGHT;
+  const plantH = REAL_SCALE.plant.HEIGHT;
 
-  const pot = new THREE.Mesh(
-    new THREE.CylinderGeometry(0.5, 0.36, 0.78, 14),
+  const pot = shadowed(new THREE.Mesh(
+    new THREE.CylinderGeometry(0.2, 0.15, potH, 14),
     new THREE.MeshStandardMaterial({ ...MATERIALS.pot })
-  );
-  pot.position.y = 0.39;
-  pot.castShadow = true;
-  pot.receiveShadow = true;
+  ));
+  pot.position.y = potH / 2;
   plantGroup.add(pot);
 
   const soil = new THREE.Mesh(
-    new THREE.CylinderGeometry(0.46, 0.46, 0.08, 12),
+    new THREE.CylinderGeometry(0.185, 0.185, 0.03, 12),
     new THREE.MeshStandardMaterial({ ...MATERIALS.soil })
   );
-  soil.position.y = 0.76;
+  soil.position.y = potH - 0.02;
   plantGroup.add(soil);
 
   const leafMat = new THREE.MeshStandardMaterial({ ...MATERIALS.leaf });
+  const leafH = (plantH - potH) * 0.95;
   for (let i = 0; i < 6; i++) {
     const angle = (i / 6) * Math.PI * 2;
-    const leaf = new THREE.Mesh(new THREE.ConeGeometry(0.24, 1.15, 6), leafMat);
-    leaf.position.set(Math.cos(angle) * 0.24, 1.25, Math.sin(angle) * 0.24);
+    const leaf = new THREE.Mesh(new THREE.ConeGeometry(0.09, leafH, 6), leafMat);
+    leaf.position.set(Math.cos(angle) * 0.09, potH + leafH / 2 - 0.02, Math.sin(angle) * 0.09);
     leaf.rotation.z = -Math.cos(angle) * 0.48;
     leaf.rotation.x = Math.sin(angle) * 0.48;
     leaf.castShadow = true;
     plantGroup.add(leaf);
   }
 
-  const topLeaf = new THREE.Mesh(new THREE.ConeGeometry(0.22, 1.25, 6), leafMat);
-  topLeaf.position.y = 1.4;
+  const topLeaf = new THREE.Mesh(new THREE.ConeGeometry(0.08, plantH - potH, 6), leafMat);
+  topLeaf.position.y = potH + (plantH - potH) / 2;
   topLeaf.castShadow = true;
   plantGroup.add(topLeaf);
 
@@ -376,65 +364,60 @@ function createWorkstation(scene, colliders, refs) {
   const desk = new THREE.Group();
   desk.position.set(L.workDesk.x, 0, L.workDesk.z);
 
-  const top = new THREE.Mesh(
-    new THREE.BoxGeometry(d.width, 0.05, d.depth),
+  const top = shadowed(new THREE.Mesh(
+    new THREE.BoxGeometry(d.width, 0.04, d.depth),
     new THREE.MeshStandardMaterial({ ...MATERIALS.deskTop })
-  );
-  top.position.y = d.topHeight - 0.025;
-  top.castShadow = true;
-  top.receiveShadow = true;
+  ));
+  top.position.y = d.topHeight - 0.02;
   desk.add(top);
 
   const legMat = new THREE.MeshStandardMaterial({ ...MATERIALS.deskLeg });
   for (const lx of [-1, 1]) {
     for (const lz of [-1, 1]) {
-      const leg = new THREE.Mesh(new THREE.BoxGeometry(0.05, d.topHeight - 0.05, 0.05), legMat);
-      leg.position.set(lx * (d.width / 2 - 0.06), (d.topHeight - 0.05) / 2, lz * (d.depth / 2 - 0.06));
-      leg.castShadow = true;
+      const leg = shadowed(new THREE.Mesh(new THREE.BoxGeometry(0.04, d.topHeight - 0.04, 0.04), legMat), false);
+      leg.position.set(lx * (d.width / 2 - 0.05), (d.topHeight - 0.04) / 2, lz * (d.depth / 2 - 0.05));
       desk.add(leg);
     }
   }
 
   // Laptop: alas + layar menyala (menghadap kursi, +Z)
   const laptopMat = new THREE.MeshStandardMaterial({ ...MATERIALS.laptop });
-  const base = new THREE.Mesh(new THREE.BoxGeometry(0.42, 0.02, 0.3), laptopMat);
-  base.position.set(0, d.topHeight + 0.01, 0.12);
+  const base = new THREE.Mesh(new THREE.BoxGeometry(0.32, 0.015, 0.22), laptopMat);
+  base.position.set(0, d.topHeight + 0.008, 0.1);
   desk.add(base);
   const lid = new THREE.Group();
-  lid.position.set(0, d.topHeight + 0.02, -0.03);
+  lid.position.set(0, d.topHeight + 0.015, -0.01);
   lid.rotation.x = -0.25;
-  const lidBack = new THREE.Mesh(new THREE.BoxGeometry(0.42, 0.28, 0.015), laptopMat);
-  lidBack.position.y = 0.14;
+  const lidBack = new THREE.Mesh(new THREE.BoxGeometry(0.32, 0.21, 0.01), laptopMat);
+  lidBack.position.y = 0.105;
   lid.add(lidBack);
   const screen = new THREE.Mesh(
-    new THREE.PlaneGeometry(0.38, 0.24),
+    new THREE.PlaneGeometry(0.29, 0.18),
     new THREE.MeshStandardMaterial({ ...MATERIALS.laptopScreen })
   );
-  screen.position.set(0, 0.14, 0.009);
+  screen.position.set(0, 0.105, 0.006);
   lid.add(screen);
   desk.add(lid);
 
   scene.add(desk);
   addColliders(colliders, L.workDesk.colliders);
 
-  // Kursi kerja
+  // Kursi kerja (berputar mengikuti pemilik)
   const c = L.workChair.colliders[0];
   const chairMat = new THREE.MeshStandardMaterial({ ...MATERIALS.deskChair });
   const chair = new THREE.Group();
   chair.position.set(L.workChair.x, 0, L.workChair.z);
-  const seat = new THREE.Mesh(new THREE.BoxGeometry(0.55, 0.08, 0.55), chairMat);
-  seat.position.y = c.topHeight - 0.04;
-  seat.castShadow = true;
+  const seat = shadowed(new THREE.Mesh(new THREE.BoxGeometry(c.width * 0.9, 0.06, c.depth * 0.9), chairMat));
+  seat.position.y = c.topHeight - 0.03;
   chair.add(seat);
-  const back = new THREE.Mesh(new THREE.BoxGeometry(0.55, 0.6, 0.07), chairMat);
-  back.position.set(0, c.topHeight + 0.3, 0.27);
-  back.castShadow = true;
+  const back = shadowed(new THREE.Mesh(new THREE.BoxGeometry(c.width * 0.9, 0.5, 0.05), chairMat), false);
+  back.position.set(0, c.topHeight + 0.25, c.depth * 0.45);
   chair.add(back);
-  const post = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, c.topHeight - 0.1, 8), legMat);
-  post.position.y = (c.topHeight - 0.1) / 2 + 0.05;
+  const post = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.03, c.topHeight - 0.08, 8), legMat);
+  post.position.y = (c.topHeight - 0.08) / 2 + 0.04;
   chair.add(post);
-  const foot = new THREE.Mesh(new THREE.CylinderGeometry(0.28, 0.28, 0.04, 10), legMat);
-  foot.position.y = 0.03;
+  const foot = new THREE.Mesh(new THREE.CylinderGeometry(0.24, 0.24, 0.03, 10), legMat);
+  foot.position.y = 0.02;
   chair.add(foot);
   scene.add(chair);
   addColliders(colliders, L.workChair.colliders);

@@ -35,18 +35,18 @@ function drawStatic(canvas) {
 export function createRemote(ctx, spec) {
   const remote = new THREE.Group();
   const body = new THREE.Mesh(
-    new THREE.BoxGeometry(0.26, 0.05, 0.09),
+    new THREE.BoxGeometry(REMOTE.SIZE.L, REMOTE.SIZE.H, REMOTE.SIZE.W),
     new THREE.MeshStandardMaterial({ ...MATERIALS.remote })
   );
   body.castShadow = true;
   remote.add(body);
   const button = new THREE.Mesh(
-    new THREE.BoxGeometry(0.03, 0.02, 0.03),
+    new THREE.BoxGeometry(REMOTE.SIZE.W * 0.3, REMOTE.SIZE.H * 0.6, REMOTE.SIZE.W * 0.3),
     new THREE.MeshStandardMaterial({ ...MATERIALS.remoteButton })
   );
-  button.position.set(0.08, 0.03, 0);
+  button.position.set(REMOTE.SIZE.L * 0.3, REMOTE.SIZE.H * 0.6, 0);
   remote.add(button);
-  remote.position.set(spec.x, spec.y + 0.025, spec.z);
+  remote.position.set(spec.x, spec.y + REMOTE.SIZE.H / 2, spec.z);
   remote.rotation.y = 0.4;
   ctx.mischief.group.add(remote);
 
@@ -84,7 +84,7 @@ export function createRemote(ctx, spec) {
     label: 'Injak remote',
     position: remote.position,
     surfaceY: spec.y,
-    markerHeight: 0.3,
+    markerHeight: REMOTE.MARKER_HEIGHT,
     onInteract: (c) => {
       inst.done = true;
       startCatAction(c.cat, {

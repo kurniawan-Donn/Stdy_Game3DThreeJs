@@ -108,10 +108,12 @@ export function pushOutOfCircle(position, vel, cx, cz, radius, height) {
 }
 
 // Ketinggian permukaan (lantai = 0 atau atas perabot) di (x, z).
-export function getGroundHeight(colliders, x, z, referenceY) {
+// margin > 0: titik dianggap di atas perabot meski sedikit melewati tepinya
+// (dipakai kucing agar bisa mendarat di permukaan sempit seperti sandaran sofa).
+export function getGroundHeight(colliders, x, z, referenceY, margin = 0) {
   let highest = 0;
   for (const box of colliders) {
-    if (x >= box.minX && x <= box.maxX && z >= box.minZ && z <= box.maxZ) {
+    if (x >= box.minX - margin && x <= box.maxX + margin && z >= box.minZ - margin && z <= box.maxZ + margin) {
       if (box.topHeight > highest && referenceY >= box.topHeight - PHYSICS.CLIMB_TOLERANCE) {
         highest = box.topHeight;
       }

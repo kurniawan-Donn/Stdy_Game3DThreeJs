@@ -1,6 +1,6 @@
 // Kucing pemain: model low-poly, gerakan relatif kamera, lompat, dan animasi.
 import * as THREE from 'three';
-import { PLAYER, PHYSICS, CAT_ANIM, MATERIALS, NOISE, OWNER, VACUUM } from '../config.js';
+import { PLAYER, PHYSICS, CAT_ANIM, MATERIALS, NOISE, OWNER, VACUUM, REAL_SCALE } from '../config.js';
 import { resolveRoomCollisions, getGroundHeight, pushOutOfCircle } from '../systems/collision.js';
 import { canRun, trySpendHighJump, updateStamina, isExhausted } from '../systems/stamina.js';
 import { emitNoise } from '../systems/noise.js';
@@ -31,99 +31,102 @@ export function createCat(scene) {
   const pinkMat = new THREE.MeshStandardMaterial({ ...MATERIALS.catPink });
   const eyeMat = new THREE.MeshStandardMaterial({ ...MATERIALS.catEye });
 
+  // Proporsi nyata (REAL_SCALE.cat): bahu 0,25 m, ujung telinga 0,35 m,
+  // badan hidung→pantat 0,45 m, ekor 0,30 m. Kucing menghadap +Z lokal.
+  const LEG_TOP = 0.14; // tinggi sendi bahu/pinggul
+
   // Pivot badan agar bisa bernapas & condong saat bergerak
   const bodyPivot = new THREE.Group();
   mesh.add(bodyPivot);
 
-  // Badan
-  const torso = new THREE.Mesh(new THREE.BoxGeometry(0.46, 0.36, 0.72), furMain);
-  torso.position.set(0, 0.42, 0);
+  // Badan (punggung = tinggi bahu)
+  const torso = new THREE.Mesh(new THREE.BoxGeometry(0.13, 0.12, 0.32), furMain);
+  torso.position.set(0, REAL_SCALE.cat.SHOULDER - 0.06, -0.01);
   torso.castShadow = true;
   torso.receiveShadow = true;
   bodyPivot.add(torso);
 
   // Perut terang
-  const belly = new THREE.Mesh(new THREE.BoxGeometry(0.34, 0.14, 0.62), furLight);
-  belly.position.set(0, 0.28, 0);
+  const belly = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.04, 0.27), furLight);
+  belly.position.set(0, 0.145, -0.01);
   bodyPivot.add(belly);
 
   // Kepala (menghadap +Z lokal)
   const headGroup = new THREE.Group();
-  headGroup.position.set(0, 0.66, 0.36);
+  headGroup.position.set(0, 0.27, 0.19);
 
-  const head = new THREE.Mesh(new THREE.BoxGeometry(0.42, 0.36, 0.38), furMain);
+  const head = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.1, 0.11), furMain);
   head.castShadow = true;
   headGroup.add(head);
 
-  const muzzle = new THREE.Mesh(new THREE.BoxGeometry(0.24, 0.15, 0.12), furLight);
-  muzzle.position.set(0, -0.06, 0.2);
+  const muzzle = new THREE.Mesh(new THREE.BoxGeometry(0.065, 0.04, 0.035), furLight);
+  muzzle.position.set(0, -0.018, 0.065);
   headGroup.add(muzzle);
 
-  const nose = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.06, 0.05), pinkMat);
-  nose.position.set(0, -0.02, 0.26);
+  const nose = new THREE.Mesh(new THREE.BoxGeometry(0.022, 0.016, 0.012), pinkMat);
+  nose.position.set(0, -0.006, 0.084);
   headGroup.add(nose);
 
   // Mata
-  const eyeL = new THREE.Mesh(new THREE.BoxGeometry(0.07, 0.09, 0.05), eyeMat);
-  eyeL.position.set(-0.11, 0.04, 0.18);
+  const eyeL = new THREE.Mesh(new THREE.BoxGeometry(0.018, 0.024, 0.012), eyeMat);
+  eyeL.position.set(-0.03, 0.012, 0.055);
   headGroup.add(eyeL);
 
   const eyeR = eyeL.clone();
-  eyeR.position.x = 0.11;
+  eyeR.position.x = 0.03;
   headGroup.add(eyeR);
 
-  // 2 Telinga
-  const earL = new THREE.Mesh(new THREE.ConeGeometry(0.1, 0.19, 4), furMain);
-  earL.position.set(-0.13, 0.25, 0.02);
-  earL.rotation.y = Math.PI / 4;
-  earL.rotation.z = 0.14;
-  earL.castShadow = true;
-  headGroup.add(earL);
-
-  const earR = new THREE.Mesh(new THREE.ConeGeometry(0.1, 0.19, 4), furMain);
-  earR.position.set(0.13, 0.25, 0.02);
-  earR.rotation.y = Math.PI / 4;
-  earR.rotation.z = -0.14;
-  earR.castShadow = true;
-  headGroup.add(earR);
+  // 2 Telinga (ujung di REAL_SCALE.cat.EAR_TIP)
+  const earH = 0.055;
+  const earY = REAL_SCALE.cat.EAR_TIP - headGroup.position.y - earH / 2;
+  for (const side of [-1, 1]) {
+    const ear = new THREE.Mesh(new THREE.ConeGeometry(0.028, earH, 4), furMain);
+    ear.position.set(side * 0.037, earY, 0.005);
+    ear.rotation.y = Math.PI / 4;
+    ear.rotation.z = -side * 0.14;
+    ear.castShadow = true;
+    headGroup.add(ear);
+  }
 
   bodyPivot.add(headGroup);
 
   // 4 Kaki dengan pivot di bahu/pinggul
   function makeLeg(x, z) {
     const pivot = new THREE.Group();
-    pivot.position.set(x, 0.28, z);
+    pivot.position.set(x, LEG_TOP, z);
 
-    const legMesh = new THREE.Mesh(new THREE.BoxGeometry(0.13, 0.28, 0.13), furMain);
-    legMesh.position.y = -0.14;
+    const legMesh = new THREE.Mesh(new THREE.BoxGeometry(0.035, LEG_TOP - 0.015, 0.035), furMain);
+    legMesh.position.y = -(LEG_TOP - 0.015) / 2;
     legMesh.castShadow = true;
     pivot.add(legMesh);
 
-    const paw = new THREE.Mesh(new THREE.BoxGeometry(0.14, 0.07, 0.16), furLight);
-    paw.position.set(0, -0.25, 0.02);
+    const paw = new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.018, 0.045), furLight);
+    paw.position.set(0, -LEG_TOP + 0.009, 0.006);
     pivot.add(paw);
 
     bodyPivot.add(pivot);
     return pivot;
   }
 
-  const legFL = makeLeg(-0.14, 0.24);
-  const legFR = makeLeg(0.14, 0.24);
-  const legBL = makeLeg(-0.14, -0.24);
-  const legBR = makeLeg(0.14, -0.24);
+  const legFL = makeLeg(-0.04, 0.1);
+  const legFR = makeLeg(0.04, 0.1);
+  const legBL = makeLeg(-0.04, -0.12);
+  const legBR = makeLeg(0.04, -0.12);
 
-  // Ekor dengan pivot di pangkal
+  // Ekor dengan pivot di pangkal (panjang REAL_SCALE.cat.TAIL)
+  const tailLen = REAL_SCALE.cat.TAIL;
   const tailPivot = new THREE.Group();
-  tailPivot.position.set(0, 0.5, -0.35);
+  tailPivot.position.set(0, 0.22, -0.17);
 
-  const tailMesh = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.46, 0.1), furMain);
-  tailMesh.position.set(0, 0.2, -0.06);
+  const tailMesh = new THREE.Mesh(new THREE.BoxGeometry(0.028, tailLen * 0.85, 0.028), furMain);
+  tailMesh.position.set(0, tailLen * 0.39, -tailLen * 0.17);
   tailMesh.rotation.x = -0.45;
   tailMesh.castShadow = true;
   tailPivot.add(tailMesh);
 
-  const tailTip = new THREE.Mesh(new THREE.BoxGeometry(0.11, 0.12, 0.11), furLight);
-  tailTip.position.set(0, 0.39, -0.15);
+  const tailTip = new THREE.Mesh(new THREE.BoxGeometry(0.032, tailLen * 0.15, 0.032), furLight);
+  tailTip.position.set(0, tailLen * 0.8, -tailLen * 0.36);
+  tailTip.rotation.x = -0.45;
   tailPivot.add(tailTip);
 
   bodyPivot.add(tailPivot);
@@ -349,7 +352,7 @@ export function updateCat(ctx, dt) {
 
   const wasGrounded = cat.isGrounded;
   cat.groundHeight = getGroundHeight(
-    colliders, player.position.x, player.position.z, Math.max(prevY, player.position.y)
+    colliders, player.position.x, player.position.z, Math.max(prevY, player.position.y), PLAYER.LEDGE_ASSIST
   );
 
   if (player.position.y <= cat.groundHeight && playerVel.y <= 0) {

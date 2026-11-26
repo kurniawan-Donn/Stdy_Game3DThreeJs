@@ -129,7 +129,7 @@ export function createGlass(ctx, spec) {
     label: 'Dorong gelas',
     position: mesh.position,
     surfaceY: spec.y,
-    markerHeight: GLASS.HEIGHT / 2 + 0.25,
+    markerHeight: GLASS.HEIGHT / 2 + GLASS.MARKER_OFFSET,
     onInteract: (c) => {
       inst.done = true;
       inst.phase = 'pushing';
