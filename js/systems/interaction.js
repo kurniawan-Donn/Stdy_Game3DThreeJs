@@ -6,11 +6,13 @@
 //     label: 'Jatuhkan gelas',          // teks prompt
 //     position: THREE.Vector3,          // referensi posisi (boleh posisi mesh)
 //     markerHeight?: number,            // tinggi penanda di atas posisi
+//     surfaceY?: number,                // kucing harus berdiri di ketinggian ini
+//     track?: (ctx) => void,            // perbarui position tiap frame (opsional)
 //     isEnabled?: (ctx) => boolean,     // opsional
 //     onInteract: (ctx) => void
 //   }
 import * as THREE from 'three';
-import { INTERACT } from '../config.js';
+import { INTERACT, SURFACE_TOLERANCE } from '../config.js';
 
 export function createInteractionSystem(scene) {
   const marker = new THREE.Mesh(
@@ -40,10 +42,18 @@ function findNearest(ctx) {
   let best = null;
   let bestDistSq = INTERACT.RADIUS * INTERACT.RADIUS;
 
+  if (ctx.cat.action) return null; // sedang melakukan aksi lain
+
   for (const item of sys.items) {
     if (item.isEnabled && !item.isEnabled(ctx)) continue;
+    if (item.track) item.track(ctx); // posisi dinamis (mis. titik terdekat di sisi sofa)
     const ip = item.position;
-    if (Math.abs(ip.y - p.y) > INTERACT.MAX_HEIGHT_DIFF) continue;
+    if (item.surfaceY !== undefined) {
+      // Kucing harus berdiri di permukaan yang sama dengan objek
+      if (Math.abs(p.y - item.surfaceY) > SURFACE_TOLERANCE) continue;
+    } else if (Math.abs(ip.y - p.y) > INTERACT.MAX_HEIGHT_DIFF) {
+      continue;
+    }
     const dx = ip.x - p.x;
     const dz = ip.z - p.z;
     const distSq = dx * dx + dz * dz;

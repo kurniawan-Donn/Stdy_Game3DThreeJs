@@ -19,7 +19,7 @@ Alternatif: `python -m http.server 8000`. Three.js dimuat dari CDN, jadi butuh i
 ## Struktur folder
 
 ```
-index.html              Canvas, elemen UI (HUD, game over), importmap Three.js
+index.html              Canvas, elemen UI (HUD, layar hasil, teks melayang), importmap Three.js
 css/style.css           Semua gaya UI
 package.json            Script "start" (npx serve)
 docs/GDD.md             Game Design Document + peta pengembangan (Fase 0–9)
@@ -29,41 +29,54 @@ js/
   core/
     renderer.js         Scene, kamera, WebGLRenderer, resize
     input.js            Keyboard: input.keys (ditahan), input.pressed (baru ditekan frame ini)
-    state.js            State bersama: skor, nyawa, level, timer (createState/resetRunState)
-    camera.js           Kamera third-person yang dijepit di dalam ruangan
-    audio.js            Efek suara Web Audio (nada dari config.AUDIO)
+    state.js            State bersama: Chaos, combo, waktu, nyawa (createState/resetRunState)
+    camera.js           Kamera third-person + getaran kamera (triggerShake)
+    audio.js            Efek suara Web Audio: audio.play(nama) dari AUDIO.SFX / AUDIO.NOISE_SFX
+    save.js             Tabungan Chaos & rekor level di localStorage
   world/
     textures.js         Tekstur prosedural (lantai kayu, karpet)
     lighting.js         Lampu hemi, matahari, lampu berdiri, fill
     room.js             Lantai, dinding, plafon, jendela, baseboard
-    furniture.js        Perabotan + collider AABB (dari FURNITURE_LAYOUT)
+    furniture.js        Perabotan + pojok dapur + collider AABB; mengembalikan { colliders, refs }
     dust.js             Partikel debu di berkas cahaya jendela
   entities/
-    cat.js              Kucing pemain: model, gerak, lompat, animasi
+    cat.js              Kucing pemain: model, gerak, lompat, animasi, aksi (startCatAction)
+    fish.js             Ikan camilan (isi stamina), menggantikan kristal
+    fishModel.js        Model ikan prosedural
     vacuum.js           Robot vacuum (rintangan) yang berpatroli bolak-balik
-    coin.js             Item koleksi + tarikan magnet
-    powerup.js          Power-up magnet
-    particles.js        Percikan partikel saat item diambil
+    powerup.js          DINONAKTIFKAN (magnet), dihapus di Fase 5
+    particles.js        Percikan partikel saat camilan diambil
+    mischief/           Objek kenakalan, satu file per jenis
+      index.js          Buat/reset/update semua objek dari MISCHIEF_LAYOUT
+      common.js         registerMischief, pose kucing, serpihan berfisika
+      glass.js tissue.js scratch.js remote.js pot.js kitchenFish.js
   systems/
     collision.js        Lingkaran vs AABB, tinggi permukaan, cek posisi bebas
     spawn.js            Cari posisi lantai acak yang aman
-    progression.js      Skor, naik level, damage, game over, reset
+    physics.js          Fisika benda sederhana (addBody, updatePhysics)
+    chaos.js            scoreMischief: Chaos + combo + noise + umpan balik
+    level.js            Timer level, akhir level, bintang, tabungan
+    progression.js      Nyawa, makan ikan, reset level
     noise.js            Event suara gameplay (emitNoise / onNoise) untuk didengar pemilik
     stamina.js          Stamina, lompat tinggi, status terengah
     meow.js             Mengeong (Q): cooldown, noise, riwayat untuk status jengkel
     interaction.js      Interaksi (E): registerInteractable, penanda, prompt
   ui/
-    hud.js              Skor, nyawa, level, magnet, stamina, cooldown meong, prompt E
-    gameOver.js         Modal game over + tombol Main Lagi
+    hud.js              Level, waktu, Chaos Meter, combo, nyawa, stamina, meong, prompt E
+    results.js          Layar hasil akhir level + tombol Main Lagi
+    floatingText.js     Teks melayang (+40, COMBO x1.5) yang mengikuti posisi 3D
     debugOverlay.js     Overlay developer (F3): ring noise, jangkauan interaksi, status
 ```
 
 ## Arsitektur
 
-- `main.js` membuat satu objek konteks **`ctx`** yang berisi `scene`, `camera`, `renderer`, `colliders`, `cat`, `coin`, `powerUp`, `obstacles`, `particles`, `dust`, `state`, `input`, `audio`, `hud`, dan `gameOver`. Fungsi update menerima `(ctx, dt)`.
+- `main.js` membuat satu objek konteks **`ctx`** (lihat isinya di `main.js`): scene/kamera/renderer, `colliders` & `furnitureRefs`, entitas (`cat`, `fish`, `obstacles`), sistem (`state`, `stamina`, `noise`, `meow`, `physics`, `mischief`, `interaction`), dan UI (`hud`, `results`, `floatText`, `debug`). Fungsi update menerima `(ctx, dt)`.
 - **Tidak ada variabel global yang bisa diubah.** Dependensi dikirim lewat parameter atau `ctx`. Satu-satunya pengecualian yang diperbolehkan: vektor kerja privat di level modul (misalnya `camTargetPos` di `camera.js`) untuk menghindari alokasi setiap frame.
-- Entitas tidak memanggil `systems/progression.js` secara langsung. Mereka mengembalikan sinyal, misalnya `updateCoin()` mengembalikan `true` saat koin diambil, lalu `main.js` memanggil `onCoinCollected(ctx)`. Pola ini mencegah import melingkar.
-- Urutan update per frame: kucing → meong → interaksi → koin → power-up → robot vacuum → noise → HUD, lalu (juga saat game over) partikel → debu → overlay debug → kamera → render → `endFrame(input)`.
+- Entitas tidak memanggil `systems/progression.js` secara langsung. Mereka mengembalikan sinyal, misalnya `updateFish()` mengembalikan `true` saat ikan dimakan, lalu `main.js` memanggil `onFishEaten(ctx)`. Pola ini mencegah import melingkar.
+- Urutan update per frame: kucing → meong → interaksi → kenakalan → ikan → robot vacuum → noise → HUD → timer level, lalu (juga setelah level berakhir) fisika → partikel → debu → overlay debug → kamera → teks melayang → render → `endFrame(input)`.
+- **Kenakalan baru:** buat file di `js/entities/mischief/`, daftarkan di `FACTORIES` (`index.js`), tambahkan posisinya di `MISCHIEF_LAYOUT` dan nilainya di `MISCHIEF` (config). Selesaikan kenakalan lewat `scoreMischief(ctx, type, posisi)`, yang otomatis memanggil `emitNoise` dengan radius dari GDD. Animasi kucing dijalankan lewat `startCatAction(cat, { duration, faceYaw, pose, events })`, dan semua perubahan tampilan harus dikembalikan di `inst.dispose()` karena objek dibuat ulang setiap level diulang.
+- Benda yang jatuh, memantul, atau berserakan memakai `addBody(ctx, {...})` dari `systems/physics.js`. Semua benda dibersihkan saat level diulang.
+- Kamera selalu berada di selatan (+Z) kucing. Objek atau perubahan tampilan yang perlu terlihat pemain sebaiknya menghadap +Z atau terlihat dari atas.
 - Aksi yang berisik memanggil `emitNoise(ctx, { x, z, radius, source })`. Sistem yang perlu "mendengar" mendaftar lewat `onNoise(ctx.noise, fn)`.
 - Objek interaktif didaftarkan lewat `registerInteractable(ctx.interaction, item)` (lihat komentar di `interaction.js`).
 - Tekan `F3` di game untuk overlay debug. Pakai overlay ini untuk memeriksa radius noise dan jangkauan interaksi.

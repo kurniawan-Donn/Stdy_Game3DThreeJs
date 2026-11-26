@@ -1,3 +1,5 @@
+// DINONAKTIFKAN sejak Fase 2: modul ini tidak lagi di-import (kristal yang
+// ditarik magnet sudah diganti ikan). Dihapus di Fase 5, digantikan catnip.
 // Power-up magnet: muncul berkala, saat diambil menarik koin ke kucing.
 import * as THREE from 'three';
 import { POWERUP, PLAYER, MATERIALS } from '../config.js';

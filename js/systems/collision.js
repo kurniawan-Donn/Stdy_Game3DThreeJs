@@ -26,7 +26,12 @@ export function isPositionFree(colliders, x, z, radius) {
 
 // Dorong kucing keluar dari dinding & perabot (mengubah position dan vel).
 export function resolveRoomCollisions(position, vel, colliders) {
-  const R = PLAYER.RADIUS;
+  resolveCircleCollisions(position, vel, colliders, PLAYER.RADIUS, position.y);
+}
+
+// Versi umum: lingkaran berradius R dengan titik bawah di footY
+// (dipakai kucing dan benda fisika).
+export function resolveCircleCollisions(position, vel, colliders, R, footY) {
 
   // Batas 4 dinding ruangan
   const minX = -ROOM_HALF_W + R;
@@ -41,7 +46,7 @@ export function resolveRoomCollisions(position, vel, colliders) {
 
   // AABB perabot: hanya blokir horizontal jika kaki lebih rendah dari topHeight - toleransi
   for (const box of colliders) {
-    if (position.y >= box.topHeight - PHYSICS.CLIMB_TOLERANCE) continue;
+    if (footY >= box.topHeight - PHYSICS.CLIMB_TOLERANCE) continue;
 
     const closestX = Math.max(box.minX, Math.min(position.x, box.maxX));
     const closestZ = Math.max(box.minZ, Math.min(position.z, box.maxZ));

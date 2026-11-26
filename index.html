@@ -3,18 +3,27 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Coin Rush 3D - Ruang Tamu</title>
+  <title>Meong Mayhem</title>
   <link rel="stylesheet" href="css/style.css" />
 </head>
 <body>
   <div id="hud">
-    <div class="score-label">Skor</div>
-    <div class="score-value" id="score-text">0</div>
+    <div class="hud-top">
+      <span class="level-label" id="level-text">Level 1</span>
+      <span class="timer" id="timer-text">4:00</span>
+    </div>
+    <div class="chaos-label">
+      Chaos <span class="chaos-value" id="chaos-text">0</span>
+      <span class="chaos-target-text">/ <span id="target-text">300</span></span>
+    </div>
+    <div class="chaos-meter" id="chaos-meter">
+      <div class="chaos-fill" id="chaos-fill"></div>
+    </div>
+    <div class="combo-status" id="combo-status"></div>
     <div class="lives-row">
       <span>Nyawa:</span>
       <span class="lives-hearts" id="lives-text">❤️❤️❤️</span>
     </div>
-    <div class="level-row">Level: <span id="level-text">1</span></div>
     <div class="magnet-status" id="magnet-status">Magnet: 5.0s</div>
     <div class="stamina-row">
       <span>Stamina</span>
@@ -27,14 +36,19 @@
     </div>
   </div>
 
+  <div id="float-layer"></div>
   <div id="interact-prompt"></div>
   <div id="debug-panel"></div>
 
-  <div id="game-over">
+  <div id="results">
     <div class="modal">
-      <h1>Game Over</h1>
-      <p>Skor: <span id="final-score">0</span></p>
-      <p>High Score: <span id="high-score">0</span></p>
+      <p class="results-reason" id="results-reason">Pemilik selesai kerja!</p>
+      <h1 id="results-title">Menang!</h1>
+      <div class="results-stars" id="results-stars">☆☆☆</div>
+      <p class="results-message" id="results-message"></p>
+      <p>Chaos: <span id="results-chaos">0</span> / <span id="results-target">300</span></p>
+      <p>Masuk tabungan: <span id="results-banked">+0</span></p>
+      <p>Total tabungan: <span id="results-bank">0</span></p>
       <button id="restart-btn">Main Lagi</button>
     </div>
   </div>

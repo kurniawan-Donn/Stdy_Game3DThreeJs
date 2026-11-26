@@ -134,7 +134,25 @@ export const CAT_ANIM = {
   PANT_AMP: 0.03,
   // Mengeong: kepala mendongak
   MEOW_DURATION: 0.6,
-  MEOW_HEAD_TILT: 0.5
+  MEOW_HEAD_TILT: 0.5,
+  // Aksi kenakalan
+  SWIPE_REACH: 1.1, // kaki depan menyapu/menepuk
+  SWIPE_RETRACT: 0.25,
+  SWIPE_LEAN: 0.12,
+  PUSH_REACH: 1.25, // dorong gelas pelan
+  PUSH_TAP_AMP: 0.1,
+  PUSH_TAP_FREQ: 10,
+  STARE_MAX_YAW: 1.3, // batas menoleh ke kamera (radian)
+  STARE_HEAD_TILT: 0.12,
+  STARE_BLEND_IN: 0.15,
+  SCRATCH_REACH: 1.0,
+  SCRATCH_SWING: 0.45,
+  SCRATCH_REAR: 0.35, // badan berdiri saat mencakar
+  SCRATCH_BLEND: 0.15,
+  STOMP_REACH: 0.8,
+  STOMP_HOP: 0.08,
+  BITE_HEAD_DIP: 0.5,
+  BITE_LEAN: 0.25
 };
 
 // --- Aturan game ---
@@ -143,15 +161,14 @@ export const GAME = {
   INVULNERABLE_DURATION: 1.5
 };
 
-// --- Koin / kristal ---
-export const COIN = {
-  RADIUS: 0.5,
-  THICKNESS: 0.14,
-  SEGMENTS: 18,
-  HOVER_HEIGHT: 0.25,
-  SPIN_SPEED: 3.5,
-  SCORE: 10,
-  COINS_PER_LEVEL: 5,
+// --- Ikan camilan (menggantikan kristal; GDD §11) ---
+export const FISH = {
+  RADIUS: 0.45, // radius untuk ambil & spawn
+  HOVER_HEIGHT: 0.3,
+  SPIN_SPEED: 1.6,
+  BOB_SPEED: 3,
+  BOB_AMP: 0.06,
+  RESPAWN_DELAY: 12, // detik setelah dimakan
   FURNITURE_SPAWN_CHANCE: 0.35, // peluang muncul di atas perabot yang bisa dinaiki
   FURNITURE_SPAWN_ATTEMPTS: 20,
   FURNITURE_EDGE_PAD: 0.12,
@@ -164,7 +181,6 @@ export const VACUUM = {
   RADIUS: 0.68,
   HEIGHT: 0.28,
   BASE_SPEED: 4.2,
-  SPEED_PER_LEVEL: 1.2,
   SPIN_SPEED: 2.5,
   INITIAL_COUNT: 2,
   MIN_PLAYER_DIST: 3.8,
@@ -174,7 +190,7 @@ export const VACUUM = {
   HIT_HEIGHT_MARGIN: 0.15
 };
 
-// --- Power-up magnet ---
+// --- Power-up magnet (DINONAKTIFKAN sejak Fase 2; dihapus di Fase 5, diganti catnip) ---
 export const POWERUP = {
   SIZE: 0.42,
   SPAWN_RADIUS: 0.55,
@@ -312,8 +328,28 @@ export const MATERIALS = {
   catFurLight: { color: 0xfde6c4, roughness: 0.75, metalness: 0.02 },
   catPink: { color: 0xf472b6, roughness: 0.6 },
   catEye: { color: 0x111827, roughness: 0.2, metalness: 0.2 },
+  // Pojok dapur
+  counterBody: { color: 0xf1ede4, roughness: 0.7, metalness: 0.02 },
+  counterTop: { color: 0x6b7280, roughness: 0.35, metalness: 0.15 },
+  fridge: { color: 0xe5e7eb, roughness: 0.3, metalness: 0.25 },
+  plate: { color: 0xf8fafc, roughness: 0.35 },
+  // Ikan (camilan & ikan dapur)
+  fishBody: { color: 0x8fb3c9, roughness: 0.35, metalness: 0.35 },
+  fishFin: { color: 0xf59e0b, roughness: 0.5 },
+  fishEye: { color: 0x0f172a, roughness: 0.2 },
+  // Objek kenakalan
+  drinkGlass: { color: 0xdbeafe, transparent: true, opacity: 0.45, roughness: 0.05, metalness: 0.1 },
+  drinkWater: { color: 0x7dd3fc, transparent: true, opacity: 0.6, roughness: 0.1 },
+  glassShard: { color: 0xe0f2fe, transparent: true, opacity: 0.75, roughness: 0.05, metalness: 0.2 },
+  tissueBox: { color: 0x60a5fa, roughness: 0.7 },
+  tissue: { color: 0xfafafa, roughness: 0.95 },
+  remote: { color: 0x1f2937, roughness: 0.5, metalness: 0.2 },
+  remoteButton: { color: 0xef4444, roughness: 0.4 },
+  scratchMark: { color: 0x1e2f36, roughness: 1.0 },
+  fluff: { color: 0xd6e2e6, roughness: 1.0 },
+  soilSpill: { color: 0x3b281c, roughness: 1.0 },
+  tvOn: { color: 0xffffff, emissiveIntensity: 1.0, roughness: 0.3 },
   // Item & rintangan
-  coin: { color: 0xfacc15, roughness: 0.22, metalness: 0.7 },
   powerUp: { color: 0x22d3ee, emissive: 0x0891b2, emissiveIntensity: 0.55, roughness: 0.25, metalness: 0.45 },
   vacuumBody: { color: 0x27272a, roughness: 0.35, metalness: 0.55 },
   vacuumRing: { color: 0xdc2626, roughness: 0.3, metalness: 0.3 },
@@ -360,14 +396,24 @@ export const FURNITURE_LAYOUT = {
   plants: {
     positions: [{ x: -9.1, z: -7.2 }, { x: 9.0, z: 6.8 }],
     collider: { width: 1.1, depth: 1.1, topHeight: 1.9, climbable: false }
+  },
+  // Pojok dapur di sudut barat laut, menghadap kamera (meja dapur bisa
+  // dinaiki dengan lompat biasa)
+  kitchenCounter: {
+    x: -8.3, z: -9.25,
+    colliders: [{ x: -8.3, z: -9.25, width: 4.2, depth: 1.2, topHeight: 0.92, climbable: true }]
+  },
+  fridge: {
+    x: -5.6, z: -9.45,
+    colliders: [{ x: -5.6, z: -9.45, width: 1.0, depth: 0.9, topHeight: 2.0, climbable: false }]
   }
 };
 
-// --- Partikel saat mengambil koin ---
-export const COIN_PARTICLES = {
+// --- Partikel saat mengambil camilan ---
+export const PICKUP_PARTICLES = {
   COUNT: 12,
   SIZE: 0.12,
-  COLOR: 0xfde047,
+  COLOR: 0x7dd3fc,
   SPEED_MIN: 2.5,
   SPEED_RANGE: 4,
   UP_MIN: 3,
@@ -403,10 +449,6 @@ export const AUDIO = {
   MIN_FREQ: 20,
   FADE_TO: 0.001,
   SFX: {
-    coin: [
-      [660, 880, 0.09, 'sine', 0.14, 0],
-      [990, 1320, 0.14, 'triangle', 0.12, 0.06]
-    ],
     jump: [[260, 520, 0.12, 'sine', 0.12, 0]],
     hit: [[190, 75, 0.22, 'sawtooth', 0.16, 0]],
     gameOver: [
@@ -422,7 +464,49 @@ export const AUDIO = {
       [320, 220, 0.12, 'triangle', 0.08, 0],
       [320, 220, 0.12, 'triangle', 0.08, 0.3],
       [320, 220, 0.12, 'triangle', 0.08, 0.6]
+    ],
+    fishEat: [
+      [500, 760, 0.08, 'sine', 0.13, 0],
+      [760, 1040, 0.12, 'triangle', 0.11, 0.07]
+    ],
+    shatter: [
+      [2600, 2400, 0.12, 'triangle', 0.06, 0.02],
+      [3300, 3000, 0.1, 'triangle', 0.05, 0.08],
+      [2900, 2700, 0.14, 'triangle', 0.04, 0.15]
+    ],
+    potThud: [[140, 50, 0.3, 'sine', 0.22, 0]],
+    tvOn: [[1000, 1000, 0.1, 'sine', 0.08, 0]],
+    bite: [
+      [300, 520, 0.07, 'square', 0.05, 0],
+      [320, 560, 0.07, 'square', 0.05, 0.12]
+    ],
+    chaos: [[523, 784, 0.12, 'sine', 0.1, 0]],
+    combo: [
+      [660, 660, 0.07, 'triangle', 0.1, 0],
+      [880, 880, 0.07, 'triangle', 0.1, 0.07],
+      [1046, 1046, 0.12, 'triangle', 0.1, 0.14]
+    ],
+    star: [[880, 1320, 0.25, 'triangle', 0.12, 0]],
+    timerTick: [[1000, 1000, 0.05, 'square', 0.04, 0]],
+    win: [
+      [523, 523, 0.12, 'triangle', 0.14, 0],
+      [659, 659, 0.12, 'triangle', 0.14, 0.12],
+      [784, 784, 0.12, 'triangle', 0.14, 0.24],
+      [1046, 1046, 0.3, 'triangle', 0.14, 0.36]
     ]
+  },
+  // Ledakan noise (white noise terfilter). Tiap item:
+  // { DURATION, VOLUME, FILTER: 'highpass'|'lowpass'|'bandpass', FREQ, Q, DELAY }
+  NOISE_SFX: {
+    shatter: [{ DURATION: 0.35, VOLUME: 0.22, FILTER: 'highpass', FREQ: 3000, Q: 0.7, DELAY: 0 }],
+    scratch: [
+      { DURATION: 0.08, VOLUME: 0.12, FILTER: 'bandpass', FREQ: 2500, Q: 1.2, DELAY: 0 },
+      { DURATION: 0.08, VOLUME: 0.12, FILTER: 'bandpass', FREQ: 2200, Q: 1.2, DELAY: 0.15 },
+      { DURATION: 0.08, VOLUME: 0.12, FILTER: 'bandpass', FREQ: 2600, Q: 1.2, DELAY: 0.3 }
+    ],
+    tissue: [{ DURATION: 0.35, VOLUME: 0.1, FILTER: 'lowpass', FREQ: 1500, Q: 0.7, DELAY: 0 }],
+    potThud: [{ DURATION: 0.4, VOLUME: 0.2, FILTER: 'lowpass', FREQ: 400, Q: 0.7, DELAY: 0 }],
+    tvOn: [{ DURATION: 0.9, VOLUME: 0.07, FILTER: 'bandpass', FREQ: 3000, Q: 0.5, DELAY: 0.08 }]
   },
   // Suara meong sintetis: sawtooth melalui filter bandpass dengan nada naik-turun
   MEOW_VOICE: {
@@ -496,7 +580,11 @@ export const OWNER = {
 export const RESULTS = {
   BANK_FRACTION_TIME_UP: 1.0, // waktu habis: semua Chaos masuk tabungan
   BANK_FRACTION_OUT_OF_LIVES: 0.5, // nyawa habis: hanya 50%
-  LOSE_MESSAGE: 'Rumah masih terlalu rapi...'
+  LOSE_MESSAGE: 'Rumah masih terlalu rapi...',
+  WIN_MESSAGE: 'Rumah berantakan sesuai rencana!',
+  OUT_OF_LIVES_MESSAGE: 'Hanya {pct}% Chaos yang masuk tabungan.', // {pct} diganti otomatis
+  TIME_UP_REASON: 'Pemilik selesai kerja!',
+  OUT_OF_LIVES_REASON: 'Nyawa habis!'
 };
 
 // --- Camilan & fitur lucu (GDD §11–12) ---
@@ -505,4 +593,163 @@ export const CATNIP = {
 };
 export const IDLE = {
   LOAF_DELAY: 5 // detik diam sebelum loaf pose
+};
+
+// =====================================================================
+// FASE 2 — kenakalan, fisika benda, umpan balik, HUD, simpanan
+// =====================================================================
+
+// --- Objek kenakalan per level (GDD §5). Tiap objek hanya bisa dipakai
+// sekali per level. y = tinggi permukaan tempat objek berada; untuk objek
+// di atas perabot kucing harus berdiri di permukaan yang sama. ---
+export const MISCHIEF_LAYOUT = {
+  glass: [
+    { x: 1.1, y: 0.68, z: 1.85 }, // meja kopi
+    { x: 1.5, y: 0.72, z: -8.85 }, // kabinet TV
+    { x: 9.2, y: 0.86, z: -0.1 }, // rak rendah
+    { x: -7.0, y: 0.92, z: -8.85 } // meja dapur
+  ],
+  tissue: [
+    { x: -0.9, y: 0.68, z: 1.0 }, // meja kopi
+    { x: 9.8, y: 0.86, z: -1.2 } // rak rendah
+  ],
+  // Cakar: target = collider perabot (indeks di daftar collider furniture.js)
+  scratchSofa: [
+    { target: 'sofaSeat', markYMin: 0.22, markYMax: 0.6 },
+    { target: 'chair', markYMin: 0.38, markYMax: 0.56 }
+  ],
+  remote: [{ x: 1.3, y: 0.7, z: 4.3 }], // di dudukan sofa; suara dari TV
+  pot: [{ plant: 0 }, { plant: 1 }], // indeks tanaman di FURNITURE_LAYOUT.plants
+  kitchenFish: [{ x: -9.6, y: 0.92, z: -9.35 }] // piring di meja dapur
+};
+
+// Toleransi tinggi: kucing dianggap "di permukaan yang sama" dengan objek
+export const SURFACE_TOLERANCE = 0.25;
+
+// --- Fisika benda sederhana ---
+export const BODY_PHYSICS = {
+  BOUNCE_MIN_SPEED: 1.2, // di bawah ini tidak memantul lagi
+  ANGULAR_DAMPING: 3,
+  SLEEP_SPEED: 0.05,
+  DEBRIS_RESTITUTION: 0.25, // serpihan kecil (kain, tanah)
+  DEBRIS_FRICTION: 6
+};
+
+// --- Gelas (dorong pelan → menoleh ke kamera → jatuh → pecah) ---
+export const GLASS = {
+  RADIUS: 0.08,
+  HEIGHT: 0.2,
+  PAW_DURATION: 0.8, // kaki depan mendorong pelan
+  PUSH_DISTANCE: 0.12, // jarak gelas tergeser saat didorong pelan
+  STARE_DURATION: 0.7, // menoleh ke kamera
+  RECOVER_DURATION: 0.3,
+  RELEASE_SPEED: 1.3, // dorongan akhir hingga jatuh dari tepi
+  TUMBLE_SPIN: 6, // putaran gelas saat jatuh
+  MAX_SLIDE_TIME: 3, // pengaman: pecah di tempat jika tidak jatuh
+  RESTITUTION: 0.2,
+  FRICTION: 6,
+  SHARD_COUNT: 16,
+  SHARD_SIZE: 0.045,
+  SHARD_SPEED_MIN: 1.5,
+  SHARD_SPEED_RANGE: 2.5,
+  SHARD_UP_MIN: 2,
+  SHARD_UP_RANGE: 2.5,
+  SHARD_SPIN: 12,
+  SHARD_RESTITUTION: 0.35,
+  SHARD_FRICTION: 5,
+  SHARD_LIFE: 3, // mulai memudar setelah 3 detik
+  SHARD_FADE: 1, // lama memudar
+  SHAKE_AMPLITUDE: 0.12,
+  SHAKE_DURATION: 0.3
+};
+
+// --- Tisu ---
+export const TISSUE = {
+  ACTION_DURATION: 0.55,
+  HIT_AT: 0.25, // detik saat kaki mengenai kotak
+  SHEET_COUNT: 7,
+  SHEET_SIZE: 0.2,
+  SHEET_SPEED_MIN: 0.8,
+  SHEET_SPEED_RANGE: 1.6,
+  SHEET_UP_MIN: 1.5,
+  SHEET_UP_RANGE: 1.5,
+  SHEET_SPIN: 5,
+  SHEET_RESTITUTION: 0.1,
+  SHEET_FRICTION: 8,
+  SPREAD_ANGLE: Math.PI * 1.2, // lebar sebaran lembar tisu
+  BOX_SPEED: 1.2, // kotak ikut terlempar
+  BOX_UP: 1.5,
+  BOX_SPIN: 5
+};
+
+// --- Cakar sofa/kursi ---
+export const SCRATCH = {
+  ACTION_DURATION: 1.1,
+  FREQ: 16, // kecepatan kaki mencakar
+  MARK_COUNT: 4,
+  MARK_SPREAD: 0.5, // lebar area bekas cakaran
+  TUFT_COUNT: 6, // serpihan kain robek di atas tepi dudukan
+  TUFT_SIZE: 0.09,
+  TUFT_INSET: 0.12,
+  FLUFF_COUNT: 10,
+  FLUFF_SIZE: 0.05,
+  FLUFF_LIFE: 1.2,
+  FLUFF_SPEED_MIN: 0.3,
+  FLUFF_SPEED_RANGE: 0.8,
+  FLUFF_UP_MIN: 0.8,
+  FLUFF_UP_RANGE: 1.2,
+  FLUFF_SPIN: 6
+};
+
+// --- Remote & TV ---
+export const REMOTE = {
+  ACTION_DURATION: 0.5,
+  STOMP_AT: 0.25,
+  TV_NOISE_POSITION: { x: 0, z: -9.6 }, // noise dipancarkan dari TV
+  TV_REFRESH_RATE: 12, // frame/detik gambar statis TV
+  TV_TEXTURE_SIZE: 64,
+  TV_BAR_COLORS: ['#f8fafc', '#facc15', '#22d3ee', '#4ade80', '#e879f9', '#f87171', '#3b82f6']
+};
+
+// --- Pot terguling ---
+export const POT = {
+  ACTION_DURATION: 0.5,
+  HIT_AT: 0.2,
+  TIP_DURATION: 0.45,
+  TIP_ANGLE: Math.PI / 2 * 0.92,
+  LIE_LIFT: 0.42, // pot naik sedikit saat rebah agar tidak menembus lantai
+  FALLEN_TOP_HEIGHT: 0.9, // collider pot setelah rebah
+  SPILL_RADIUS: 0.55,
+  SPILL_DISTANCE: 1.2
+};
+
+// --- Curi ikan di dapur ---
+export const KITCHEN_FISH = {
+  ACTION_DURATION: 0.6,
+  BITE_AT: 0.3,
+  CARRY_DURATION: 3 // ikan terlihat di mulut kucing
+};
+
+// --- Getaran kamera ---
+export const CAMERA_SHAKE = {
+  FREQUENCY: 40
+};
+
+// --- Teks melayang (+40, COMBO x1.5) ---
+export const FLOAT_TEXT = {
+  DURATION: 1.3,
+  RISE_PX: 70,
+  COMBO_OFFSET_PX: 30,
+  START_HEIGHT: 0.5 // di atas objek (meter)
+};
+
+// --- HUD ---
+export const HUD = {
+  TIMER_WARNING: 30, // detik terakhir: timer merah
+  TIMER_TICK_FROM: 10 // detik terakhir: bunyi tik tiap detik
+};
+
+// --- Simpanan (localStorage) ---
+export const SAVE = {
+  KEY: 'meongMayhem.save.v1'
 };

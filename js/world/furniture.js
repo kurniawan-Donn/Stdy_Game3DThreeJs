@@ -17,13 +17,22 @@ function addFurnitureCollider(colliders, c) {
   });
 }
 
+// Mendaftarkan collider dan mengembalikan objek collider yang dibuat.
 function addColliders(colliders, list) {
-  for (const c of list) addFurnitureCollider(colliders, c);
+  const added = [];
+  for (const c of list) {
+    addFurnitureCollider(colliders, c);
+    added.push(colliders[colliders.length - 1]);
+  }
+  return added;
 }
 
-// Membangun semua perabot ke dalam scene dan mengembalikan daftar collider.
+// Membangun semua perabot ke dalam scene.
+// Mengembalikan { colliders, refs }; refs berisi mesh/collider yang dipakai
+// objek kenakalan (layar TV, collider sofa & kursi, tanaman).
 export function createFurniture(scene) {
   const colliders = [];
+  const refs = { plants: [] };
   const L = FURNITURE_LAYOUT;
 
   const woodDark = new THREE.MeshStandardMaterial({ ...MATERIALS.woodDark });
@@ -88,7 +97,7 @@ export function createFurniture(scene) {
     }
   }
   scene.add(sofaGroup);
-  addColliders(colliders, L.sofa.colliders);
+  refs.sofaSeat = addColliders(colliders, L.sofa.colliders)[0];
 
   // 3. MEJA KOPI
   const tableGroup = new THREE.Group();
@@ -142,6 +151,7 @@ export function createFurniture(scene) {
   );
   tvScreen.position.set(0, 2.45, -0.55);
   tvUnit.add(tvScreen);
+  refs.tvScreen = tvScreen;
 
   scene.add(tvUnit);
   addColliders(colliders, L.tvUnit.colliders);
@@ -216,7 +226,7 @@ export function createFurniture(scene) {
     }
   }
   scene.add(chairGroup);
-  addColliders(colliders, L.chair.colliders);
+  refs.chair = addColliders(colliders, L.chair.colliders)[0];
 
   // 6. LAMPU BERDIRI
   const lampGroup = new THREE.Group();
@@ -244,10 +254,71 @@ export function createFurniture(scene) {
 
   // 7. TANAMAN POT (dua sudut ruangan)
   for (const p of L.plants.positions) {
-    createPottedPlant(scene, colliders, p.x, p.z);
+    refs.plants.push(createPottedPlant(scene, colliders, p.x, p.z));
   }
 
-  return colliders;
+  // 8. POJOK DAPUR: meja dapur (bisa dinaiki) + kulkas
+  createKitchen(scene, colliders);
+
+  return { colliders, refs };
+}
+
+function createKitchen(scene, colliders) {
+  const L = FURNITURE_LAYOUT;
+  const c = L.kitchenCounter.colliders[0];
+  // Sisi depan menghadap ke tengah ruangan
+  const front = -Math.sign(L.kitchenCounter.z) || 1;
+
+  const counterGroup = new THREE.Group();
+  counterGroup.position.set(L.kitchenCounter.x, 0, L.kitchenCounter.z);
+
+  const bodyH = c.topHeight - 0.06;
+  const body = new THREE.Mesh(
+    new THREE.BoxGeometry(c.width - 0.1, bodyH, c.depth - 0.1),
+    new THREE.MeshStandardMaterial({ ...MATERIALS.counterBody })
+  );
+  body.position.y = bodyH / 2;
+  body.castShadow = true;
+  body.receiveShadow = true;
+  counterGroup.add(body);
+
+  const top = new THREE.Mesh(
+    new THREE.BoxGeometry(c.width, 0.06, c.depth),
+    new THREE.MeshStandardMaterial({ ...MATERIALS.counterTop })
+  );
+  top.position.y = c.topHeight - 0.03;
+  top.castShadow = true;
+  top.receiveShadow = true;
+  counterGroup.add(top);
+
+  // Garis pintu lemari
+  const doorMat = new THREE.MeshStandardMaterial({ ...MATERIALS.counterTop });
+  for (let i = -1; i <= 1; i++) {
+    const seam = new THREE.Mesh(new THREE.BoxGeometry(0.02, bodyH * 0.8, 0.01), doorMat);
+    seam.position.set(i * 1.0, bodyH / 2, front * ((c.depth - 0.1) / 2 + 0.005));
+    counterGroup.add(seam);
+  }
+
+  scene.add(counterGroup);
+  addColliders(colliders, L.kitchenCounter.colliders);
+
+  // Kulkas
+  const f = L.fridge.colliders[0];
+  const fridgeMat = new THREE.MeshStandardMaterial({ ...MATERIALS.fridge });
+  const fridge = new THREE.Mesh(new THREE.BoxGeometry(f.width, f.topHeight, f.depth), fridgeMat);
+  fridge.position.set(L.fridge.x, f.topHeight / 2, L.fridge.z);
+  fridge.castShadow = true;
+  fridge.receiveShadow = true;
+  scene.add(fridge);
+
+  const handle = new THREE.Mesh(
+    new THREE.BoxGeometry(0.05, 0.6, 0.05),
+    new THREE.MeshStandardMaterial({ ...MATERIALS.metalDark })
+  );
+  handle.position.set(L.fridge.x + f.width / 2 - 0.15, 1.2, L.fridge.z + front * (f.depth / 2 + 0.03));
+  scene.add(handle);
+
+  addColliders(colliders, L.fridge.colliders);
 }
 
 function createPottedPlant(scene, colliders, x, z) {
@@ -287,5 +358,6 @@ function createPottedPlant(scene, colliders, x, z) {
   plantGroup.add(topLeaf);
 
   scene.add(plantGroup);
-  addFurnitureCollider(colliders, { x, z, ...FURNITURE_LAYOUT.plants.collider });
+  const collider = addColliders(colliders, [{ x, z, ...FURNITURE_LAYOUT.plants.collider }])[0];
+  return { group: plantGroup, collider };
 }

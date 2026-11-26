@@ -5,6 +5,8 @@ import * as THREE from 'three';
 import { DEBUG, INTERACT, NOISE, PLAYER, STAMINA, MEOW } from '../config.js';
 import { isExhausted } from '../systems/stamina.js';
 import { recentMeowCount, isAnnoying } from '../systems/meow.js';
+import { comboTimeLeft } from '../systems/chaos.js';
+import { remainingMischief } from '../entities/mischief/index.js';
 
 const RING_Y = 0.03;
 
@@ -101,6 +103,9 @@ export function updateDebugOverlay(ctx) {
     `stamina   : ${stamina.value.toFixed(1)} / ${STAMINA.MAX}${isExhausted(stamina) ? '  TERENGAH ' + stamina.exhaustedTimer.toFixed(1) + 's' : ''}`,
     `meong     : cooldown ${meow.cooldown.toFixed(1)}s, ${recentMeowCount(meow)}x/${MEOW.ANNOY_WINDOW}s${isAnnoying(meow) ? ' JENGKEL' : ''}`,
     `noise     : ${events.length} aktif${lastNoise ? `, terakhir ${lastNoise.source} r=${lastNoise.radius}m` : ''}`,
-    `interaksi : ${interaction.items.length} objek, ${interaction.current ? interaction.current.label : '-'}`
+    `interaksi : ${interaction.items.length} objek, ${interaction.current ? interaction.current.label : '-'}`,
+    `chaos     : ${ctx.state.chaos}, kenakalan tersisa ${remainingMischief(ctx)}, combo ${comboTimeLeft(ctx).toFixed(1)}s`,
+    `aksi      : ${cat.action ? cat.action.type + ' ' + cat.action.t.toFixed(2) + 's' : '-'}`,
+    `fisika    : ${ctx.physics.bodies.length} benda, waktu ${ctx.state.timeLeft.toFixed(1)}s`
   ].join('\n');
 }

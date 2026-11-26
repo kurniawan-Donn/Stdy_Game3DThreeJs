@@ -67,12 +67,52 @@ export function createAudio() {
     osc.stop(now + M.DURATION);
   }
 
+  // White noise 1 detik, dibuat sekali lalu dipakai ulang
+  let noiseBuffer = null;
+  function getNoiseBuffer() {
+    if (!noiseBuffer) {
+      const len = audioCtx.sampleRate;
+      noiseBuffer = audioCtx.createBuffer(1, len, audioCtx.sampleRate);
+      const data = noiseBuffer.getChannelData(0);
+      for (let i = 0; i < len; i++) data[i] = Math.random() * 2 - 1;
+    }
+    return noiseBuffer;
+  }
+
+  // Ledakan noise terfilter (pecah kaca, cakaran, gedebuk, dll.)
+  function playNoiseBurst({ DURATION, VOLUME, FILTER, FREQ, Q, DELAY }) {
+    const now = audioCtx.currentTime + DELAY;
+    const src = audioCtx.createBufferSource();
+    src.buffer = getNoiseBuffer();
+    const filter = audioCtx.createBiquadFilter();
+    filter.type = FILTER;
+    filter.frequency.value = FREQ;
+    filter.Q.value = Q;
+    const gain = audioCtx.createGain();
+    gain.gain.setValueAtTime(VOLUME, now);
+    gain.gain.exponentialRampToValueAtTime(AUDIO.FADE_TO, now + DURATION);
+    src.connect(filter);
+    filter.connect(gain);
+    gain.connect(audioCtx.destination);
+    src.start(now);
+    src.stop(now + DURATION);
+  }
+
+  // Memainkan efek berdasarkan nama: nada dari AUDIO.SFX[name] dan/atau
+  // noise dari AUDIO.NOISE_SFX[name].
+  function play(name) {
+    if (!audioCtx) return;
+    const tones = AUDIO.SFX[name];
+    if (tones) playSfx(tones);
+    const bursts = AUDIO.NOISE_SFX[name];
+    if (bursts) for (const b of bursts) playNoiseBurst(b);
+  }
+
   return {
     ensure,
-    playCoin: () => playSfx(AUDIO.SFX.coin),
+    play,
     playJump: () => playSfx(AUDIO.SFX.jump),
     playHit: () => playSfx(AUDIO.SFX.hit),
-    playGameOver: () => playSfx(AUDIO.SFX.gameOver),
     playPowerUp: () => playSfx(AUDIO.SFX.powerUp),
     playPant: () => playSfx(AUDIO.SFX.pant),
     playMeow

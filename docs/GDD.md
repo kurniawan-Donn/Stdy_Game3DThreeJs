@@ -78,7 +78,37 @@ Setiap kenakalan memberi Chaos dan memancarkan suara dengan radius tertentu. Pem
 | Gulingkan pot | 50 | 8 m |
 | Curi ikan di dapur | 80 | 3 m |
 
-**Combo:** kenakalan yang dilakukan beruntun, masing-masing dalam jarak **10 detik** dari kenakalan sebelumnya, mendapat bonus **×1,5**.
+**Combo:** kenakalan yang dilakukan beruntun, masing-masing dalam jarak **10 detik** dari kenakalan sebelumnya, mendapat bonus **×1,5**. Hasilnya dibulatkan (mis. tisu 15 × 1,5 = 23).
+
+### Aturan kenakalan
+- Setiap **objek** hanya bisa dipakai **sekali per level**. Setelah itu tampilannya berubah: gelas pecah, tisu berserakan, sofa tercakar, TV menyala, pot terguling, piring kosong.
+- Gelas, tisu, remote, dan ikan dapur hanya bisa dilakukan jika kucing **berdiri di permukaan yang sama** dengan objeknya. Cakar dan pot dilakukan dari lantai.
+- Noise **remote** dipancarkan dari **TV**, bukan dari remote.
+- Chaos gelas diberikan saat gelas **pecah**, bukan saat didorong.
+
+### Objek per level (level 1)
+
+| Kenakalan | Jumlah | Lokasi | Total Chaos dasar |
+|---|---|---|---|
+| Gelas | 4 | meja kopi, kabinet TV, rak rendah, meja dapur | 160 |
+| Pot | 2 | dua tanaman di sudut ruangan | 100 |
+| Ikan dapur | 1 | meja dapur | 80 |
+| Cakar | 2 | sofa, kursi | 40 |
+| Tisu | 2 | meja kopi, rak rendah | 30 |
+| Remote | 1 | dudukan sofa | 30 |
+| **Total** | **12** | | **440** (maks. ±660 dengan combo) |
+
+**Pojok dapur:** meja dapur (bisa dinaiki dengan lompat biasa) dan kulkas di sudut barat laut ruangan, menghadap kamera. Tempat ini juga menjadi waypoint "ambil minum" pemilik di Fase 3.
+
+### Animasi khas
+- **Gelas:** kucing mendorong gelas pelan dengan kaki depan, menoleh ke kamera sebentar, lalu gelas meluncur jatuh dan pecah. Pecahan berhamburan, mulai memudar setelah 3 detik, dan kamera bergetar kecil.
+- **Cakar:** kucing berdiri dan mencakar bergantian dengan kedua kaki depan, serpihan kain beterbangan.
+- **Tisu, pot:** kaki depan menepuk. **Remote:** kucing menginjak. **Ikan dapur:** kucing menggigit lalu membawa ikan di mulut sebentar.
+
+### Umpan balik
+- Angka "+N" melayang dari objek. Jika combo, muncul juga "COMBO x1.5".
+- Chaos Meter di HUD dengan rentang 0–200% target, garis target di 100%, dan tanda bintang di 100%, 150%, dan 200% yang menyala saat tercapai.
+- HUD menampilkan sisa waktu jendela combo.
 
 ## 6. Stamina
 
@@ -146,7 +176,7 @@ Total **3 nyawa**.
 
 | Camilan | Efek |
 |---|---|
-| **Ikan** | Mengisi stamina +40. Muncul acak di lantai dan di atas perabot. |
+| **Ikan** | Mengisi stamina +40. Muncul acak di lantai dan di atas perabot, satu ekor dalam satu waktu. Dimakan otomatis saat disentuh, lalu muncul lagi 12 detik kemudian. |
 | **Catnip** (langka) | Mode **zoomies** selama 6 detik: kucing sangat cepat dan senyap |
 
 ## 12. Hal lucu (fitur karakter)
@@ -164,11 +194,11 @@ Fitur dari prototipe *Coin Rush 3D* diubah sebagai berikut. Perubahan ini dikerj
 
 | Fitur prototipe | Nasib | Fase |
 |---|---|---|
-| Kristal/koin | Diganti **ikan**, yang muncul acak di lantai dan di atas perabot | 5 |
-| Power-up magnet | **Dihapus**, digantikan catnip | 5 |
+| Kristal/koin | Diganti **ikan**, yang muncul acak di lantai dan di atas perabot | 2 ✅ |
+| Power-up magnet | **Dinonaktifkan** di Fase 2 (tak berguna tanpa kristal). Kodenya **dihapus** di Fase 5, digantikan catnip | 2 ✅ / 5 |
 | Robot vacuum melukai kucing | **Tidak melukai lagi**, menjadi kendaraan | 6 |
-| Naik level karena mengumpulkan koin | **Dihapus** | 2 |
-| Skor | Diganti **Chaos** | 2 |
+| Naik level karena mengumpulkan koin | **Dihapus** (jumlah dan kecepatan robot tetap) | 2 ✅ |
+| Skor & high score | Diganti **Chaos** dan tabungan Chaos | 2 ✅ |
 
 ## 14. Lobi (dikerjakan nanti)
 
@@ -225,12 +255,16 @@ Belum ada. Tambahkan di sini jika muncul keputusan desain yang belum ditentukan.
 - [x] Overlay debug developer (`F3`): radius noise, jangkauan interaksi, status kucing
 
 ### Fase 2 — Kenakalan & Chaos
-- [ ] Objek kenakalan (tisu, sofa, remote/TV, gelas, pot, ikan dapur) beserta fisika jatuh sederhana
-- [ ] Meter Chaos dan combo (bagian 5)
-- [ ] Timer level, target Chaos, dan rating bintang (bagian 4)
-- [ ] Layar hasil dan tabungan Chaos (bagian 10)
-- [ ] HUD baru: Chaos, waktu, nyawa, stamina (rapikan bar stamina sementara dari Fase 1)
-- [ ] Hapus skor dan kenaikan level berbasis koin (bagian 13)
+- [x] Objek kenakalan (tisu, sofa/kursi, remote/TV, gelas, pot, ikan dapur), sekali per objek per level, dengan tampilan berubah setelahnya
+- [x] Fisika benda sederhana buatan sendiri (gravitasi, pantulan kecil, gesekan) dan pecahan gelas yang memudar
+- [x] Animasi khas mendorong gelas sambil menatap kamera (dimajukan dari Fase 6)
+- [x] Pojok dapur (meja dapur + kulkas)
+- [x] Meter Chaos dan combo (bagian 5), angka melayang, teks COMBO, getaran kamera
+- [x] Timer level, target Chaos, dan rating bintang (bagian 4)
+- [x] Layar hasil dan tabungan Chaos di `localStorage` (bagian 10)
+- [x] HUD baru: level, waktu, Chaos Meter, combo, nyawa, stamina, meong
+- [x] Hapus skor dan kenaikan level berbasis koin (bagian 13)
+- [x] Ikan menggantikan kristal; magnet dinonaktifkan (dimajukan dari Fase 5)
 
 ### Fase 3 — Pemilik rumah (AI)
 - [ ] Model pemilik prosedural dan rutinitas waypoint (bagian 8)
@@ -241,17 +275,17 @@ Belum ada. Tambahkan di sini jika muncul keputusan desain yang belum ditentukan.
 ### Fase 4 — Ketahuan & nyawa
 - [ ] Sekuens tertangkap: slow motion, desaturasi, vignette, teks "KETAHUAN!", fade hitam
 - [ ] Respawn di keranjang, nyawa −1, total 3 nyawa
-- [ ] Level gagal saat nyawa habis (50% Chaos ke tabungan)
+- [x] Level gagal saat nyawa habis (50% Chaos ke tabungan) — dikerjakan di Fase 2
 
 ### Fase 5 — Sembunyi & camilan
 - [ ] Kardus (ketahuan jika bergerak saat dilihat)
 - [ ] Area gelap yang mengurangi jangkauan pandang pemilik
-- [ ] Ikan menggantikan kristal; catnip (zoomies 6 detik) menggantikan magnet
+- [ ] Catnip (zoomies 6 detik) menggantikan magnet; hapus kode magnet (`entities/powerup.js`)
 - [ ] Tidur di sinar matahari untuk memulihkan stamina
 
 ### Fase 6 — Hal lucu
 - [ ] Robot vacuum tidak melukai dan bisa ditunggangi
-- [ ] Animasi mendorong gelas sambil menatap kamera
+- [x] Animasi mendorong gelas sambil menatap kamera — dikerjakan di Fase 2
 - [ ] Loaf pose setelah diam 5 detik
 - [ ] Bola benang yang bisa ditendang sebagai pengalih
 

@@ -145,8 +145,40 @@ export function createCat(scene) {
     profile: PLAYER.NORMAL_PROFILE, // seberapa mudah terlihat (Fase 3)
     crouch: 0, // 0..1, animasi merendah saat mengendap
     isPanting: false,
-    meowTimer: 0
+    meowTimer: 0,
+    camYaw: 0, // sudut ke kamera relatif terhadap badan (untuk menoleh)
+    action: null // aksi kenakalan yang sedang berjalan (lihat startCatAction)
   };
+}
+
+// Menjalankan aksi kenakalan: kontrol dikunci selama `duration` detik,
+// kucing berputar ke `faceYaw` (opsional), `pose(parts, t, cat)` dipanggil
+// tiap frame untuk animasi khusus, dan `events` [{ at, fn }] dijalankan saat
+// waktunya tiba. `onEnd()` dipanggil saat aksi selesai.
+export function startCatAction(cat, action) {
+  cat.action = { t: 0, events: [], ...action };
+  for (const ev of cat.action.events) ev.fired = false;
+}
+
+function updateCatAction(cat, dt) {
+  const a = cat.action;
+  if (!a) return;
+  a.t += dt;
+  for (const ev of a.events) {
+    if (!ev.fired && a.t >= ev.at) {
+      ev.fired = true;
+      ev.fn();
+    }
+  }
+  if (a.t >= a.duration) {
+    cat.action = null;
+    if (a.onEnd) a.onEnd();
+  }
+}
+
+// Sudut yaw dari kucing ke titik (x, z)
+export function yawTowards(cat, x, z) {
+  return Math.atan2(x - cat.mesh.position.x, z - cat.mesh.position.z);
 }
 
 // Kembalikan kucing ke posisi awal (animClock & walkCycle sengaja tidak direset).
@@ -167,6 +199,8 @@ export function resetCat(cat) {
   cat.crouch = 0;
   cat.isPanting = false;
   cat.meowTimer = 0;
+  cat.action = null;
+  cat.parts.headGroup.rotation.set(0, 0, 0);
   cat.lastStepIndex = Math.floor(cat.walkCycle / Math.PI);
 }
 
@@ -177,16 +211,20 @@ export function updateCat(ctx, dt) {
   const player = cat.mesh;
   const playerVel = cat.vel;
 
-  const wantsSneak = !!keys['KeyC'];
-  const wantsRun = !!(keys['ShiftLeft'] || keys['ShiftRight']);
+  // Selama aksi kenakalan, kontrol dikunci
+  const locked = !!cat.action;
+  const wantsSneak = !locked && !!keys['KeyC'];
+  const wantsRun = !locked && !!(keys['ShiftLeft'] || keys['ShiftRight']);
 
   let inputForward = 0;
   let inputRight = 0;
 
-  if (keys['KeyW'] || keys['ArrowUp']) inputForward += 1;
-  if (keys['KeyS'] || keys['ArrowDown']) inputForward -= 1;
-  if (keys['KeyD'] || keys['ArrowRight']) inputRight += 1;
-  if (keys['KeyA'] || keys['ArrowLeft']) inputRight -= 1;
+  if (!locked) {
+    if (keys['KeyW'] || keys['ArrowUp']) inputForward += 1;
+    if (keys['KeyS'] || keys['ArrowDown']) inputForward -= 1;
+    if (keys['KeyD'] || keys['ArrowRight']) inputRight += 1;
+    if (keys['KeyA'] || keys['ArrowLeft']) inputRight -= 1;
+  }
 
   // Vektor gerakan relatif terhadap kamera pada bidang XZ
   camera.getWorldDirection(camForward);
@@ -244,8 +282,17 @@ export function updateCat(ctx, dt) {
     }
   }
 
+  // Aksi kenakalan: putar badan menghadap target
+  if (locked && cat.action.faceYaw !== undefined) {
+    let diff = cat.action.faceYaw - cat.yaw;
+    while (diff > Math.PI) diff -= Math.PI * 2;
+    while (diff < -Math.PI) diff += Math.PI * 2;
+    cat.yaw += diff * Math.min(1, PLAYER.TURN_SPEED * dt);
+    player.rotation.y = cat.yaw;
+  }
+
   // Lompat: Spasi = lompat biasa (gratis); Shift + Spasi = lompat tinggi (pakai stamina)
-  if (keys['Space'] && cat.isGrounded) {
+  if (!locked && keys['Space'] && cat.isGrounded) {
     const highJump = wantsRun && trySpendHighJump(stamina);
     playerVel.y = highJump ? PLAYER.HIGH_JUMP_FORCE : PLAYER.JUMP_FORCE;
     cat.isGrounded = false;
@@ -285,7 +332,14 @@ export function updateCat(ctx, dt) {
   }
   cat.isPanting = isExhausted(stamina);
 
+  // Sudut ke kamera relatif terhadap badan (dipakai animasi menoleh)
+  let camYaw = yawTowards(cat, camera.position.x, camera.position.z) - cat.yaw;
+  while (camYaw > Math.PI) camYaw -= Math.PI * 2;
+  while (camYaw < -Math.PI) camYaw += Math.PI * 2;
+  cat.camYaw = camYaw;
+
   animateCat(cat, dt);
+  updateCatAction(cat, dt);
 
   // Suara langkah: satu event per setengah siklus jalan
   const stepIndex = Math.floor(cat.walkCycle / Math.PI);
@@ -388,5 +442,11 @@ function animateCat(cat, dt) {
     p.headGroup.rotation.x = -Math.sin(Math.PI * t) * A.MEOW_HEAD_TILT;
   } else {
     p.headGroup.rotation.x = 0;
+  }
+
+  // Pose khusus aksi kenakalan (menimpa pose normal)
+  p.headGroup.rotation.y = 0;
+  if (cat.action && cat.action.pose) {
+    cat.action.pose(p, cat.action.t, cat);
   }
 }

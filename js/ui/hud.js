@@ -1,22 +1,89 @@
-// HUD pojok kiri atas: skor, nyawa, level, status magnet.
-import { GAME } from '../config.js';
+// HUD pojok kiri atas: level & waktu, Chaos Meter (garis target + bintang),
+// combo, nyawa, stamina, cooldown meong; plus prompt interaksi (E).
+import { GAME, STAR_THRESHOLDS, HUD } from '../config.js';
+
+// Bar Chaos mencakup 0 .. (ambang bintang tertinggi × target)
+const METER_MAX = STAR_THRESHOLDS[STAR_THRESHOLDS.length - 1];
+
+function formatTime(seconds) {
+  const s = Math.ceil(seconds);
+  const m = Math.floor(s / 60);
+  return `${m}:${String(s % 60).padStart(2, '0')}`;
+}
 
 export function createHud() {
-  const scoreTextEl = document.getElementById('score-text');
-  const livesTextEl = document.getElementById('lives-text');
   const levelTextEl = document.getElementById('level-text');
+  const timerEl = document.getElementById('timer-text');
+  const chaosTextEl = document.getElementById('chaos-text');
+  const targetTextEl = document.getElementById('target-text');
+  const chaosFillEl = document.getElementById('chaos-fill');
+  const meterEl = document.getElementById('chaos-meter');
+  const comboEl = document.getElementById('combo-status');
+  const livesTextEl = document.getElementById('lives-text');
   const magnetStatusEl = document.getElementById('magnet-status');
   const staminaFillEl = document.getElementById('stamina-fill');
   const meowStatusEl = document.getElementById('meow-status');
   const promptEl = document.getElementById('interact-prompt');
+
+  // Garis target & tanda bintang pada Chaos Meter
+  const starEls = STAR_THRESHOLDS.map((t, i) => {
+    const pct = (t / METER_MAX) * 100;
+    if (i === 0) {
+      const line = document.createElement('div');
+      line.className = 'chaos-target';
+      line.style.left = pct + '%';
+      meterEl.appendChild(line);
+    }
+    const star = document.createElement('span');
+    star.className = 'chaos-star';
+    star.textContent = '★';
+    star.style.left = pct + '%';
+    star.title = `${Math.round(t * 100)}% target`;
+    meterEl.appendChild(star);
+    return { el: star, threshold: t };
+  });
 
   // Cache agar DOM tidak ditulis ulang tiap frame jika nilainya sama
   let lastStaminaPct = -1;
   let lastExhausted = null;
   let lastMeowText = '';
   let lastPrompt = undefined;
+  let lastTimerText = '';
+  let lastTimerWarn = null;
+  let lastComboText = null;
 
   return {
+    setLevel(levelId) {
+      levelTextEl.textContent = `Level ${levelId}`;
+    },
+    setTimer(seconds) {
+      const text = formatTime(seconds);
+      if (text !== lastTimerText) {
+        timerEl.textContent = text;
+        lastTimerText = text;
+      }
+      const warn = seconds <= HUD.TIMER_WARNING;
+      if (warn !== lastTimerWarn) {
+        timerEl.classList.toggle('warning', warn);
+        lastTimerWarn = warn;
+      }
+    },
+    setChaos(chaos, target) {
+      chaosTextEl.textContent = String(chaos);
+      targetTextEl.textContent = String(target);
+      const pct = Math.min(100, (chaos / (target * METER_MAX)) * 100);
+      chaosFillEl.style.width = pct + '%';
+      for (const s of starEls) s.el.classList.toggle('reached', chaos >= target * s.threshold);
+    },
+    // remaining > 0: kenakalan berikutnya dalam waktu ini dapat bonus combo
+    setCombo(remaining, multiplier) {
+      const text = remaining > 0 ? `COMBO x${multiplier} siap: ${remaining.toFixed(1)}s` : '';
+      if (text !== lastComboText) {
+        comboEl.textContent = text;
+        comboEl.classList.toggle('active', remaining > 0);
+        lastComboText = text;
+      }
+    },
     setStamina(value, max, exhausted) {
       const pct = Math.round((value / max) * 1000) / 10;
       if (pct !== lastStaminaPct) {
@@ -46,17 +113,12 @@ export function createHud() {
         promptEl.classList.remove('active');
       }
     },
-    setScore(score) {
-      scoreTextEl.textContent = String(score);
-    },
-    setLevel(level) {
-      levelTextEl.textContent = String(level);
-    },
     setLives(lives) {
       const filled = '❤️'.repeat(Math.max(lives, 0));
       const empty = '🖤'.repeat(Math.max(GAME.MAX_LIVES - lives, 0));
       livesTextEl.textContent = filled + empty;
     },
+    // Magnet dinonaktifkan sejak Fase 2 (dipakai entities/powerup.js; dihapus di Fase 5)
     showMagnet() {
       magnetStatusEl.style.display = 'block';
     },

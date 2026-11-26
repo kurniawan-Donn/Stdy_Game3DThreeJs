@@ -1,6 +1,6 @@
-// Partikel kubus kecil yang memercik saat koin diambil.
+// Partikel kubus kecil yang memercik saat camilan diambil.
 import * as THREE from 'three';
-import { COIN_PARTICLES as P, PHYSICS } from '../config.js';
+import { PICKUP_PARTICLES as P, PHYSICS } from '../config.js';
 
 export function createParticleSystem() {
   return {
@@ -10,7 +10,7 @@ export function createParticleSystem() {
   };
 }
 
-export function spawnCoinParticles(sys, scene, pos) {
+export function spawnPickupParticles(sys, scene, pos) {
   for (let i = 0; i < P.COUNT; i++) {
     const mesh = new THREE.Mesh(sys.geo, sys.mat);
     mesh.position.copy(pos);

@@ -16,11 +16,12 @@ canvas {
   display: block;
 }
 
-/* HUD Skor di pojok kiri atas */
+/* HUD di pojok kiri atas */
 #hud {
   position: fixed;
   top: 16px;
   left: 16px;
+  width: 270px;
   background: rgba(15, 23, 42, 0.72);
   border: 1px solid rgba(255, 255, 255, 0.15);
   border-radius: 10px;
@@ -29,18 +30,97 @@ canvas {
   pointer-events: none;
 }
 
-#hud .score-label {
+#hud .hud-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  font-weight: 700;
+}
+
+#hud .level-label {
+  font-size: 13px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: #38bdf8;
+}
+
+#hud .timer {
+  font-size: 22px;
+  font-variant-numeric: tabular-nums;
+  color: #f8fafc;
+}
+
+#hud .timer.warning {
+  color: #f87171;
+}
+
+#hud .chaos-label {
+  margin-top: 6px;
   font-size: 12px;
   text-transform: uppercase;
   letter-spacing: 1px;
   color: #94a3b8;
 }
 
-#hud .score-value {
-  font-size: 28px;
+#hud .chaos-value {
+  font-size: 24px;
   font-weight: 700;
   color: #facc15;
-  line-height: 1.2;
+  letter-spacing: 0;
+}
+
+#hud .chaos-target-text {
+  font-size: 13px;
+  color: #cbd5e1;
+  letter-spacing: 0;
+}
+
+/* Chaos Meter: 0..200% target, garis target di 100%, bintang di 100/150/200% */
+#hud .chaos-meter {
+  position: relative;
+  margin: 10px 8px 14px 0;
+  height: 12px;
+  background: rgba(255, 255, 255, 0.12);
+  border-radius: 6px;
+}
+
+#hud .chaos-fill {
+  height: 100%;
+  width: 0%;
+  border-radius: 6px;
+  background: linear-gradient(90deg, #f59e0b, #ef4444);
+  transition: width 0.25s ease;
+}
+
+#hud .chaos-target {
+  position: absolute;
+  top: -4px;
+  bottom: -4px;
+  width: 2px;
+  margin-left: -1px;
+  background: #f8fafc;
+}
+
+#hud .chaos-star {
+  position: absolute;
+  top: 10px;
+  transform: translateX(-50%);
+  font-size: 14px;
+  color: #475569;
+  transition: color 0.2s ease, transform 0.2s ease;
+}
+
+#hud .chaos-star.reached {
+  color: #facc15;
+  transform: translateX(-50%) scale(1.25);
+}
+
+#hud .combo-status {
+  min-height: 16px;
+  margin-top: 4px;
+  font-size: 12px;
+  font-weight: 700;
+  color: #f472b6;
 }
 
 #hud .lives-row {
@@ -57,17 +137,6 @@ canvas {
   letter-spacing: 2px;
 }
 
-#hud .level-row {
-  margin-top: 4px;
-  font-size: 14px;
-  color: #e2e8f0;
-  font-weight: 600;
-}
-
-#hud .level-row span {
-  color: #38bdf8;
-}
-
 #hud .magnet-status {
   margin-top: 4px;
   font-size: 13px;
@@ -82,8 +151,8 @@ canvas {
   color: #cbd5e1;
 }
 
-/* Layar Game Over */
-#game-over {
+/* Layar hasil akhir level */
+#results {
   position: fixed;
   inset: 0;
   display: none;
@@ -94,7 +163,7 @@ canvas {
   z-index: 10;
 }
 
-#game-over.active {
+#results.active {
   display: flex;
 }
 
@@ -111,7 +180,35 @@ canvas {
 .modal h1 {
   font-size: 28px;
   color: #f87171;
-  margin-bottom: 16px;
+  margin-bottom: 8px;
+}
+
+.modal h1.won {
+  color: #4ade80;
+}
+
+.modal .results-reason {
+  font-size: 13px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: #94a3b8;
+}
+
+.modal .results-stars {
+  font-size: 34px;
+  letter-spacing: 6px;
+  color: #facc15;
+  margin-bottom: 8px;
+}
+
+.modal .results-stars.none {
+  color: #475569;
+}
+
+.modal .results-message {
+  font-style: italic;
+  color: #cbd5e1;
+  margin-bottom: 14px;
 }
 
 .modal p {
@@ -226,4 +323,33 @@ canvas {
 
 #debug-panel.active {
   display: block;
+}
+
+/* Teks melayang (+40, COMBO x1.5) */
+#float-layer {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.float-text {
+  position: absolute;
+  left: 0;
+  top: 0;
+  font-weight: 800;
+  white-space: nowrap;
+  text-shadow: 0 2px 6px rgba(0, 0, 0, 0.6);
+  will-change: transform, opacity;
+}
+
+.float-text.chaos {
+  font-size: 26px;
+  color: #facc15;
+}
+
+.float-text.combo {
+  font-size: 18px;
+  color: #f472b6;
+  letter-spacing: 1px;
 }
