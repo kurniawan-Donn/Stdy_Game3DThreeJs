@@ -23,11 +23,13 @@ function roomAt(p) {
 const CONE_SEGMENTS = 16;
 const MAX_PATH_POINTS = 64;
 
-function makeLine(maxPoints, color, segments) {
+// xray: digambar menembus dinding (hanya garis line-of-sight, yang memang
+// melintasi penghalang). Garis di lantai memakai depth test agar tertutup dinding.
+function makeLine(maxPoints, color, segments, xray = false) {
   const geo = new THREE.BufferGeometry();
   geo.setAttribute('position', new THREE.BufferAttribute(new Float32Array(maxPoints * 3), 3));
   geo.setDrawRange(0, 0);
-  const mat = new THREE.LineBasicMaterial({ color, depthTest: false, transparent: true, fog: false, vertexColors: color === null });
+  const mat = new THREE.LineBasicMaterial({ color, depthTest: !xray, transparent: true, fog: false, vertexColors: color === null });
   const line = segments ? new THREE.LineSegments(geo, mat) : new THREE.Line(geo, mat);
   line.frustumCulled = false;
   line.renderOrder = 999;
@@ -59,21 +61,23 @@ export function createDebugOverlay(scene) {
   const cone = makeLine(CONE_SEGMENTS + 3, DEBUG.CONE_COLOR, false);
   group.add(cone);
   // Garis line-of-sight ke titik tubuh kucing (warna per verteks)
-  const los = makeLine(16, null, true);
+  const los = makeLine(16, null, true, true);
   los.geometry.setAttribute('color', new THREE.BufferAttribute(new Float32Array(16 * 3), 3));
   group.add(los);
   // Jalur A* pemilik
   const path = makeLine(MAX_PATH_POINTS + 1, DEBUG.PATH_COLOR, false);
   group.add(path);
   // Batas area gelap di lantai (pita tipis; garis WebGL hanya 1 px)
-  const darkMat = new THREE.MeshBasicMaterial({ color: DEBUG.DARK_ZONE_COLOR, transparent: true, opacity: DEBUG.DARK_ZONE_OPACITY, depthTest: false, depthWrite: false, fog: false });
+  const darkMat = new THREE.MeshBasicMaterial({ color: DEBUG.DARK_ZONE_COLOR, transparent: true, opacity: DEBUG.DARK_ZONE_OPACITY, depthWrite: false, fog: false });
   const darkEdges = new THREE.Group();
   const bw = DEBUG.DARK_ZONE_BORDER;
+  const inset = DEBUG.DARK_ZONE_INSET + bw / 2; // geser ke dalam agar tidak tertutup dinding & lis
   for (const z of DARK_ZONES) {
-    const x0 = z.x - z.width / 2 + bw / 2, x1 = z.x + z.width / 2 - bw / 2;
-    const z0 = z.z - z.depth / 2 + bw / 2, z1 = z.z + z.depth / 2 - bw / 2;
-    for (const [cx, cz, w, d] of [[z.x, z0, z.width, bw], [z.x, z1, z.width, bw], [x0, z.z, bw, z.depth], [x1, z.z, bw, z.depth]]) {
-      const strip = new THREE.Mesh(new THREE.PlaneGeometry(w, d), darkMat);
+    const x0 = z.x - z.width / 2 + inset, x1 = z.x + z.width / 2 - inset;
+    const z0 = z.z - z.depth / 2 + inset, z1 = z.z + z.depth / 2 - inset;
+    const w = x1 - x0 + bw, d = z1 - z0 + bw;
+    for (const [cx, cz, sw, sd] of [[z.x, z0, w, bw], [z.x, z1, w, bw], [x0, z.z, bw, d], [x1, z.z, bw, d]]) {
+      const strip = new THREE.Mesh(new THREE.PlaneGeometry(sw, sd), darkMat);
       strip.rotation.x = -Math.PI / 2;
       strip.position.set(cx, RING_Y, cz);
       strip.renderOrder = 998;

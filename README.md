@@ -38,6 +38,7 @@ Ditulis dengan JavaScript ES modules biasa, tanpa build tool dan tanpa aset ekst
 | Mouse | Putar kamera (klik layar untuk mengunci mouse, `Esc` untuk melepas; atau tahan klik kiri + geser) |
 | Roda mouse | Zoom kamera |
 | `H` | Layar bantuan kontrol |
+| `P` | Pause (juga otomatis saat kunci mouse lepas) |
 | `E` dekat kardus | Masuk / keluar kardus |
 | Tahan `E` di sinar matahari | Tidur (stamina pulih cepat) |
 | Lompat ke robot vacuum | Menumpang (`Spasi` untuk turun) |
@@ -112,7 +113,7 @@ Ringkasan dari peta pengembangan di [docs/GDD.md](docs/GDD.md):
 - [x] Fase 4: Ketahuan & nyawa (sekuens tertangkap, keranjang)
 - [x] Fase 5: Sembunyi (kardus, kolong, area gelap) & camilan (catnip, tidur di sinar matahari)
 - [x] Fase 6: Hal lucu (tunggangi robot vacuum, loaf pose, bola benang)
-- [ ] Fase 7: Level & tutorial
+- [ ] Fase 7: Level & tutorial (sistem level, Level 1–2, alur lobi/pause/hasil selesai; tutorial menyusul)
 - [ ] Fase 8: Lobi & kustomisasi kucing
 - [ ] Fase 9: Polish & performa
 

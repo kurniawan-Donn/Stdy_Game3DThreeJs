@@ -12,6 +12,7 @@ import { HIDE_BOX, MATERIALS } from '../config.js';
 import { registerInteractable } from '../systems/interaction.js';
 import { addBody } from '../systems/physics.js';
 import { createNavGrid } from '../systems/navGrid.js';
+import { removeAndDispose } from '../core/dispose.js';
 
 function buildBoxMesh() {
   const S = HIDE_BOX.SIZE;
@@ -121,7 +122,7 @@ export function createHideBoxes(ctx) {
 export function disposeHideBoxes(ctx) {
   for (const box of ctx.hideBoxes || []) {
     for (const u of box.unregister) u();
-    if (box.mesh.parent) box.mesh.parent.remove(box.mesh);
+    removeAndDispose(box.mesh);
     const i = ctx.colliders.indexOf(box.collider);
     if (i >= 0) ctx.colliders.splice(i, 1);
   }

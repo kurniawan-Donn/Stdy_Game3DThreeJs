@@ -1,14 +1,21 @@
 // Efek suara sintetis memakai Web Audio API (tanpa file eksternal).
-import { AUDIO } from '../config.js';
+import { AUDIO, MEETING } from '../config.js';
 
 export function createAudio() {
   let audioCtx = null;
+  let master = null; // semua suara lewat sini (volume di Pengaturan)
+  let volume = 1;
 
   // Harus dipanggil dari gesture pengguna (keydown/klik) agar audio aktif.
   function ensure() {
     if (!audioCtx) {
       const AudioCtx = window.AudioContext || window.webkitAudioContext;
-      if (AudioCtx) audioCtx = new AudioCtx();
+      if (AudioCtx) {
+        audioCtx = new AudioCtx();
+        master = audioCtx.createGain();
+        master.gain.value = volume;
+        master.connect(audioCtx.destination);
+      }
     }
     if (audioCtx && audioCtx.state === 'suspended') {
       audioCtx.resume();
@@ -29,7 +36,7 @@ export function createAudio() {
     gain.gain.exponentialRampToValueAtTime(AUDIO.FADE_TO, now + duration);
 
     osc.connect(gain);
-    gain.connect(audioCtx.destination);
+    gain.connect(master);
     osc.start(now);
     osc.stop(now + duration);
   }
@@ -62,7 +69,7 @@ export function createAudio() {
 
     osc.connect(filter);
     filter.connect(gain);
-    gain.connect(audioCtx.destination);
+    gain.connect(master);
     osc.start(now);
     osc.stop(now + M.DURATION);
   }
@@ -93,7 +100,7 @@ export function createAudio() {
     gain.gain.exponentialRampToValueAtTime(AUDIO.FADE_TO, now + DURATION);
     src.connect(filter);
     filter.connect(gain);
-    gain.connect(audioCtx.destination);
+    gain.connect(master);
     src.start(now);
     src.stop(now + DURATION);
   }
@@ -108,9 +115,60 @@ export function createAudio() {
     if (bursts) for (const b of bursts) playNoiseBurst(b);
   }
 
+  // Suara bicara samar rapat video: noise → bandpass, volume per "suku kata"
+  // acak. level 0 = diam. Dipanggil tiap frame selama rapat.
+  let murmurNodes = null;
+  let syllableT = 0;
+  function murmur(level) {
+    if (!audioCtx) return;
+    const A = MEETING.AUDIO;
+    if (level <= 0) {
+      if (murmurNodes) {
+        const now = audioCtx.currentTime;
+        murmurNodes.gain.gain.cancelScheduledValues(now);
+        murmurNodes.gain.gain.setTargetAtTime(0, now, 0.05);
+        murmurNodes.src.stop(now + 0.3);
+        murmurNodes = null;
+      }
+      return;
+    }
+    if (!murmurNodes) {
+      const src = audioCtx.createBufferSource();
+      src.buffer = getNoiseBuffer();
+      src.loop = true;
+      const filter = audioCtx.createBiquadFilter();
+      filter.type = 'bandpass';
+      filter.frequency.value = A.FREQ;
+      filter.Q.value = A.Q;
+      const gain = audioCtx.createGain();
+      gain.gain.value = 0;
+      src.connect(filter);
+      filter.connect(gain);
+      gain.connect(master);
+      src.start();
+      murmurNodes = { src, filter, gain };
+      syllableT = 0;
+    }
+    const now = audioCtx.currentTime;
+    if (now >= syllableT) {
+      const len = A.SYLLABLE_MIN + Math.random() * (A.SYLLABLE_MAX - A.SYLLABLE_MIN);
+      const amp = Math.random() < A.PAUSE_CHANCE ? 0 : level * (0.4 + Math.random() * 0.6);
+      murmurNodes.gain.gain.setTargetAtTime(amp, now, len * 0.3);
+      murmurNodes.filter.frequency.setTargetAtTime(A.FREQ * (0.8 + Math.random() * 0.5), now, len * 0.5);
+      syllableT = now + len;
+    }
+  }
+
+  function setVolume(v) {
+    volume = v;
+    if (master) master.gain.value = v;
+  }
+
   return {
     ensure,
     play,
+    murmur,
+    setVolume,
     playJump: () => playSfx(AUDIO.SFX.jump),
     playPant: () => playSfx(AUDIO.SFX.pant),
     playMeow

@@ -1,7 +1,8 @@
 // Timer level, akhir level, rating bintang, dan tabungan Chaos (GDD §4, §10).
 import { STAR_THRESHOLDS, RESULTS, HUD } from '../config.js';
 import { currentLevel } from '../core/state.js';
-import { recordLevelResult } from '../core/save.js';
+import { recordLevelResult, defaultSave } from '../core/save.js';
+import { nextLevelIndex } from './levelManager.js';
 import { hideInteraction } from './interaction.js';
 
 export function countStars(chaos, target) {
@@ -40,7 +41,9 @@ export function endLevel(ctx, reason) {
   const fraction = timeUp ? RESULTS.BANK_FRACTION_TIME_UP : RESULTS.BANK_FRACTION_OUT_OF_LIVES;
   const banked = Math.round(s.chaos * fraction);
 
-  const save = recordLevelResult({ levelId: level.id, banked, chaos: s.chaos, stars });
+  if (!ctx.save) ctx.save = defaultSave(); // (uji tanpa simpanan)
+  const save = recordLevelResult(ctx.save, { level, banked, chaos: s.chaos, stars });
+  if (ctx.flow) ctx.flow.state = 'results';
 
   let message;
   if (!timeUp) {
@@ -58,7 +61,9 @@ export function endLevel(ctx, reason) {
     chaos: s.chaos,
     target,
     banked,
-    bank: save.chaosBank
+    bank: save.chaosBank,
+    levelName: level.name,
+    hasNext: nextLevelIndex(save, s.levelIndex) >= 0
   });
   ctx.audio.play(won ? 'win' : 'gameOver');
 }

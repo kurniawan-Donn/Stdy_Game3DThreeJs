@@ -8,6 +8,7 @@ import { addBody } from '../systems/physics.js';
 import { emitNoise } from '../systems/noise.js';
 import { startCatAction, yawTowards } from './cat.js';
 import { swipePose } from './mischief/common.js';
+import { removeAndDispose } from '../core/dispose.js';
 
 function buildYarnMesh() {
   const group = new THREE.Group();
@@ -54,7 +55,7 @@ export function createYarnBalls(ctx) {
 export function disposeYarnBalls(ctx) {
   for (const ball of ctx.yarnBalls || []) {
     if (ball.unregister) ball.unregister();
-    if (ball.mesh.parent) ball.mesh.parent.remove(ball.mesh);
+    removeAndDispose(ball.mesh);
     const i = ctx.physics.bodies.indexOf(ball.body);
     if (i >= 0) ctx.physics.bodies.splice(i, 1);
   }

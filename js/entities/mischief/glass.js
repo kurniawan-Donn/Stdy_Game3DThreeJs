@@ -7,6 +7,7 @@ import { addBody, removeBody } from '../../systems/physics.js';
 import { scoreMischief } from '../../systems/chaos.js';
 import { triggerShake } from '../../core/camera.js';
 import { registerMischief, dirFromCat, smoothstep } from './common.js';
+import { removeAndDispose } from '../../core/dispose.js';
 
 const ACTION_DURATION = GLASS.PAW_DURATION + GLASS.STARE_DURATION + GLASS.RECOVER_DURATION;
 
@@ -100,7 +101,7 @@ export function createGlass(ctx, spec) {
     inst.phase = 'shattered';
     const pos = mesh.position.clone();
     if (inst.body) removeBody(ctx, inst.body);
-    else if (mesh.parent) mesh.parent.remove(mesh);
+    else removeAndDispose(mesh);
     inst.body = null;
 
     spawnShards(ctx, pos);
@@ -164,7 +165,7 @@ export function createGlass(ctx, spec) {
 
   inst.dispose = (c) => {
     if (inst.body) removeBody(c, inst.body);
-    if (mesh.parent) mesh.parent.remove(mesh);
+    removeAndDispose(mesh);
   };
 
   return inst;

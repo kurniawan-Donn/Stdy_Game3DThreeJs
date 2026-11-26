@@ -6,6 +6,7 @@ import { TOILET_PAPER as T, CAT_ANIM, MATERIALS } from '../../config.js';
 import { startCatAction, yawTowards } from '../cat.js';
 import { scoreMischief } from '../../systems/chaos.js';
 import { registerMischief, smoothstep } from './common.js';
+import { removeAndDispose } from '../../core/dispose.js';
 
 // Berdiri dengan kaki belakang, kaki depan menepuk bergantian
 function batPose(p, t) {
@@ -99,7 +100,7 @@ export function createToiletPaper(ctx, spec) {
   };
 
   inst.dispose = () => {
-    if (group.parent) group.parent.remove(group);
+    removeAndDispose(group);
   };
 
   return inst;

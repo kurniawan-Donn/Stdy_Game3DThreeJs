@@ -15,6 +15,7 @@
 import * as THREE from 'three';
 import { PHYSICS, BODY_PHYSICS } from '../config.js';
 import { resolveCircleCollisions, getGroundHeight } from './collision.js';
+import { removeAndDispose, disposeObject3D } from '../core/dispose.js';
 
 export function createPhysicsWorld() {
   return { bodies: [] };
@@ -45,9 +46,7 @@ export function removeBody(ctx, body) {
 }
 
 export function clearBodies(ctx) {
-  for (const b of ctx.physics.bodies) {
-    if (b.mesh.parent) b.mesh.parent.remove(b.mesh);
-  }
+  for (const b of ctx.physics.bodies) removeAndDispose(b.mesh);
   ctx.physics.bodies.length = 0;
 }
 
@@ -61,6 +60,7 @@ export function updatePhysics(ctx, dt) {
       b.life -= dt;
       if (b.life <= 0) {
         removeBody(ctx, b);
+        disposeObject3D(b.mesh); // serpihan yang habis umurnya
         continue;
       }
       if (b.fade && b.material && b.life < b.fade) {

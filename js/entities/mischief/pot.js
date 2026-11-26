@@ -5,6 +5,7 @@ import { POT, MATERIALS } from '../../config.js';
 import { startCatAction, yawTowards } from '../cat.js';
 import { scoreMischief } from '../../systems/chaos.js';
 import { registerMischief, dirFromCat, swipePose } from './common.js';
+import { removeAndDispose } from '../../core/dispose.js';
 
 export function createPot(ctx, spec) {
   const plant = ctx.furnitureRefs.plants[spec.plant];
@@ -80,7 +81,7 @@ export function createPot(ctx, spec) {
     group.quaternion.identity();
     group.position.copy(basePos);
     collider.topHeight = originalTop;
-    if (inst.spill && inst.spill.parent) inst.spill.parent.remove(inst.spill);
+    if (inst.spill) removeAndDispose(inst.spill);
   };
 
   return inst;

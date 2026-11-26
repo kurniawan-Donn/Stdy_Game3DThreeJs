@@ -5,6 +5,7 @@ import { SCRATCH, CAT_ANIM, MATERIALS } from '../../config.js';
 import { startCatAction, yawTowards } from '../cat.js';
 import { scoreMischief } from '../../systems/chaos.js';
 import { registerMischief, spawnDebris } from './common.js';
+import { removeAndDispose } from '../../core/dispose.js';
 
 const LABELS = { sofaSeat: 'Cakar sofa', chair: 'Cakar kursi' };
 
@@ -130,7 +131,7 @@ export function createScratch(ctx, spec) {
   });
 
   inst.dispose = () => {
-    if (marks.parent) marks.parent.remove(marks);
+    removeAndDispose(marks);
   };
 
   return inst;

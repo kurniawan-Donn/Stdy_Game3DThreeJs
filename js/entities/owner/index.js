@@ -10,6 +10,7 @@ import { isAnnoying } from '../../systems/meow.js';
 import { setDoorOpen, isDoorOpen, isDoorClosed } from '../../world/house.js';
 import { startCapture } from '../../systems/capture.js';
 import { hideSpotOf, recentChaosNear } from '../../systems/hiding.js';
+import { resetMeetings, updateMeeting, endMeeting, dueMeeting, isLoudDuringMeeting } from './meeting.js';
 
 const HEAD_MAX = (OWNER.HEAD_MAX_YAW_DEG * Math.PI) / 180;
 
@@ -59,7 +60,11 @@ export function createOwner(scene) {
     stretchAt: -1,
     stretchT: 0,
     toiletUsed: false,
-    away: false
+    away: false,
+    // Rapat video (Level 2, owner/meeting.js)
+    meetings: [],
+    inMeeting: null,
+    meetingT: 0
   };
 }
 
@@ -83,6 +88,7 @@ export function resetOwner(ctx) {
   o.phase = 'do'; // mulai sudah duduk di meja
   o.pose = 'type';
   o.parts.hips.position.y = R.SIT_HEIGHT;
+  resetMeetings(ctx);
 }
 
 // --- Gerak & navigasi ---------------------------------------------------
@@ -181,6 +187,13 @@ function updateRoutine(ctx, o, dt) {
         if (walkTo(ctx, o, spots.desk, OWNER.WALK_SPEED, dt)) o.phase = 'do';
         return;
       }
+      // Rapat video: duduk diam menghadap laptop, tidak menoleh
+      if (updateMeeting(ctx, dt)) {
+        o.glanceT = 0;
+        turnTowards(o, spots.desk.yaw, dt);
+        o.pose = 'type';
+        return;
+      }
       // Duduk bekerja; sesekali menoleh ke belakang (kursi berputar) atau meregang
       o.activityT -= dt;
       if (o.stretchAt > 0 && o.activityT <= o.stretchAt) {
@@ -214,7 +227,8 @@ function updateRoutine(ctx, o, dt) {
       turnTowards(o, spot.yaw, dt);
       o.pose = o.activity === 'bedroom' ? 'window' : o.activity;
       o.activityT -= dt;
-      if (o.activityT <= 0) startWork(o);
+      // Jadwal rapat tiba: kegiatan dipersingkat, kembali ke meja
+      if (o.activityT <= 0 || dueMeeting(ctx)) startWork(o);
       return;
     }
     case 'toilet':
@@ -312,6 +326,7 @@ function updateKneel(ctx, o, dt) {
 function setState(ctx, o, state) {
   const prev = o.state;
   o.checkingSpot = null;
+  if (state !== 'routine') endMeeting(ctx); // keluar rutinitas = rapat bubar
   o.state = state;
   o.stateT = 0;
   o.lostT = 0;
@@ -385,12 +400,27 @@ export function ownerHearNoise(ctx, ev) {
   if (Math.hypot(ev.x - pos.x, ev.z - pos.z) > ev.radius) return;
 
   const isStep = ev.source.startsWith('step-') || ev.source === 'land';
+  const point = { x: ev.x, z: ev.z };
+
+  // Rapat video: suara keras = langsung "!" (malu di depan bos); suara
+  // pelan hanya menambah curiga, pemilik tetap duduk di rapat.
+  if (o.inMeeting) {
+    if (isLoudDuringMeeting(ctx, ev)) {
+      o.meter = S.MAX;
+      o.attention = point;
+      ctx.audio.play('meetingBusted');
+      setState(ctx, o, 'chase');
+    } else {
+      const gain = ev.source === 'meow' ? S.MEOW_GAIN : ev.radius * S.NOISE_PER_METER * (isStep ? S.FOOTSTEP_MULT : 1);
+      o.meter = Math.min(o.meter + gain * suspicionGain(ctx, o), Math.max(o.meter, S.NOISE_CAP));
+    }
+    return;
+  }
   let gain = ev.source === 'meow' ? S.MEOW_GAIN : ev.radius * S.NOISE_PER_METER * (isStep ? S.FOOTSTEP_MULT : 1);
   gain *= suspicionGain(ctx, o);
   // Suara saja tidak bisa memicu "!"
   o.meter = Math.min(o.meter + gain, Math.max(o.meter, S.NOISE_CAP));
 
-  const point = { x: ev.x, z: ev.z };
   if (isStep) {
     if (o.state === 'routine') {
       o.attention = point;
@@ -420,7 +450,8 @@ export function updateOwner(ctx, dt) {
 
   switch (o.state) {
     case 'routine':
-      if (o.seen && o.meter > 0 && !o.away) setState(ctx, o, 'curious');
+      // Saat rapat pemilik tetap duduk (meter tetap naik bila melihat kucing)
+      if (o.seen && o.meter > 0 && !o.away && !o.inMeeting) setState(ctx, o, 'curious');
       else updateRoutine(ctx, o, dt);
       break;
 

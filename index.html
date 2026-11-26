@@ -6,7 +6,7 @@
   <title>Meong Mayhem</title>
   <link rel="stylesheet" href="css/style.css" />
 </head>
-<body>
+<body class="mode-lobby">
   <div id="hud">
     <div class="hud-top">
       <span class="level-label" id="level-text">Level 1</span>
@@ -28,7 +28,8 @@
     </div>
   </div>
 
-  <div id="help-hint">H: Bantuan</div>
+  <div id="meeting-badge"><span class="dot"></span>SEDANG RAPAT</div>
+  <div id="help-hint">H: Bantuan · P: Pause</div>
   <div id="help-overlay">
     <div class="help-panel">
       <h2>Kontrol</h2>
@@ -46,7 +47,8 @@
         <tr><td>Klik layar</td><td>Kunci mouse, gerakkan untuk memutar kamera</td></tr>
         <tr><td>Tahan klik + geser</td><td>Putar kamera tanpa mengunci mouse</td></tr>
         <tr><td>Roda mouse</td><td>Zoom kamera</td></tr>
-        <tr><td><kbd>Esc</kbd></td><td>Lepas mouse</td></tr>
+        <tr><td><kbd>Esc</kbd></td><td>Lepas mouse (game otomatis pause)</td></tr>
+        <tr><td><kbd>P</kbd></td><td>Pause / lanjutkan</td></tr>
         <tr><td><kbd>H</kbd></td><td>Buka / tutup bantuan ini</td></tr>
       </table>
       <p class="help-goal">Kumpulkan Chaos dengan berbuat nakal sebelum waktu habis. Jangan sampai dipergoki pemilik: <b>?</b> curiga, <b>!</b> mengejar.</p>
@@ -70,13 +72,54 @@
   <div id="results">
     <div class="modal">
       <p class="results-reason" id="results-reason">Pemilik selesai kerja!</p>
+      <p class="results-level" id="results-level"></p>
       <h1 id="results-title">Menang!</h1>
       <div class="results-stars" id="results-stars">☆☆☆</div>
       <p class="results-message" id="results-message"></p>
-      <p>Chaos: <span id="results-chaos">0</span> / <span id="results-target">300</span></p>
+      <p>Chaos didapat: <span id="results-chaos">0</span> / <span id="results-target">300</span></p>
       <p>Masuk tabungan: <span id="results-banked">+0</span></p>
       <p>Total tabungan: <span id="results-bank">0</span></p>
-      <button id="restart-btn">Main Lagi</button>
+      <div class="btn-row">
+        <button class="btn" data-action="retry" id="results-retry">Ulangi</button>
+        <button class="btn primary" data-action="next" id="results-next">Level Berikutnya</button>
+        <button class="btn" data-action="lobby" id="results-lobby">Lobi</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="pause">
+    <div class="modal">
+      <h1 class="pause-title">Pause</h1>
+      <p class="pause-level" id="pause-level"></p>
+      <div class="btn-col">
+        <button class="btn primary" data-action="resume">Lanjutkan</button>
+        <button class="btn" data-action="restart">Ulangi</button>
+        <button class="btn" data-action="lobby">Lobi</button>
+      </div>
+      <p class="pause-hint">P: lanjutkan</p>
+    </div>
+  </div>
+
+  <div id="lobby" class="active">
+    <div class="bank-chip" title="Tabungan Chaos">Tabungan Chaos <b id="lobby-bank">0</b></div>
+    <div class="lobby-panel active" id="lobby-main">
+      <h1 class="game-title">Meong Mayhem</h1>
+      <p class="game-tagline">Kucing nakal, pemilik sibuk.</p>
+      <button class="btn primary big" data-action="play">Main<small id="play-sub">Level 1</small></button>
+      <button class="btn" data-action="levels">Pilih Level</button>
+      <button class="btn" data-action="custom" id="btn-custom" disabled>Kustomisasi</button>
+      <button class="btn" data-action="settings" id="btn-settings" disabled>Pengaturan</button>
+      <button class="btn" data-action="howto">Cara Bermain</button>
+    </div>
+    <div class="lobby-panel wide" id="level-select">
+      <h2>Pilih Level</h2>
+      <div class="level-cards" id="level-cards"></div>
+      <button class="btn" data-action="back">Kembali</button>
+    </div>
+    <div class="lobby-panel wide" id="howto-panel">
+      <h2>Cara Bermain</h2>
+      <div class="howto-body" id="howto-body"></div>
+      <button class="btn" data-action="back">Kembali</button>
     </div>
   </div>
 

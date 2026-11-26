@@ -5,6 +5,7 @@ import { REMOTE, CAT_ANIM, MATERIALS } from '../../config.js';
 import { startCatAction, yawTowards } from '../cat.js';
 import { scoreMischief } from '../../systems/chaos.js';
 import { registerMischief, smoothstep } from './common.js';
+import { removeAndDispose } from '../../core/dispose.js';
 
 function stompPose(p, t) {
   const A = CAT_ANIM;
@@ -113,7 +114,7 @@ export function createRemote(ctx, spec) {
       inst.texture.dispose();
       tvScreen.material = originalMaterial;
     }
-    if (remote.parent) remote.parent.remove(remote);
+    removeAndDispose(remote);
   };
 
   return inst;

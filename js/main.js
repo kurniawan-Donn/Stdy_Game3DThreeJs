@@ -1,6 +1,6 @@
 // Entry point: merangkai semua modul ke satu objek konteks (ctx) lalu
 // menjalankan game loop. Tidak ada state global; semua lewat ctx.
-import { PHYSICS, STAMINA, COMBO } from './config.js';
+import { PHYSICS, STAMINA, COMBO, GAME_FLOW } from './config.js';
 import { createRenderer, bindResize } from './core/renderer.js';
 import { createInput, endFrame } from './core/input.js';
 import { createState } from './core/state.js';
@@ -21,7 +21,7 @@ import { updateYarnBalls } from './entities/yarn.js';
 import { createCatnip, updateCatnip } from './entities/catnip.js';
 import { registerCatInteractions } from './entities/catBehavior.js';
 import { hideStatus } from './systems/hiding.js';
-import { onFishEaten, resetGame } from './systems/progression.js';
+import { onFishEaten } from './systems/progression.js';
 import { createNoiseSystem, updateNoise, onNoise } from './systems/noise.js';
 import { createStamina, isExhausted } from './systems/stamina.js';
 import { createMeow, updateMeow } from './systems/meow.js';
@@ -40,13 +40,19 @@ import { createDebugOverlay, updateDebugOverlay } from './ui/debugOverlay.js';
 import { createScreenEffects } from './ui/screenEffects.js';
 import { createOwnerIndicator } from './ui/ownerIndicator.js';
 import { createHelp } from './ui/help.js';
+import { createMenus } from './ui/menus.js';
+import { createPauseScreen } from './ui/pause.js';
+import { loadSave } from './core/save.js';
+import { createFlow, enterLobby, openLevelSelect, playLevel, playContinue, retryLevel, playNextLevel,
+  pauseGame, resumeGame, updateFlowInput, onPointerLockChange } from './core/gameFlow.js';
+import { loadLevel } from './systems/levelManager.js';
 
 function init() {
   const canvas = document.getElementById('game-canvas');
   const { scene, camera, renderer } = createRenderer(canvas);
 
   // Urutan pembuatan dipertahankan (mempengaruhi urutan render objek transparan)
-  setupLights(scene);
+  const lights = setupLights(scene);
   const house = createLivingRoom(scene);
   const furniture = createFurniture(scene);
   const refs = furniture.refs;
@@ -110,22 +116,57 @@ function init() {
     help: createHelp(),
     hud: createHud(),
     floatText: createFloatingText(document.getElementById('float-layer')),
+    lights,
+    levelOverrides: [], // nilai config yang ditimpa level aktif (systems/levelManager.js)
+    save: loadSave(),
+    flow: createFlow(),
+    menus: null,
+    pause: null,
     input: null,
     results: null
   };
 
   ctx.input = createInput(() => audio.ensure(), canvas);
-  ctx.input.allowPointerLock = () => !ctx.state.isGameOver;
-  ctx.results = createResultsScreen(() => {
+  ctx.input.allowPointerLock = () => ctx.flow.state === 'playing' && !ctx.state.isGameOver;
+  ctx.input.onLockChange = (locked) => onPointerLockChange(ctx, locked);
+  const click = (fn) => () => {
     audio.ensure();
-    resetGame(ctx);
+    fn();
+  };
+  ctx.results = createResultsScreen({
+    retry: click(() => retryLevel(ctx)),
+    next: click(() => playNextLevel(ctx)),
+    lobby: click(() => enterLobby(ctx))
+  });
+  ctx.pause = createPauseScreen({
+    resume: click(() => {
+      resumeGame(ctx);
+      ctx.input.requestLock();
+    }),
+    restart: click(() => retryLevel(ctx)),
+    lobby: click(() => enterLobby(ctx))
+  });
+  ctx.menus = createMenus({
+    play: click(() => playContinue(ctx)),
+    levels: click(() => openLevelSelect(ctx)),
+    howto: click(() => {
+      ctx.flow.state = 'lobby';
+      ctx.menus.showHowto();
+    }),
+    back: click(() => enterLobby(ctx)),
+    onLevel: (i) => click(() => playLevel(ctx, i))()
+  });
+  // Jendela kehilangan fokus saat bermain → pause
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden) pauseGame(ctx);
   });
   bindResize(camera, renderer);
   onNoise(ctx.noise, (ev, c) => ownerHearNoise(c, ev));
   registerCatInteractions(ctx);
 
-  resetGame(ctx);
-  ctx.help.showAuto();
+  // Dunia disiapkan dengan level 1 sebagai latar menu, lalu mulai dari lobi
+  loadLevel(ctx, 0);
+  enterLobby(ctx);
   startLoop(ctx);
 }
 
@@ -147,6 +188,64 @@ function hideIcon(ctx) {
   return o.sense.visibility < 1 ? 'half' : 'open';
 }
 
+// Satu frame permainan (state 'playing' dan 'results')
+function gameFrame(ctx, dt) {
+  const capturing = ctx.capture.active;
+  const wdt = dt * ctx.capture.timeScale; // waktu dunia (slow motion saat tertangkap)
+
+  if (!ctx.state.isGameOver) {
+    if (capturing) {
+      // Input dikunci; dunia tetap bergerak pelan di sekitar kucing
+      updateCapture(ctx, dt);
+      updateOwner(ctx, wdt);
+      updateMischief(ctx, wdt);
+      updateObstacles(ctx, wdt);
+      updateHideBoxes(ctx);
+    } else {
+      ctx.time += dt;
+      updateCat(ctx, dt);
+      updateMeow(ctx, dt);
+      updateInteraction(ctx, dt);
+      updateMischief(ctx, dt);
+      if (updateFish(ctx, dt)) onFishEaten(ctx);
+      updateHideBoxes(ctx);
+      updateYarnBalls(ctx, dt);
+      updateCatnip(ctx, dt);
+      updateObstacles(ctx, dt);
+      updateOwner(ctx, dt);
+      updateNoise(ctx.noise, dt);
+
+      ctx.hud.setStamina(ctx.stamina.value, STAMINA.MAX, isExhausted(ctx.stamina));
+      ctx.hud.setMeowCooldown(ctx.meow.cooldown);
+      ctx.hud.setCombo(comboTimeLeft(ctx), COMBO.MULTIPLIER);
+      ctx.hud.setHideStatus(hideIcon(ctx));
+      updateLevelTimer(ctx, dt);
+    }
+    updateDoor(ctx.door, wdt);
+  }
+  updateDarkness(ctx, dt);
+
+  updatePhysics(ctx, wdt);
+  updateParticles(ctx.particles, ctx.scene, wdt);
+  updateDust(ctx.dust, wdt);
+  updateDebugOverlay(ctx);
+  updateCamera(ctx, dt);
+  ctx.cameraFading = updateCameraOcclusion(ctx, dt);
+  ctx.help.update(ctx.input, dt);
+  ctx.floatText.update(ctx.camera, dt);
+  ctx.ownerIndicator.update(ctx);
+}
+
+// Latar menu: kamera pelan mengorbit ruang tamu (dunia diam)
+function menuFrame(ctx, dt) {
+  const M = GAME_FLOW.MENU_CAMERA;
+  ctx.menuCamT = (ctx.menuCamT || 0) + dt * M.SPEED;
+  const a = ctx.menuCamT;
+  ctx.camera.position.set(M.CENTER[0] + Math.sin(a) * M.RADIUS, M.HEIGHT, M.CENTER[2] + Math.cos(a) * M.RADIUS);
+  ctx.camera.lookAt(M.CENTER[0], M.CENTER[1], M.CENTER[2]);
+  updateDust(ctx.dust, dt);
+}
+
 function startLoop(ctx) {
   let lastTime = performance.now();
 
@@ -157,50 +256,17 @@ function startLoop(ctx) {
     const dt = Math.min(rawDt, PHYSICS.MAX_DT); // waktu nyata
     lastTime = now;
     if (rawDt > 0) ctx.fps += (1 / rawDt - ctx.fps) * Math.min(1, rawDt * 2); // FPS dihaluskan (F3)
-    const capturing = ctx.capture.active;
-    const wdt = dt * ctx.capture.timeScale; // waktu dunia (slow motion saat tertangkap)
 
-    if (!ctx.state.isGameOver) {
-      if (capturing) {
-        // Input dikunci; dunia tetap bergerak pelan di sekitar kucing
-        updateCapture(ctx, dt);
-        updateOwner(ctx, wdt);
-        updateMischief(ctx, wdt);
-        updateObstacles(ctx, wdt);
-        updateHideBoxes(ctx);
-      } else {
-        ctx.time += dt;
-        updateCat(ctx, dt);
-        updateMeow(ctx, dt);
-        updateInteraction(ctx, dt);
-        updateMischief(ctx, dt);
-        if (updateFish(ctx, dt)) onFishEaten(ctx);
-        updateHideBoxes(ctx);
-        updateYarnBalls(ctx, dt);
-        updateCatnip(ctx, dt);
-        updateObstacles(ctx, dt);
-        updateOwner(ctx, dt);
-        updateNoise(ctx.noise, dt);
-
-        ctx.hud.setStamina(ctx.stamina.value, STAMINA.MAX, isExhausted(ctx.stamina));
-        ctx.hud.setMeowCooldown(ctx.meow.cooldown);
-        ctx.hud.setCombo(comboTimeLeft(ctx), COMBO.MULTIPLIER);
-        ctx.hud.setHideStatus(hideIcon(ctx));
-        updateLevelTimer(ctx, dt);
-      }
-      updateDoor(ctx.door, wdt);
+    updateFlowInput(ctx); // P = pause / lanjut
+    const st = ctx.flow.state;
+    if (st === 'playing' || st === 'results') {
+      gameFrame(ctx, dt);
+    } else if (st === 'paused') {
+      // Dunia membeku; hanya layar bantuan yang tetap bisa dibuka/tutup
+      ctx.help.update(ctx.input, dt);
+    } else {
+      menuFrame(ctx, dt);
     }
-    updateDarkness(ctx, dt);
-
-    updatePhysics(ctx, wdt);
-    updateParticles(ctx.particles, ctx.scene, wdt);
-    updateDust(ctx.dust, wdt);
-    updateDebugOverlay(ctx);
-    updateCamera(ctx, dt);
-    ctx.cameraFading = updateCameraOcclusion(ctx, dt);
-    ctx.help.update(ctx.input, dt);
-    ctx.floatText.update(ctx.camera, dt);
-    ctx.ownerIndicator.update(ctx);
     ctx.renderer.render(ctx.scene, ctx.camera);
 
     endFrame(ctx.input);

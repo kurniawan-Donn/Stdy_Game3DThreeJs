@@ -67,6 +67,7 @@ pilih misi kenakalan → menyelinap → lakukan kenakalan → kabur & sembunyi �
 | Mouse | Putar kamera | Klik layar mengunci mouse (`Esc` melepas); tanpa kunci: tahan klik kiri + geser |
 | Roda mouse | Zoom kamera | 1,0–4,0 m |
 | `H` | Bantuan | Daftar kontrol; muncul otomatis 10 detik saat game pertama dibuka |
+| `P` | Pause | Juga otomatis pause jika kunci mouse lepas saat main. `Esc` tetap untuk melepas kunci mouse |
 
 ### Kamera
 - Orbit third-person mengelilingi kucing: yaw bebas 360°, pitch 5°–65°. Gerak `WASD` selalu relatif terhadap arah kamera.
@@ -94,9 +95,32 @@ pilih misi kenakalan → menyelinap → lakukan kenakalan → kabur & sembunyi �
 
 ## 4. Level & penilaian
 
-| Level | Durasi | Target Chaos |
-|---|---|---|
-| 1 | 4 menit | 300 |
+### Daftar level
+
+| # | Nama | Durasi | Target Chaos | Ringkasan | Status |
+|---|---|---|---|---|---|
+| 0 | **Latihan** | – | – | Tutorial (bagian 15) | fase terpisah |
+| 1 | **Senin Pagi** | 4 menit | 300 | Hari kerja biasa: rutinitas, pencahayaan, dan objek seperti sekarang | dibangun |
+| 2 | **Deadline** | 4 menit | 400 | Pemilik tegang: lebih sering menoleh, dua sesi rapat video | dibangun |
+| 3 | **Sore Hujan** | – | – | (ide) | dicatat |
+| 4 | **Malam Hari** | – | – | Pemilik membawa **senter** (ide) | dicatat |
+| 5 | **Kedatangan Tamu** | – | – | (ide) | dicatat |
+| bonus | **Minggu Bersih-bersih** | – | – | (ide) | dicatat |
+
+- **Terbuka:** Level 1 selalu terbuka. Level berikutnya terbuka jika level sebelumnya pernah selesai dengan **minimal 1 bintang**.
+- Setiap level adalah **satu file data** di `js/levels/`: nama, deskripsi singkat, durasi, target Chaos, pencahayaan, kenakalan aktif, posisi objek, dan pengubah perilaku pemilik (menimpa nilai `config.js` selama level berjalan, dipulihkan saat ganti level). Menambah level = satu file baru + satu baris import di `js/levels/index.js` (tanpa build tool, browser tidak bisa membaca isi folder).
+- Ganti atau ulang level mereset dunia dengan bersih (geometri & material objek level di-dispose, tanpa memory leak).
+
+### Level 2 — Deadline
+- Durasi 4 menit, target **400**.
+- Pemilik **menoleh lebih sering**: tiap **8–12 detik** saat bekerja (Level 1: 12–20 detik).
+- Ke toilet **paling banyak sekali**.
+- **2 sesi RAPAT VIDEO**, masing-masing **40 detik**:
+  - Pemilik duduk diam menghadap laptop (tidak menoleh). Layar laptop menampilkan kotak-kotak wajah, terdengar suara bicara samar.
+  - Selama rapat, suara dengan **radius ≥ 3 m** yang terdengar pemilik (pemilik di dalam radiusnya) = langsung **"!"** (malu di depan bos): gelas pecah (4 m), pot (3,2 m), meong (4,8 m). *(Permintaan awal ≥ 6 m; diturunkan ke 3 m karena suara terbesar hanya 4,8 m.)*
+  - Suara yang lebih pelan hanya menambah curiga; pemilik tetap duduk di rapat. Melihat kucing tetap menaikkan meter, tetapi pemilik tidak beranjak menyelidiki; meter penuh = "!".
+  - **Jadwal:** rapat dimulai di detik **45** dan **150** sejak level dimulai. Jika pemilik sedang berkegiatan lain, kegiatannya dipersingkat dan ia kembali ke meja; rapat dimulai saat ia duduk. Rapat dilewati jika sisa waktu < 45 detik. Rapat bubar jika pemilik mengejar.
+  - Indikator **"SEDANG RAPAT"** muncul di HUD.
 
 **Rating bintang** (dihitung dari target Chaos):
 
@@ -248,6 +272,8 @@ Total **3 nyawa**.
 
 ## 10. Akhir level
 
+- **Layar hasil:** bintang, Chaos didapat, Chaos yang masuk tabungan, dan tombol **Ulangi**, **Level Berikutnya** (jika sudah terbuka), dan **Lobi**.
+
 - **Waktu habis:** pemilik selesai bekerja, lalu muncul **layar hasil**.
   - Chaos ≥ target → **menang**, beserta rating bintang.
   - Chaos < target → **kalah**, dengan pesan lucu *"Rumah masih terlalu rapi..."*
@@ -312,21 +338,57 @@ Fitur dari prototipe *Coin Rush 3D* diubah sebagai berikut. Perubahan ini dikerj
 | Naik level karena mengumpulkan koin | **Dihapus** (jumlah dan kecepatan robot tetap) | 2 ✅ |
 | Skor & high score | Diganti **Chaos** dan tabungan Chaos | 2 ✅ |
 
-## 14. Lobi (dikerjakan nanti)
+## 14. Lobi, kustomisasi & pengaturan
 
-- Ruangan nyaman dengan **preview kucing yang berputar**.
-- **Pilih kucing:** oranye, hitam, putih, abu-abu, calico, tabby. Semua dibuat secara prosedural.
-- **Aksesoris:** lonceng, dasi kupu-kupu, topi, syal.
+### Alur game
+**LOBI → PILIH LEVEL → MAIN → (PAUSE) → HASIL → LOBI**
+
+- **Pause** dengan `P`. `Esc` tetap melepas kunci mouse; jika kunci mouse lepas saat main, game otomatis pause.
+
+### Lobi
+- Scene 3D kecil: **sudut rumah yang nyaman**. Kucing pemain duduk di bantal dan berputar pelan, dengan animasi idle (loaf, menjilat kaki).
+- **Tabungan Chaos** terlihat di pojok atas.
 - **Menu:**
-  - Main
-  - Pilih Level
-  - Kustomisasi
-  - Pengaturan: kualitas grafis, volume, sensitivitas
-  - Cara Bermain
-- **Unlock** kucing dan aksesoris memakai tabungan Chaos (lihat bagian 10). Progres disimpan di `localStorage`.
-- Semua item bersifat **kosmetik**, dengan dua pengecualian:
-  - **Lonceng:** Chaos yang didapat lebih besar, tapi langkah kucing berbunyi.
-  - **Kucing hitam:** lebih sulit terlihat di area gelap.
+  - **Main:** lanjut ke level tertinggi yang terbuka.
+  - **Pilih Level:** kartu per level dengan nama, deskripsi, bintang terbaik, dan status terkunci/terbuka.
+  - **Kustomisasi**
+  - **Pengaturan**
+  - **Cara Bermain:** sementara berisi daftar kontrol (tutorial menyusul).
+
+### Kustomisasi (kosmetik, prosedural, tanpa aset)
+Preview langsung di lobi saat memilih. Item terkunci tampil dengan harga dan bisa dibeli dengan tabungan Chaos.
+
+| Kucing | Harga |
+|---|---|
+| Oranye | gratis |
+| Putih | 300 |
+| Abu-abu | 300 |
+| Hitam | 500 |
+| Tabby bergaris | 600 |
+| Calico | 800 |
+| Gemuk/chonky oranye | 1000 |
+
+- **Chonky:** badan lebih bulat, jalan bergoyang, loaf lebih bulat; kemampuan **sama**.
+
+| Aksesoris (satu slot) | Harga |
+|---|---|
+| Dasi kupu-kupu | 150 |
+| Syal | 200 |
+| Topi kecil | 250 |
+| Kalung lonceng | 400 |
+
+- Semua kosmetik, dengan dua pengecualian:
+  - **Kalung lonceng:** Chaos **×1,2**, tetapi langkah kucing berbunyi: radius suara langkah jalan 0,4 → **1,2 m**, lari 2 → **3 m**, mengendap 0 → **0,6 m**.
+  - **Kucing hitam:** lebih sulit terlihat di area gelap: jangkauan pandang pemilik di area gelap ×0,7 → **×0,5**.
+
+### Pengaturan
+- **Kualitas grafis:** Rendah (tanpa bayangan, pixel ratio 1), Sedang (bayangan 1024, pixel ratio maks. 1,5), Tinggi (seperti sekarang: bayangan 2048, pixel ratio maks. 2).
+- **Volume**, **sensitivitas mouse**, **balik sumbu Y**, **tampilkan FPS**.
+- Tombol **Hapus Progres** dengan konfirmasi.
+
+### Simpan progres
+- `localStorage` dengan **versi skema** (update berikutnya tidak merusak save lama): tabungan, bintang terbaik per level, item yang dimiliki, kucing & aksesoris terpilih, pengaturan, status tutorial.
+- Semua akses dibungkus `try/catch`; game tetap jalan tanpa save.
 
 ## 15. Tutorial
 
@@ -418,19 +480,23 @@ Belum ada. Tambahkan di sini jika muncul keputusan desain yang belum ditentukan.
 - [x] Denah di `docs/denah.md`
 
 ### Fase 7 — Level & tutorial
-- [ ] Sistem level (layout ruangan, target, durasi) yang didefinisikan sebagai data
-- [ ] Beberapa level dengan tingkat kesulitan yang meningkat
+- [x] Sistem level data-driven: satu file per level di `js/levels/`, level manager, reset bersih tanpa memory leak
+- [x] Level 1 Senin Pagi dan Level 2 Deadline (menoleh lebih sering, rapat video, indikator SEDANG RAPAT)
+- [x] State game LOBI → PILIH LEVEL → MAIN → PAUSE → HASIL; pause `P` & saat kunci mouse lepas
+- [x] Layar hasil dengan Ulangi / Level Berikutnya / Lobi; level terbuka dengan minimal 1 bintang
+- [x] Simpanan `localStorage` berversi skema (v2, migrasi dari save lama), aman tanpa `localStorage`
+- [ ] Level 3–5 (Sore Hujan, Malam Hari, Kedatangan Tamu) dan bonus Minggu Bersih-bersih
 - [ ] Tutorial bertahap yang otomatis dimulai saat pertama main, bisa dilewati dan diulang
 
 ### Fase 8 — Lobi & kustomisasi
-- [ ] Ruang lobi dengan preview kucing berputar
-- [ ] Varian kucing prosedural (oranye, hitam, putih, abu-abu, calico, tabby)
-- [ ] Aksesoris (lonceng, dasi kupu-kupu, topi, syal), termasuk efek lonceng dan kucing hitam
+- [ ] Lobi 3D: sudut rumah nyaman, kucing di bantal berputar pelan dengan animasi idle, tabungan di pojok atas
 - [ ] Menu: Main, Pilih Level, Kustomisasi, Pengaturan, Cara Bermain
-- [ ] Unlock dengan tabungan Chaos dan penyimpanan di `localStorage`
+- [ ] Varian kucing prosedural (oranye, putih, abu-abu, hitam, tabby, calico, chonky) dengan harga
+- [ ] Aksesoris satu slot (dasi kupu-kupu, syal, topi kecil, kalung lonceng), termasuk efek lonceng dan kucing hitam
+- [ ] Pengaturan: kualitas grafis, volume, sensitivitas mouse, balik sumbu Y, tampilkan FPS, hapus progres
+- [x] Simpanan berversi skema (dikerjakan di Fase 7)
 
 ### Fase 9 — Polish & performa
 - [ ] Efek suara prosedural untuk semua aksi baru
-- [ ] Preset kualitas grafis, volume, dan sensitivitas yang benar-benar diterapkan
 - [ ] Uji performa di laptop biasa dan optimasi (sudah: bayangan hanya dari matahari, geometri statis digabung, FPS di F3)
 - [ ] Penyeimbangan angka di `config.js` dan uji main menyeluruh

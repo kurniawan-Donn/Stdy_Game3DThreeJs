@@ -26,6 +26,8 @@ export function createHud() {
   const promptEl = document.getElementById('interact-prompt');
   const hideEl = document.getElementById('hide-status');
   const darkEl = document.getElementById('dark-status');
+  const meetingEl = document.getElementById('meeting-badge');
+  let lastMeeting = null;
   let lastHide = null;
   let lastDark = null;
 
@@ -57,8 +59,14 @@ export function createHud() {
   let lastComboText = null;
 
   return {
-    setLevel(levelId) {
-      levelTextEl.textContent = `Level ${levelId}`;
+    setLevel(levelId, name) {
+      levelTextEl.textContent = name ? `Level ${levelId} · ${name}` : `Level ${levelId}`;
+    },
+    // Indikator "SEDANG RAPAT" (rapat video Level 2)
+    setMeeting(on) {
+      if (on === lastMeeting) return;
+      lastMeeting = on;
+      meetingEl.classList.toggle('active', on);
     },
     setTimer(seconds) {
       const text = formatTime(seconds);

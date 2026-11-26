@@ -6,6 +6,7 @@ import { startCatAction, yawTowards } from '../cat.js';
 import { addBody } from '../../systems/physics.js';
 import { scoreMischief } from '../../systems/chaos.js';
 import { registerMischief, dirFromCat, swipePose } from './common.js';
+import { removeAndDispose } from '../../core/dispose.js';
 
 const BOX = TISSUE.BOX_SIZE;
 
@@ -93,7 +94,7 @@ export function createTissue(ctx, spec) {
 
   // Kotak & lembar tisu jadi benda fisika; dibersihkan oleh clearBodies saat reset.
   inst.dispose = () => {
-    if (box.parent) box.parent.remove(box);
+    removeAndDispose(box);
   };
 
   return inst;

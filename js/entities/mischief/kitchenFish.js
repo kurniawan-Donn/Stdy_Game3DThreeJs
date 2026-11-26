@@ -6,6 +6,7 @@ import { startCatAction, yawTowards } from '../cat.js';
 import { scoreMischief } from '../../systems/chaos.js';
 import { createFishMesh } from '../fishModel.js';
 import { registerMischief, smoothstep } from './common.js';
+import { removeAndDispose } from '../../core/dispose.js';
 
 function bitePose(p, t) {
   const A = CAT_ANIM;
@@ -66,8 +67,8 @@ export function createKitchenFish(ctx, spec) {
   };
 
   inst.dispose = () => {
-    if (fish.parent) fish.parent.remove(fish);
-    if (plate.parent) plate.parent.remove(plate);
+    removeAndDispose(fish);
+    removeAndDispose(plate);
   };
 
   return inst;

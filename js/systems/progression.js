@@ -66,7 +66,7 @@ export function resetGame(ctx) {
   resetCameraOcclusion(ctx);
 
   const level = currentLevel(state);
-  hud.setLevel(level.id);
+  hud.setLevel(level.id, level.name);
   hud.setTimer(state.timeLeft);
   hud.setChaos(0, level.TARGET_CHAOS);
   hud.setCombo(0);
@@ -74,5 +74,6 @@ export function resetGame(ctx) {
   hud.setStamina(ctx.stamina.value, STAMINA.MAX, false);
   hud.setMeowCooldown(0);
   hud.setHideStatus('');
+  if (hud.setMeeting) hud.setMeeting(false);
   ctx.results.hide();
 }

@@ -2,6 +2,7 @@
 // tiap frame, dan dibuat ulang saat level diulang (tiap objek sekali per level).
 import * as THREE from 'three';
 import { MISCHIEF_LAYOUT } from '../../config.js';
+import { currentLevel } from '../../core/state.js';
 import { createGlass } from './glass.js';
 import { createTissue } from './tissue.js';
 import { createScratch } from './scratch.js';
@@ -37,7 +38,10 @@ export function resetMischief(ctx) {
   }
   m.instances.length = 0;
 
+  // Kenakalan aktif ditentukan file level (null = semua)
+  const active = currentLevel(ctx.state).ACTIVE_MISCHIEF;
   for (const [type, specs] of Object.entries(MISCHIEF_LAYOUT)) {
+    if (active && !active.includes(type)) continue;
     const factory = FACTORIES[type];
     for (const spec of specs) m.instances.push(factory(ctx, spec));
   }

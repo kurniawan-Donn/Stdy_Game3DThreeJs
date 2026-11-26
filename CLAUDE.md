@@ -25,15 +25,18 @@ package.json            Script "start" (npx serve)
 docs/GDD.md             Game Design Document + peta pengembangan (Fase 0–9)
 docs/denah.md           Denah rumah 14 × 10 m (ASCII + koordinat, loop, jalan pintas)
 js/
-  main.js               Entry point: membuat objek konteks `ctx`, menjalankan game loop
+  main.js               Entry point: membuat objek konteks `ctx`, menjalankan game loop (lobi / main / pause)
   config.js             SEMUA angka penyetelan (lihat aturan di bawah)
+  levels/               Satu file data per level (level1.js Senin Pagi, level2.js Deadline) + index.js (daftar & format)
   core/
     renderer.js         Scene, kamera, WebGLRenderer, resize
     input.js            Keyboard (keys/pressed) + mouse (mouseDX/DY via pointer lock atau drag, wheel)
     state.js            State bersama: Chaos, combo, waktu, nyawa (createState/resetRunState)
     camera.js           Kamera orbit third-person (camRig): yaw/pitch/zoom, auto-recenter, spring arm, mode KETAHUAN, getaran
     audio.js            Efek suara Web Audio: audio.play(nama) dari AUDIO.SFX / AUDIO.NOISE_SFX
-    save.js             Tabungan Chaos & rekor level di localStorage
+    save.js             Simpanan localStorage berversi skema (v2, migrasi save lama): tabungan, rekor level, item, pilihan, pengaturan
+    gameFlow.js         Alur LOBI → PILIH LEVEL → MAIN → PAUSE → HASIL (flow.state), pause P & saat kunci mouse lepas
+    dispose.js          disposeObject3D / removeAndDispose: lepas geometri, material, tekstur objek level
     mergeStatic.js      Gabung mesh statis per material (mengurangi draw call)
   world/
     textures.js         Tekstur prosedural (lantai kayu, karpet)
@@ -53,6 +56,7 @@ js/
     catnip.js           Catnip (satu per level) → zoomies
     owner/              Pemilik rumah
       index.js          Rutinitas, meter curiga, state machine, mengejar, pendengaran
+      meeting.js        Rapat video (Level 2): jadwal, layar laptop wajah, suara bicara samar, suara keras = "!"
       model.js          Model manusia low-poly (pivot sendi)
       animation.js      Pose: jalan, lari, duduk mengetik, minum, meregang, mengangkat
     particles.js        Percikan partikel saat camilan diambil
@@ -66,6 +70,7 @@ js/
     physics.js          Fisika benda sederhana (addBody, updatePhysics)
     chaos.js            scoreMischief: Chaos + combo + noise + umpan balik
     level.js            Timer level, akhir level, bintang, tabungan
+    levelManager.js     Muat level (pengubah config + pencahayaan, dipulihkan saat ganti), aturan buka level
     progression.js      Makan ikan, reset level
     navGrid.js          Grid navigasi pemilik + A* + penghalusan jalur
     perception.js       Penglihatan pemilik: kerucut, jangkauan, line-of-sight (kardus, kolong tempat sembunyi)
@@ -78,7 +83,9 @@ js/
     interaction.js      Interaksi (E): registerInteractable, penanda, prompt
   ui/
     hud.js              Level, waktu, Chaos Meter, combo, nyawa, stamina, meong, prompt E
-    results.js          Layar hasil akhir level + tombol Main Lagi
+    results.js          Layar hasil: bintang, Chaos, tabungan + Ulangi / Level Berikutnya / Lobi
+    menus.js            Menu lobi: Main, Pilih Level (kartu), Cara Bermain
+    pause.js            Layar pause: Lanjutkan / Ulangi / Lobi
     floatingText.js     Teks melayang (+40, COMBO x1.5) yang mengikuti posisi 3D
     screenEffects.js    Efek layar CSS: desaturasi, vignette, teks KETAHUAN!, fade hitam
     ownerIndicator.js   Ikon ?/! + meter curiga di atas kepala pemilik (+ label debug)
@@ -91,7 +98,11 @@ js/
 - `main.js` membuat satu objek konteks **`ctx`** (lihat isinya di `main.js`): scene/kamera/renderer, `colliders` & `furnitureRefs`, entitas (`cat`, `fish`, `obstacles`, `owner`), dunia (`nav`, `door`), sistem (`state`, `stamina`, `noise`, `meow`, `physics`, `mischief`, `interaction`, `capture`), dan UI (`hud`, `results`, `floatText`, `screenFx`, `ownerIndicator`, `debug`). Fungsi update menerima `(ctx, dt)`.
 - **Tidak ada variabel global yang bisa diubah.** Dependensi dikirim lewat parameter atau `ctx`. Satu-satunya pengecualian yang diperbolehkan: vektor kerja privat di level modul (misalnya `focusTarget` di `camera.js`) untuk menghindari alokasi setiap frame.
 - Entitas tidak memanggil `systems/progression.js` secara langsung. Mereka mengembalikan sinyal, misalnya `updateFish()` mengembalikan `true` saat ikan dimakan, lalu `main.js` memanggil `onFishEaten(ctx)`. Pola ini mencegah import melingkar.
-- Urutan update per frame: kucing → meong → interaksi → kenakalan → ikan → robot vacuum → pemilik → noise → HUD → timer level → pintu, lalu (juga setelah level berakhir) fisika → partikel → debu → overlay debug → kamera → teks melayang → indikator pemilik → render → `endFrame(input)`.
+- **Alur game** (`core/gameFlow.js`): `ctx.flow.state` = `lobby` | `select` | `playing` | `paused` | `results`. Dunia hanya di-update saat `playing` dan `results`; saat `paused` dunia membeku. Mulai/ganti level selalu lewat `playLevel` → `loadLevel` (jangan panggil `resetGame` langsung dari UI).
+- **Level** (`js/levels/`, `systems/levelManager.js`): file level hanya berisi data. Pengubah (`OWNER`, `LAYOUT`) menimpa objek di `config.js` selama level berjalan dan dicatat di `ctx.levelOverrides`; `loadLevel` selalu memulihkannya dulu sebelum menerapkan level berikutnya. Modul yang membaca nilai config saat dipakai (bukan disalin di level modul) otomatis ikut. Level baru = file baru + satu baris di `levels/index.js`.
+- **Memory:** objek per level yang dibuang harus lewat `removeAndDispose` (`core/dispose.js`), bukan sekadar `parent.remove`. Uji headless memeriksa tidak ada geometri/material yang bocor setelah 20× ganti level.
+- **Simpanan** hanya lewat `core/save.js` (`ctx.save`); semua akses localStorage dibungkus try/catch. Saat skema berubah, naikkan `SAVE.VERSION` dan tambahkan migrasi.
+- Urutan update per frame (saat bermain): kucing → meong → interaksi → kenakalan → ikan → robot vacuum → pemilik → noise → HUD → timer level → pintu, lalu (juga setelah level berakhir) fisika → partikel → debu → overlay debug → kamera → teks melayang → indikator pemilik → render → `endFrame(input)`.
 - **Waktu nyata vs waktu dunia:** saat tertangkap, `ctx.capture.timeScale` = 0,3 (slow motion). Pemilik, kenakalan, robot, fisika, partikel, dan debu memakai waktu dunia (`dt × timeScale`); alur KETAHUAN, kamera, dan UI memakai waktu nyata. Input kucing dikunci selama alur KETAHUAN.
 - Pemilik mendengar lewat `onNoise` (didaftarkan di `main.js` → `ownerHearNoise`). Penglihatan dihitung di `systems/perception.js`. Collider perabot dengan `occludes: false` tidak menghalangi pandangan, dan `navBlocks: false` tidak menghalangi jalur pemilik.
 - **Kenakalan baru:** buat file di `js/entities/mischief/`, daftarkan di `FACTORIES` (`index.js`), tambahkan posisinya di `MISCHIEF_LAYOUT` dan nilainya di `MISCHIEF` (config). Selesaikan kenakalan lewat `scoreMischief(ctx, type, posisi)`, yang otomatis memanggil `emitNoise` dengan radius dari GDD. Animasi kucing dijalankan lewat `startCatAction(cat, { duration, faceYaw, pose, events })`, dan semua perubahan tampilan harus dikembalikan di `inst.dispose()` karena objek dibuat ulang setiap level diulang.

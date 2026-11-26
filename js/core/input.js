@@ -16,7 +16,9 @@ export function createInput(onKeyDown, canvas) {
     wheel: 0,
     pointerLocked: false,
     dragging: false,
-    allowPointerLock: () => true
+    allowPointerLock: () => true,
+    onLockChange: null, // (locked) => void, dipanggil saat status kunci mouse berubah
+    requestLock: () => {}
   };
 
   window.addEventListener('keydown', (e) => {
@@ -39,25 +41,29 @@ export function createInput(onKeyDown, canvas) {
   });
 
   if (canvas) {
+    input.requestLock = () => {
+      if (input.pointerLocked || !input.allowPointerLock() || !canvas.requestPointerLock) return;
+      try {
+        const req = canvas.requestPointerLock();
+        if (req && req.catch) req.catch(() => {});
+      } catch (err) {
+        // browser menolak: drag tetap bisa dipakai
+      }
+    };
     // Klik canvas = pointer lock; tahan klik kiri sambil geser = putar kamera
     canvas.addEventListener('mousedown', (e) => {
       if (onKeyDown) onKeyDown(e);
       if (e.button !== 0) return;
       input.dragging = true;
-      if (!input.pointerLocked && input.allowPointerLock() && canvas.requestPointerLock) {
-        try {
-          const req = canvas.requestPointerLock();
-          if (req && req.catch) req.catch(() => {});
-        } catch (err) {
-          // browser menolak: drag tetap bisa dipakai
-        }
-      }
+      input.requestLock();
     });
     window.addEventListener('mouseup', (e) => {
       if (e.button === 0) input.dragging = false;
     });
     document.addEventListener('pointerlockchange', () => {
+      const was = input.pointerLocked;
       input.pointerLocked = document.pointerLockElement === canvas;
+      if (input.onLockChange && was !== input.pointerLocked) input.onLockChange(input.pointerLocked);
     });
     document.addEventListener('mousemove', (e) => {
       if (!input.pointerLocked && !input.dragging) return;

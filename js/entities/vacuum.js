@@ -3,6 +3,7 @@
 import * as THREE from 'three';
 import { VACUUM, MATERIALS, ROOM_HALF_W, ROOM_HALF_D, PLAYER } from '../config.js';
 import { findFreeFloorPosition } from '../systems/spawn.js';
+import { removeAndDispose } from '../core/dispose.js';
 
 function createRobotVacuumMesh() {
   const R = VACUUM.RADIUS;
@@ -60,7 +61,7 @@ export function spawnObstacle(ctx) {
 
 export function clearObstacles(ctx) {
   for (const obs of ctx.obstacles) {
-    ctx.scene.remove(obs.mesh);
+    removeAndDispose(obs.mesh);
   }
   ctx.obstacles.length = 0;
 }

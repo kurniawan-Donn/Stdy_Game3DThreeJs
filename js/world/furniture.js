@@ -284,6 +284,7 @@ export function createFurniture(scene) {
     screen.position.set(0, 0.105, 0.006);
     lid.add(screen);
     g.add(lid);
+    refs.laptopScreen = screen; // layar rapat video (owner/meeting.js)
     finish(ctx, g, L.workDesk.colliders);
   }
   {

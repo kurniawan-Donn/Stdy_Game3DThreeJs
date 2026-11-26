@@ -173,7 +173,8 @@ export const DEBUG = {
   PATH_COLOR: 0xe879f9,
   DARK_ZONE_COLOR: 0x818cf8, // batas area gelap di lantai
   DARK_ZONE_OPACITY: 0.85,
-  DARK_ZONE_BORDER: 0.06 // lebar pita batas (m)
+  DARK_ZONE_BORDER: 0.06, // lebar pita batas (m)
+  DARK_ZONE_INSET: 0.1 // jarak pita dari tepi zona (tepi zona = tengah dinding)
 };
 
 // --- Animasi kucing ---
@@ -706,6 +707,7 @@ export const AUDIO = {
     star: [[880, 1320, 0.25, 'triangle', 0.12, 0]],
     timerTick: [[1000, 1000, 0.05, 'square', 0.04, 0]],
     suspicious: [[520, 700, 0.15, 'sine', 0.08, 0]], // "?"
+    meetingBusted: [[880, 300, 0.35, 'square', 0.07, 0], [600, 200, 0.4, 'square', 0.06, 0.12]], // ketahuan berisik saat rapat
     alarm: [
       [880, 880, 0.08, 'square', 0.08, 0],
       [1175, 1175, 0.16, 'square', 0.08, 0.09]
@@ -769,9 +771,15 @@ export const AUDIO = {
 // =====================================================================
 
 // --- Level & penilaian (GDD §4) ---
-export const LEVELS = [
-  { id: 1, DURATION: 240, TARGET_CHAOS: 300 }
-];
+// Data level (durasi, target, pencahayaan, pengubah) ada di js/levels/.
+// Level berikutnya terbuka jika level sebelumnya mendapat minimal sekian bintang.
+export const LEVEL_UNLOCK_MIN_STARS = 1;
+// Alur game & lobi
+export const GAME_FLOW = {
+  PAUSE_KEY: 'KeyP',
+  // Kamera latar menu (sementara, sebelum lobi 3D): mengorbit ruang tamu
+  MENU_CAMERA: { CENTER: [-1.5, 0.5, 2.0], RADIUS: 2.6, HEIGHT: 1.7, SPEED: 0.06 }
+};
 // Rating bintang: kelipatan target Chaos untuk 1, 2, 3 bintang
 export const STAR_THRESHOLDS = [1.0, 1.5, 2.0];
 
@@ -1057,7 +1065,63 @@ export const HUD = {
 
 // --- Simpanan (localStorage) ---
 export const SAVE = {
-  KEY: 'meongMayhem.save.v1'
+  KEY: 'meongMayhem.save', // versi skema disimpan di dalam data (lihat core/save.js)
+  VERSION: 2,
+  LEGACY_KEYS: ['meongMayhem.save.v1'] // save lama yang dimigrasi otomatis
+};
+
+// --- Pengaturan (lobi → Pengaturan) ---
+export const SETTINGS = {
+  DEFAULTS: { quality: 'high', volume: 0.8, sensitivity: 1, invertY: false, showFps: false },
+  QUALITY: {
+    low: { label: 'Rendah', shadows: false, shadowMapSize: 512, maxPixelRatio: 1 },
+    medium: { label: 'Sedang', shadows: true, shadowMapSize: 1024, maxPixelRatio: 1.5 },
+    high: { label: 'Tinggi', shadows: true, shadowMapSize: 2048, maxPixelRatio: 2 }
+  },
+  SENSITIVITY_MIN: 0.3, // pengali CAMERA.MOUSE_SENSITIVITY
+  SENSITIVITY_MAX: 2.5,
+  SENSITIVITY_STEP: 0.1,
+  VOLUME_STEP: 0.05
+};
+
+// --- Kustomisasi kucing (GDD §14). Harga dalam tabungan Chaos. ---
+// Warna: fur = bulu utama, light = perut/moncong/kaki, pattern = belang/bercak,
+// eye = mata. pattern: null | 'tabby' (belang) | 'calico' (bercak 3 warna).
+export const CUSTOMIZATION = {
+  DEFAULT_CAT: 'orange',
+  FREE_CATS: ['orange'],
+  CATS: [
+    { id: 'orange', name: 'Oranye', price: 0, fur: 0xf59e42, light: 0xfde6c4, eye: 0x111827, pattern: null },
+    { id: 'white', name: 'Putih', price: 300, fur: 0xf4f1ea, light: 0xffffff, eye: 0x2563eb, pattern: null },
+    { id: 'gray', name: 'Abu-abu', price: 300, fur: 0x8b8f98, light: 0xd7d9de, eye: 0x15803d, pattern: null },
+    { id: 'black', name: 'Hitam', price: 500, fur: 0x1f1f24, light: 0x34343b, eye: 0xfacc15, pattern: null, darkStealth: true },
+    { id: 'tabby', name: 'Tabby Bergaris', price: 600, fur: 0xc98a4b, light: 0xf2dcc0, eye: 0x166534, pattern: 'tabby', patternColor: 0x6b4226 },
+    { id: 'calico', name: 'Calico', price: 800, fur: 0xf8f4ec, light: 0xffffff, eye: 0x92400e, pattern: 'calico', patternColor: 0xe07b2a, patternColor2: 0x2a2523 },
+    { id: 'chonky', name: 'Chonky Oranye', price: 1000, fur: 0xf59e42, light: 0xfde6c4, eye: 0x111827, pattern: null, chonky: true }
+  ],
+  ACCESSORIES: [
+    { id: 'bowtie', name: 'Dasi Kupu-kupu', price: 150, color: 0xdc2626 },
+    { id: 'scarf', name: 'Syal', price: 200, color: 0x2563eb, color2: 0xf8fafc },
+    { id: 'hat', name: 'Topi Kecil', price: 250, color: 0x3f3f46, color2: 0xfacc15 },
+    { id: 'bell', name: 'Kalung Lonceng', price: 400, color: 0xdc2626, color2: 0xfacc15 }
+  ],
+  // Kalung lonceng: Chaos lebih besar, tapi langkah berbunyi (GDD §14)
+  BELL: { CHAOS_MULT: 1.2, STEP_RADIUS: { walk: 1.2, run: 3, sneak: 0.6 } },
+  // Kucing hitam: jangkauan pandang pemilik di area gelap (biasa: PERCEPTION.DARK_RANGE_MULT)
+  BLACK_CAT_DARK_RANGE_MULT: 0.5,
+  // Chonky: badan lebih bulat, jalan bergoyang, loaf lebih bulat (kemampuan sama)
+  CHONKY: { BODY_WIDTH: 1.35, BODY_HEIGHT: 1.15, BELLY_DROP: 0.012, WADDLE_ROLL: 0.12, WADDLE_SWAY: 0.012, LOAF_WIDEN: 1.12 }
+};
+
+// --- Rapat video (Level 2). Jadwal & aturan ada di file level (MEETINGS). ---
+export const MEETING = {
+  SPEAKER_INTERVAL: 1.6, // detik pergantian pembicara (bingkai menyala)
+  SCREEN_SIZE: [256, 160], // resolusi kanvas layar laptop
+  SCREEN_BG: '#0f172a',
+  TILE_COLORS: ['#93c5fd', '#fca5a5', '#86efac', '#fcd34d'],
+  SPEAKER_COLOR: '#22c55e',
+  // Suara bicara samar: noise → bandpass, volume per "suku kata" acak
+  AUDIO: { VOLUME: 0.06, MAX_DIST: 8, MIN_LEVEL: 0.12, FREQ: 520, Q: 1.6, SYLLABLE_MIN: 0.08, SYLLABLE_MAX: 0.22, PAUSE_CHANCE: 0.2 }
 };
 
 // =====================================================================

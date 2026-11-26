@@ -5,6 +5,7 @@ import { BLANKET as B, MATERIALS } from '../../config.js';
 import { startCatAction, yawTowards } from '../cat.js';
 import { scoreMischief } from '../../systems/chaos.js';
 import { registerMischief } from './common.js';
+import { removeAndDispose } from '../../core/dispose.js';
 
 function kneadPose(p, t) {
   const w = Math.max(0, Math.min(1, t / 0.15, (B.ACTION_DURATION - t) / 0.15));
@@ -81,7 +82,7 @@ export function createBlanket(ctx, spec) {
   });
 
   inst.dispose = () => {
-    if (group.parent) group.parent.remove(group);
+    removeAndDispose(group);
   };
 
   return inst;

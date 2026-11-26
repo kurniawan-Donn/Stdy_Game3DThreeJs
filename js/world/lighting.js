@@ -24,7 +24,7 @@ export function setupLights(scene) {
   scene.add(sunLight.target);
 
   // Lampu ruangan tanpa bayangan
-  const lights = { sun: sunLight };
+  const lights = { sun: sunLight, hemi: hemiLight };
   for (const p of LIGHTS.points) {
     const light = new THREE.PointLight(p.color, p.intensity, p.distance, p.decay);
     light.position.set(...p.position);
