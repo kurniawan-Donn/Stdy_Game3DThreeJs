@@ -4,7 +4,8 @@
 // merah = terhalang), jalur A* pemilik, dan panel teks status.
 // State & meter pemilik di atas kepalanya ditampilkan oleh ui/ownerIndicator.js.
 import * as THREE from 'three';
-import { DEBUG, INTERACT, NOISE, PLAYER, STAMINA, MEOW, OWNER, HOUSE } from '../config.js';
+import { DEBUG, INTERACT, NOISE, PLAYER, STAMINA, MEOW, OWNER, HOUSE, DARK_ZONES } from '../config.js';
+import { isInDarkZone } from '../world/house.js';
 import { isExhausted } from '../systems/stamina.js';
 import { recentMeowCount, isAnnoying } from '../systems/meow.js';
 import { comboTimeLeft } from '../systems/chaos.js';
@@ -64,6 +65,23 @@ export function createDebugOverlay(scene) {
   // Jalur A* pemilik
   const path = makeLine(MAX_PATH_POINTS + 1, DEBUG.PATH_COLOR, false);
   group.add(path);
+  // Batas area gelap di lantai (pita tipis; garis WebGL hanya 1 px)
+  const darkMat = new THREE.MeshBasicMaterial({ color: DEBUG.DARK_ZONE_COLOR, transparent: true, opacity: DEBUG.DARK_ZONE_OPACITY, depthTest: false, depthWrite: false, fog: false });
+  const darkEdges = new THREE.Group();
+  const bw = DEBUG.DARK_ZONE_BORDER;
+  for (const z of DARK_ZONES) {
+    const x0 = z.x - z.width / 2 + bw / 2, x1 = z.x + z.width / 2 - bw / 2;
+    const z0 = z.z - z.depth / 2 + bw / 2, z1 = z.z + z.depth / 2 - bw / 2;
+    for (const [cx, cz, w, d] of [[z.x, z0, z.width, bw], [z.x, z1, z.width, bw], [x0, z.z, bw, z.depth], [x1, z.z, bw, z.depth]]) {
+      const strip = new THREE.Mesh(new THREE.PlaneGeometry(w, d), darkMat);
+      strip.rotation.x = -Math.PI / 2;
+      strip.position.set(cx, RING_Y, cz);
+      strip.renderOrder = 998;
+      darkEdges.add(strip);
+    }
+  }
+  darkEdges.name = 'darkZoneBorders';
+  group.add(darkEdges);
 
   const overlay = {
     cone,
@@ -146,7 +164,7 @@ export function updateDebugOverlay(ctx) {
     `chaos     : ${ctx.state.chaos}, kenakalan tersisa ${remainingMischief(ctx)}, combo ${comboTimeLeft(ctx).toFixed(1)}s`,
     `aksi      : ${cat.action ? cat.action.type + ' ' + cat.action.t.toFixed(2) + 's' : '-'}`,
     `fisika    : ${ctx.physics.bodies.length} benda, waktu ${ctx.state.timeLeft.toFixed(1)}s`,
-    `ruangan   : ${roomAt(ctx.cat.mesh.position)}${cat.underCrawl ? ' (di kolong)' : ''}`,
+    `ruangan   : ${roomAt(ctx.cat.mesh.position)}${cat.underCrawl ? ' (di kolong)' : ''}${isInDarkZone(p.x, p.z) ? ' · AREA GELAP' : ''}`,
     `sembunyi  : ${hideDebugText(ctx)}`,
     `kamera    : yaw ${(ctx.camRig.yaw * 57.3).toFixed(0)}° pitch ${(ctx.camRig.pitch * 57.3).toFixed(0)}° lengan ${ctx.camRig.arm.toFixed(2)}/${ctx.camRig.zoom.toFixed(2)} m, pudar ${ctx.cameraFading}${ctx.input.pointerLocked ? ', mouse terkunci' : ''}`
   ].join('\n');

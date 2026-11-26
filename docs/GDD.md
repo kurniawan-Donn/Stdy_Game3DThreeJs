@@ -205,7 +205,7 @@ Pemilik berjalan memakai grid navigasi (A* + penghalusan jalur) dan tidak menemb
 - Kucing hanya terlihat jika ada **line-of-sight** ke titik tubuhnya (kepala 0,28 m, punggung 0,23 m, pantat 0,20 m). Kucing kecil mudah tertutup meja kopi, sofa, dan perabot lain. Perabot menghalangi pandangan; lampu berdiri dan tanaman tidak. Perabot yang sedang dipijak kucing tidak menutupi kucing itu sendiri.
 - Pengubah jangkauan: **mengendap ×0,5**, **area gelap ×0,7**.
 - **Jarak < 0,6 m:** selalu terlihat, kecuali line-of-sight terhalang total.
-- **Area gelap:** lorong dan kamar tidur, ditandai bayangan gelap di lantai (visual lengkap di Fase 5).
+- **Area gelap:** lorong dan kamar tidur. Tampak jelas lebih redup: lantai, dinding, dan plafon zona diberi lapisan gelap kecokelatan, hanya diterangi lampu malam hangat yang lemah, dan kucing serta pemilik di dalamnya ikut meredup. Saat kucing di area gelap, ikon mata HUD diberi **tanda bulan kecil**; `F3` menggambar batas zona di lantai.
 
 ### Pendengaran
 - Pemilik mendengar suara (`emitNoise`) jika berada di dalam radiusnya.
@@ -283,6 +283,8 @@ Total **3 nyawa**.
 - Robot (Ø 0,34 m) berkeliaran di seluruh rumah dengan kecepatan 0,6 m/s: jalan lurus, berbelok acak saat menabrak dan sesekali, sehingga bisa pindah ruangan. Robot **tidak melukai** kucing.
 - Lompat ke atas robot = **menumpang**: kucing duduk tenang, langkah senyap, **WASD tidak mengarahkan**, `Spasi` = turun. Jika robot masuk kolong yang terlalu rendah, kucing turun otomatis.
 - Pemilik yang melihat kucing menumpang: curiga naik **setengah** kecepatan biasa.
+- Saat pemilik **MENGEJAR**, robot dalam radius 5 m dari kucing/pemilik **menyingkir** ke dinding samping terdekat (sisi lorong) lalu diam; di ruang terbuka robot cukup berhenti. Robot kembali berkeliaran 1,5 detik setelah kejaran selesai. Di lorong 1,2 m tersisa celah ±0,75 m untuk kabur.
+- Robot berbelok sebelum menabrak kucing yang berdiri di lantai (tidak mendorongnya).
 
 ### Bola benang
 - 2 bola (ruang tamu, kamar tidur). `E` = **tendang** ke arah hadap kucing (jeda 1 detik); bola menggelinding ±1,7 m.
@@ -395,7 +397,8 @@ Belum ada. Tambahkan di sini jika muncul keputusan desain yang belum ditentukan.
 
 ### Fase 5 — Sembunyi & camilan
 - [x] Kardus (ketahuan jika bergerak saat dilihat; masuk di depan mata tidak menyelamatkan)
-- [ ] Area gelap: visual & pencahayaan yang lebih jelas (efek jangkauan ×0,7 sudah ada sejak Fase 3; lorong & kamar tidur)
+- [x] Area gelap: visual & pencahayaan yang lebih jelas (lapisan redup hangat, lampu malam lemah, entitas meredup, tanda bulan di HUD, batas di F3)
+- [x] Robot menyingkir/berhenti saat pemilik mengejar agar jalur kabur tidak tertutup
 - [x] Kolong perabot untuk sembunyi — dikerjakan saat perbaikan peta; diperbarui: sofa, kasur, meja kerja, meja makan (merendah = tersembunyi), meja kopi hanya bisa dilewati, pemilik kadang membungkuk mengecek
 - [x] Catnip (zoomies 6 detik, satu per level) menggantikan magnet
 - [x] Tidur di sinar matahari untuk memulihkan stamina (pemilik tidak curiga pada kucing tidur)

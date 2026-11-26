@@ -1,7 +1,7 @@
 // Elemen rumah yang dinamis/khusus: pintu kamar mandi (tertutup saat pemilik
 // di dalam), keranjang kucing (tempat muncul kembali), dan area gelap.
 import * as THREE from 'three';
-import { DOOR, BASKET, DARK_ZONES, DARK_ZONE_VISUAL, MATERIALS } from '../config.js';
+import { DOOR, BASKET, DARK_ZONES, DARK_ZONE_VISUAL, NIGHT_LIGHTS, MATERIALS, ROOM, ROOM_HALF_W, ROOM_HALF_D } from '../config.js';
 
 // --- Pintu kamar mandi ---
 // Engsel di sisi barat bukaan; daun pintu membentang ke +X saat tertutup dan
@@ -103,18 +103,114 @@ export function createBasket(scene) {
 }
 
 // --- Area gelap ---
-export function createDarkZones(scene) {
-  const mat = new THREE.MeshBasicMaterial({
-    color: DARK_ZONE_VISUAL.COLOR,
-    transparent: true,
-    opacity: DARK_ZONE_VISUAL.OPACITY,
-    depthWrite: false
-  });
+// Lapisan redup hangat di lantai, dinding (dalam & luar), dan plafon setiap
+// zona, ditambah lampu malam lemah. wallBoxes = kotak dinding dalam (termasuk
+// ambang pintu) dari room.js.
+export function createDarkZones(scene, wallBoxes = []) {
+  const V = DARK_ZONE_VISUAL;
+  const make = (opacity) => new THREE.MeshBasicMaterial({ color: V.COLOR, transparent: true, opacity, depthWrite: false });
+  const floorMat = make(V.FLOOR_OPACITY);
+  const wallMat = make(V.WALL_OPACITY);
+  const ceilMat = make(V.CEILING_OPACITY);
+  ceilMat.side = THREE.BackSide;
+  const group = new THREE.Group();
+  const off = V.SURFACE_OFFSET;
+  const tol = V.FACE_TOLERANCE;
+
+  // Bidang dinding: axis 'x' = bidang tegak lurus X (di x = at), sebaliknya Z.
+  // normal = arah hadap (+1/-1) ke dalam zona.
+  function wallPlane(axis, at, normal, a, b, y0, y1) {
+    if (b - a < V.MIN_PIECE || y1 - y0 < V.MIN_PIECE) return;
+    const m = new THREE.Mesh(new THREE.PlaneGeometry(b - a, y1 - y0), wallMat);
+    const mid = (a + b) / 2;
+    if (axis === 'x') {
+      m.position.set(at + normal * off, (y0 + y1) / 2, mid);
+      m.rotation.y = normal > 0 ? Math.PI / 2 : -Math.PI / 2;
+    } else {
+      m.position.set(mid, (y0 + y1) / 2, at + normal * off);
+      m.rotation.y = normal > 0 ? 0 : Math.PI;
+    }
+    group.add(m);
+  }
+
   for (const z of DARK_ZONES) {
-    const plane = new THREE.Mesh(new THREE.PlaneGeometry(z.width, z.depth), mat);
-    plane.rotation.x = -Math.PI / 2;
-    plane.position.set(z.x, 0.012, z.z);
-    scene.add(plane);
+    const minX = z.x - z.width / 2, maxX = z.x + z.width / 2;
+    const minZ = z.z - z.depth / 2, maxZ = z.z + z.depth / 2;
+
+    const floor = new THREE.Mesh(new THREE.PlaneGeometry(z.width, z.depth), floorMat);
+    floor.rotation.x = -Math.PI / 2;
+    floor.position.set(z.x, 0.012, z.z);
+    group.add(floor);
+
+    const ceil = new THREE.Mesh(new THREE.PlaneGeometry(z.width, z.depth), ceilMat);
+    ceil.rotation.x = -Math.PI / 2;
+    ceil.position.set(z.x, ROOM.HEIGHT - off, z.z);
+    group.add(ceil);
+
+    // Dinding dalam: muka yang menghadap ke dalam zona
+    for (const b of wallBoxes) {
+      const y0 = b.minY || 0, y1 = b.topHeight;
+      const za = Math.max(b.minZ, minZ), zb = Math.min(b.maxZ, maxZ);
+      const xa = Math.max(b.minX, minX), xb = Math.min(b.maxX, maxX);
+      if (zb > za) {
+        if (b.maxX >= minX - tol && maxX - b.maxX > 0.05) wallPlane('x', b.maxX, 1, za, zb, y0, y1);
+        if (b.minX <= maxX + tol && b.minX - minX > 0.05) wallPlane('x', b.minX, -1, za, zb, y0, y1);
+      }
+      if (xb > xa) {
+        if (b.maxZ >= minZ - tol && maxZ - b.maxZ > 0.05) wallPlane('z', b.maxZ, 1, xa, xb, y0, y1);
+        if (b.minZ <= maxZ + tol && b.minZ - minZ > 0.05) wallPlane('z', b.minZ, -1, xa, xb, y0, y1);
+      }
+    }
+    // Dinding luar yang berimpit dengan tepi zona
+    const H = ROOM.HEIGHT;
+    if (Math.abs(minX + ROOM_HALF_W) < tol) wallPlane('x', -ROOM_HALF_W, 1, minZ, maxZ, 0, H);
+    if (Math.abs(maxX - ROOM_HALF_W) < tol) wallPlane('x', ROOM_HALF_W, -1, minZ, maxZ, 0, H);
+    if (Math.abs(minZ + ROOM_HALF_D) < tol) wallPlane('z', -ROOM_HALF_D, 1, minX, maxX, 0, H);
+    if (Math.abs(maxZ - ROOM_HALF_D) < tol) wallPlane('z', ROOM_HALF_D, -1, minX, maxX, 0, H);
+  }
+  scene.add(group);
+
+  // Lampu malam: point light lemah tanpa bayangan + titik kecil yang berpendar
+  const lights = [];
+  for (const l of NIGHT_LIGHTS) {
+    const light = new THREE.PointLight(l.color, l.intensity, l.distance, l.decay);
+    light.position.set(...l.position);
+    light.castShadow = false;
+    scene.add(light);
+    const bulb = new THREE.Mesh(new THREE.SphereGeometry(l.glow, 10, 8), new THREE.MeshBasicMaterial({ color: l.color }));
+    bulb.position.set(...l.position);
+    scene.add(bulb);
+    lights.push(light);
+  }
+  return { group, lights };
+}
+
+// Peredup warna entitas (kucing, pemilik) saat berada di area gelap.
+// Material entitas ini unik per entitas, jadi warnanya boleh diubah.
+export function createDarkTint(root) {
+  const entries = [];
+  const seen = new Set();
+  root.traverse((o) => {
+    const mats = o.material ? (Array.isArray(o.material) ? o.material : [o.material]) : [];
+    for (const m of mats) {
+      if (!m.color || seen.has(m)) continue;
+      seen.add(m);
+      entries.push({ m, base: m.color.clone() });
+    }
+  });
+  return { entries, f: 0, tint: new THREE.Color(DARK_ZONE_VISUAL.ENTITY_TINT) };
+}
+
+export function updateDarkTint(t, inDark, dt) {
+  const target = inDark ? 1 : 0;
+  if (t.f === target) return;
+  const step = DARK_ZONE_VISUAL.TINT_LERP * dt;
+  t.f = Math.abs(target - t.f) <= step ? target : t.f + Math.sign(target - t.f) * step;
+  for (const e of t.entries) {
+    e.m.color.copy(e.base);
+    e.m.color.r *= 1 + (t.tint.r - 1) * t.f;
+    e.m.color.g *= 1 + (t.tint.g - 1) * t.f;
+    e.m.color.b *= 1 + (t.tint.b - 1) * t.f;
   }
 }
 

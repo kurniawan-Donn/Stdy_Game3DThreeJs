@@ -110,8 +110,8 @@ Ringkasan dari peta pengembangan di [docs/GDD.md](docs/GDD.md):
 - [x] Fase 2: Kenakalan, Chaos, combo, timer level, layar hasil
 - [x] Fase 3: Pemilik rumah (AI): rutinitas, penglihatan, pendengaran, curiga
 - [x] Fase 4: Ketahuan & nyawa (sekuens tertangkap, keranjang)
-- [ ] Fase 5: Sembunyi (kardus, area gelap) & camilan (catnip, tidur di sinar matahari)
-- [ ] Fase 6: Hal lucu (tunggangi robot vacuum, loaf pose, bola benang)
+- [x] Fase 5: Sembunyi (kardus, kolong, area gelap) & camilan (catnip, tidur di sinar matahari)
+- [x] Fase 6: Hal lucu (tunggangi robot vacuum, loaf pose, bola benang)
 - [ ] Fase 7: Level & tutorial
 - [ ] Fase 8: Lobi & kustomisasi kucing
 - [ ] Fase 9: Polish & performa

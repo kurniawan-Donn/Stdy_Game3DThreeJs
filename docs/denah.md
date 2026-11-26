@@ -83,5 +83,6 @@ Kardus K2 sengaja tidak diletakkan di koridor sekitar meja makan: koridor itu ha
 
 ## Area gelap & terang
 
-- Gelap (jangkauan pandang pemilik ×0,7): lorong, kamar tidur.
+- Gelap (jangkauan pandang pemilik ×0,7): lorong (x −7..3,5, z −1,5..−0,3), kamar tidur (x −7..−2,6, z −5..−1,5). Lantai, dinding, dan plafon dilapisi redup hangat.
+- Lampu malam (lemah, hangat): lorong di dinding selatan (−2,4; −0,37), kamar tidur di dinding barat dekat kaki kasur (−6,97; −2,2).
 - Terang: depan jendela ruang tamu (berkas matahari & debu), dekat jendela dapur. Keduanya zona tidur di sinar matahari.

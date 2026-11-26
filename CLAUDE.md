@@ -41,12 +41,12 @@ js/
     room.js             Rumah dari HOUSE: lantai kayu/keramik, dinding luar+jendela, dinding dalam+bukaan, plafon
     furniture.js        Perabot seluruh rumah + collider AABB (crawlHeight = kolong); { colliders, refs, mergeStats }
     dust.js             Partikel debu di berkas cahaya jendela
-    house.js            Pintu kamar mandi (collider dinamis), keranjang kucing, area gelap (isInDarkZone)
+    house.js            Pintu kamar mandi (collider dinamis), keranjang kucing, area gelap (isInDarkZone, lapisan redup, lampu malam, createDarkTint/updateDarkTint)
   entities/
     cat.js              Kucing pemain: model, gerak, lompat, animasi, aksi (startCatAction)
     fish.js             Ikan camilan (isi stamina), menggantikan kristal
     fishModel.js        Model ikan prosedural
-    vacuum.js           Robot vacuum berkeliaran (lurus, belok acak); tidak melukai, bisa ditumpangi
+    vacuum.js           Robot vacuum berkeliaran (lurus, belok acak); tidak melukai, bisa ditumpangi, menyingkir saat pemilik mengejar
     catBehavior.js      Tingkah kucing: menumpang robot, tidur di sinar matahari, loaf, animasi idle, zoomies
     hideBox.js          Kardus: masuk/keluar, ikut bergerak, terbongkar, dilempar saat tertangkap
     yarn.js             Bola benang: ditendang (E), noise saat berhenti (pengalih)

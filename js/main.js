@@ -32,7 +32,7 @@ import { updateLevelTimer } from './systems/level.js';
 import { createNavGrid } from './systems/navGrid.js';
 import { createCapture, updateCapture } from './systems/capture.js';
 import { createOwner, updateOwner, ownerHearNoise } from './entities/owner/index.js';
-import { createDoor, updateDoor, createBasket, createDarkZones } from './world/house.js';
+import { createDoor, updateDoor, createBasket, createDarkZones, isInDarkZone, createDarkTint, updateDarkTint } from './world/house.js';
 import { createHud } from './ui/hud.js';
 import { createResultsScreen } from './ui/results.js';
 import { createFloatingText } from './ui/floatingText.js';
@@ -54,7 +54,7 @@ function init() {
   // Semua collider: dinding dalam + perabot + pintu kamar mandi (dinamis)
   const colliders = [...house.colliders, ...furniture.colliders, door.collider];
   createBasket(scene);
-  createDarkZones(scene);
+  createDarkZones(scene, house.cameraBlockers);
   const dust = createDust(scene);
   const cat = createCat(scene);
   const fish = createFishPickup(scene);
@@ -106,6 +106,7 @@ function init() {
     cameraShake: createCameraShake(),
     camRig: createCameraRig(),
     cameraFading: 0, // jumlah perabot yang sedang memudar (debug)
+    darkTint: { cat: createDarkTint(cat.mesh), owner: createDarkTint(owner.mesh) }, // redup di area gelap
     help: createHelp(),
     hud: createHud(),
     floatText: createFloatingText(document.getElementById('float-layer')),
@@ -126,6 +127,16 @@ function init() {
   resetGame(ctx);
   ctx.help.showAuto();
   startLoop(ctx);
+}
+
+// Area gelap: kucing & pemilik meredup, tanda bulan pada ikon mata HUD
+function updateDarkness(ctx, dt) {
+  const cp = ctx.cat.mesh.position;
+  const catDark = isInDarkZone(cp.x, cp.z);
+  updateDarkTint(ctx.darkTint.cat, catDark, dt);
+  const op = ctx.owner.mesh.position;
+  updateDarkTint(ctx.darkTint.owner, isInDarkZone(op.x, op.z), dt);
+  ctx.hud.setDarkZone(catDark);
 }
 
 // Ikon mata HUD: tertutup = tersembunyi, setengah = terlihat sebagian, terbuka = terlihat
@@ -179,6 +190,7 @@ function startLoop(ctx) {
       }
       updateDoor(ctx.door, wdt);
     }
+    updateDarkness(ctx, dt);
 
     updatePhysics(ctx, wdt);
     updateParticles(ctx.particles, ctx.scene, wdt);

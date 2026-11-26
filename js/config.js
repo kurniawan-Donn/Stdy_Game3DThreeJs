@@ -170,7 +170,10 @@ export const DEBUG = {
   CONE_SEEN_COLOR: 0xef4444,
   LOS_CLEAR_COLOR: 0x22c55e,
   LOS_BLOCKED_COLOR: 0xef4444,
-  PATH_COLOR: 0xe879f9
+  PATH_COLOR: 0xe879f9,
+  DARK_ZONE_COLOR: 0x818cf8, // batas area gelap di lantai
+  DARK_ZONE_OPACITY: 0.85,
+  DARK_ZONE_BORDER: 0.06 // lebar pita batas (m)
 };
 
 // --- Animasi kucing ---
@@ -272,7 +275,14 @@ export const VACUUM = {
   MIN_PLAYER_DIST: 1.5,
   SUBSTEP_THRESHOLD: 0.12, // jika langkah per frame > ini, pecah jadi 2 sub-step
   WALL_CHECK_SHRINK: 0.04,
-  BLOCK_HEIGHT: 0.12 // kucing di bawah ketinggian ini tertahan tubuh robot
+  BLOCK_HEIGHT: 0.12, // kucing di bawah ketinggian ini tertahan tubuh robot
+  CAT_AVOID_MARGIN: 0.04, // robot berbelok sebelum menabrak kucing (tidak mendorongnya)
+  // Saat pemilik MENGEJAR: robot di dekat kejaran menyingkir ke sisi lalu diam
+  YIELD_RADIUS: 5, // robot dalam jarak ini dari kucing/pemilik ikut menyingkir
+  YIELD_PROBE: 0.8, // jarak cari dinding di samping robot
+  YIELD_SPEED: 0.6,
+  YIELD_WALL_GAP: 0.02, // berhenti sedekat ini dari dinding
+  YIELD_RESUME_DELAY: 1.5 // detik diam setelah kejaran selesai
 };
 
 // --- Pencarian posisi spawn bebas ---
@@ -1107,7 +1117,24 @@ export const DARK_ZONES = [
   { x: -1.75, z: -0.9, width: 10.5, depth: 1.2 }, // lorong
   { x: -4.8, z: -3.25, width: 4.4, depth: 3.5 } // kamar tidur (tirai tertutup)
 ];
-export const DARK_ZONE_VISUAL = { COLOR: 0x000000, OPACITY: 0.32 };
+// Tampilan area gelap: lapisan redup kehangatan rendah di lantai, dinding, dan
+// plafon zona; kucing & pemilik di dalam zona ikut meredup; lampu malam lemah.
+export const DARK_ZONE_VISUAL = {
+  COLOR: 0x1f1208, // gelap kecokelatan (hangat)
+  FLOOR_OPACITY: 0.5,
+  WALL_OPACITY: 0.42,
+  CEILING_OPACITY: 0.5,
+  SURFACE_OFFSET: 0.006, // jarak lapisan dari permukaan (hindari z-fighting)
+  FACE_TOLERANCE: 0.08, // muka dinding yang dianggap di tepi zona
+  MIN_PIECE: 0.02,
+  ENTITY_TINT: 0x9c8670, // pengali warna kucing & pemilik di area gelap
+  TINT_LERP: 5 // kecepatan transisi redup (1/detik)
+};
+// Lampu malam hangat & lemah (tanpa bayangan) di area gelap
+export const NIGHT_LIGHTS = [
+  { color: 0xffa25a, intensity: 0.5, distance: 2.6, decay: 2, position: [-2.4, 0.3, -0.37], glow: 0.035 }, // lorong, dinding selatan
+  { color: 0xff9448, intensity: 0.45, distance: 2.4, decay: 2, position: [-6.97, 0.3, -2.2], glow: 0.035 } // kamar tidur, dekat kaki kasur
+];
 
 // --- Grid navigasi + A* ---
 export const NAV = {

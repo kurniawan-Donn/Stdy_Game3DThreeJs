@@ -1,7 +1,7 @@
 // Robot vacuum: berkeliaran di rumah (lurus, berbelok acak) dan bisa
 // ditumpangi kucing. Tidak melukai kucing (sejak Fase 3).
 import * as THREE from 'three';
-import { VACUUM, MATERIALS, ROOM_HALF_W, ROOM_HALF_D } from '../config.js';
+import { VACUUM, MATERIALS, ROOM_HALF_W, ROOM_HALF_D, PLAYER } from '../config.js';
 import { findFreeFloorPosition } from '../systems/spawn.js';
 
 function createRobotVacuumMesh() {
@@ -53,7 +53,8 @@ export function spawnObstacle(ctx) {
     turnTarget: null, // arah tujuan saat sedang berbelok
     wanderIn: randRange(VACUUM.WANDER_INTERVAL_MIN, VACUUM.WANDER_INTERVAL_MAX),
     vel: new THREE.Vector3(), // dipakai kucing yang menumpang
-    rider: null
+    rider: null,
+    yield: null // menyingkir saat pemilik mengejar: { dir, done, resumeIn }
   });
 }
 
@@ -79,9 +80,84 @@ function robotFree(colliders, x, z) {
   return true;
 }
 
+// Kucing di lantai (tidak sedang menumpang/di atas perabot) menghalangi robot:
+// robot berbelok sebelum menabraknya alih-alih mendorongnya.
+function hitsCat(ctx, obs, x, z) {
+  const cat = ctx.cat;
+  if (!cat || cat.riding === obs || cat.mesh.position.y > VACUUM.BLOCK_HEIGHT) return false;
+  const r = VACUUM.RADIUS + PLAYER.RADIUS + VACUUM.CAT_AVOID_MARGIN;
+  const p = cat.mesh.position;
+  const dNew = (x - p.x) ** 2 + (z - p.z) ** 2;
+  const dOld = (obs.mesh.position.x - p.x) ** 2 + (obs.mesh.position.z - p.z) ** 2;
+  return dNew < r * r && dNew < dOld; // hanya saat makin mendekat (tidak terkunci)
+}
+
+// Jarak bebas ke samping (sampai YIELD_PROBE) dari posisi robot ke arah dir
+function sideClearance(colliders, x, z, dir) {
+  const step = 0.05;
+  for (let d = step; d <= VACUUM.YIELD_PROBE; d += step) {
+    if (!robotFree(colliders, x + Math.sin(dir) * d, z + Math.cos(dir) * d)) return d - step;
+  }
+  return Infinity;
+}
+
+// Pemilik sedang mengejar dekat robot ini?
+function chaseNear(ctx, obs) {
+  const o = ctx.owner;
+  if (!o || o.state !== 'chase' || ctx.cat.riding === obs) return false;
+  const p = obs.mesh.position;
+  const r2 = VACUUM.YIELD_RADIUS ** 2;
+  const c = ctx.cat.mesh.position;
+  const q = o.mesh.position;
+  return (p.x - c.x) ** 2 + (p.z - c.z) ** 2 < r2 || (p.x - q.x) ** 2 + (p.z - q.z) ** 2 < r2;
+}
+
+// Menyingkir: robot bergerak menyamping ke dinding terdekat (sisi lorong) lalu
+// diam. Di ruang terbuka tanpa dinding dekat, robot cukup berhenti.
+// Mengembalikan true selama robot sedang menyingkir/diam.
+function updateYield(ctx, obs, dt) {
+  const pos = obs.mesh.position;
+  if (chaseNear(ctx, obs)) {
+    if (!obs.yield) {
+      const left = obs.heading + Math.PI / 2;
+      const right = obs.heading - Math.PI / 2;
+      const cl = sideClearance(ctx.colliders, pos.x, pos.z, left);
+      const cr = sideClearance(ctx.colliders, pos.x, pos.z, right);
+      const dir = Math.min(cl, cr) === Infinity ? null : cl <= cr ? left : right;
+      obs.yield = { dir, done: dir === null, resumeIn: VACUUM.YIELD_RESUME_DELAY };
+      obs.turnTarget = null;
+    }
+    obs.yield.resumeIn = VACUUM.YIELD_RESUME_DELAY;
+  } else if (obs.yield) {
+    obs.yield.resumeIn -= dt;
+    if (obs.yield.resumeIn <= 0) {
+      obs.yield = null;
+      return false;
+    }
+  } else {
+    return false;
+  }
+  const y = obs.yield;
+  if (!y.done) {
+    const d = VACUUM.YIELD_SPEED * dt;
+    const nx = pos.x + Math.sin(y.dir) * d;
+    const nz = pos.z + Math.cos(y.dir) * d;
+    const gx = nx + Math.sin(y.dir) * VACUUM.YIELD_WALL_GAP;
+    const gz = nz + Math.cos(y.dir) * VACUUM.YIELD_WALL_GAP;
+    if (robotFree(ctx.colliders, gx, gz) && !hitsCat(ctx, obs, nx, nz)) {
+      pos.x = nx;
+      pos.z = nz;
+    } else {
+      y.done = true;
+    }
+  }
+  return true;
+}
+
 // Robot berkeliaran: jalan lurus, berbelok acak saat menabrak dan sesekali,
 // sehingga lama-lama melewati pintu & pindah ruangan. Tidak melukai kucing;
-// kucing bisa menumpang (entities/catBehavior.js).
+// kucing bisa menumpang (entities/catBehavior.js). Saat pemilik mengejar,
+// robot di dekatnya menyingkir agar jalur kabur tidak tertutup.
 export function updateObstacles(ctx, dt) {
   const { state, colliders, obstacles } = ctx;
   const speed = state.obstacleSpeed;
@@ -97,7 +173,8 @@ export function updateObstacles(ctx, dt) {
     const pos = obs.mesh.position;
     const startX = pos.x;
     const startZ = pos.z;
-    for (let s = 0; s < steps; s++) {
+    const yielding = updateYield(ctx, obs, dt);
+    for (let s = 0; s < steps && !yielding; s++) {
       if (obs.turnTarget !== null) {
         const diff = obs.turnTarget - obs.heading;
         const step = VACUUM.TURN_RATE * subDt;
@@ -110,7 +187,7 @@ export function updateObstacles(ctx, dt) {
       }
       const nx = pos.x + Math.sin(obs.heading) * speed * subDt;
       const nz = pos.z + Math.cos(obs.heading) * speed * subDt;
-      if (robotFree(colliders, nx, nz)) {
+      if (robotFree(colliders, nx, nz) && !hitsCat(ctx, obs, nx, nz)) {
         pos.x = nx;
         pos.z = nz;
       } else if (obs.turnTarget === null) {
@@ -119,7 +196,7 @@ export function updateObstacles(ctx, dt) {
         obs.turnTarget = obs.heading + sign * randRange(VACUUM.BOUNCE_TURN_MIN, VACUUM.BOUNCE_TURN_MAX);
       }
     }
-    obs.mesh.rotation.y += VACUUM.SPIN_SPEED * dt;
+    if (!yielding || !obs.yield.done) obs.mesh.rotation.y += VACUUM.SPIN_SPEED * dt;
     obs.vel.set((pos.x - startX) / Math.max(dt, 1e-6), 0, (pos.z - startZ) / Math.max(dt, 1e-6));
   }
 }

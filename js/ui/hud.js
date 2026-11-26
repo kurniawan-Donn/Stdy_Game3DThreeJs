@@ -25,7 +25,9 @@ export function createHud() {
   const meowStatusEl = document.getElementById('meow-status');
   const promptEl = document.getElementById('interact-prompt');
   const hideEl = document.getElementById('hide-status');
+  const darkEl = document.getElementById('dark-status');
   let lastHide = null;
+  let lastDark = null;
 
   // Garis target & tanda bintang pada Chaos Meter
   const starEls = STAR_THRESHOLDS.map((t, i) => {
@@ -121,6 +123,12 @@ export function createHud() {
       lastHide = state;
       hideEl.className = state ? `hide-eye ${state}` : 'hide-eye';
       hideEl.title = { closed: 'Tersembunyi', half: 'Terlihat sebagian', open: 'Terlihat!' }[state] || 'Status persembunyian';
+    },
+    // Tanda bulan kecil di ikon mata saat kucing di area gelap
+    setDarkZone(on) {
+      if (on === lastDark) return;
+      lastDark = on;
+      darkEl.classList.toggle('active', on);
     },
     setLives(lives) {
       const filled = '❤️'.repeat(Math.max(lives, 0));

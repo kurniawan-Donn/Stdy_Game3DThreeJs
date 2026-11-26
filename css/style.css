@@ -629,3 +629,19 @@ canvas {
   from { filter: blur(3px) hue-rotate(0deg); }
   to { filter: blur(3px) hue-rotate(360deg); }
 }
+
+/* Tanda bulan kecil di pojok ikon mata saat kucing di area gelap */
+#hud .dark-moon {
+  display: none;
+  margin-left: -7px;
+  font-size: 10px;
+  line-height: 1;
+  color: #c7d2fe;
+  text-shadow: 0 0 4px rgba(129, 140, 248, 0.9);
+  transform: translateY(-6px);
+  flex: none;
+}
+
+#hud .dark-moon.active {
+  display: inline-block;
+}
