@@ -708,6 +708,7 @@ export const AUDIO = {
     timerTick: [[1000, 1000, 0.05, 'square', 0.04, 0]],
     suspicious: [[520, 700, 0.15, 'sine', 0.08, 0]], // "?"
     bellStep: [[2600, 2450, 0.12, 'sine', 0.025, 0], [3300, 3150, 0.1, 'sine', 0.018, 0.03]], // kalung lonceng
+    tutorialStep: [[660, 660, 0.09, 'sine', 0.08, 0], [990, 990, 0.14, 'sine', 0.08, 0.09]], // langkah latihan selesai
     meetingBusted: [[880, 300, 0.35, 'square', 0.07, 0], [600, 200, 0.4, 'square', 0.06, 0.12]], // ketahuan berisik saat rapat
     alarm: [
       [880, 880, 0.08, 'square', 0.08, 0],
@@ -866,6 +867,8 @@ export const IDLE = {
   ANIM_DURATION: 1.2, // menjilat kaki / menggaruk telinga / menguap
   LOAF_HEART_INTERVAL: 2.5,
   LOAF_SQUASH: 0.3, // badan merendah saat loaf
+  LOAF_LEG_FOLD: 1.45, // rad: kaki terlipat di bawah badan
+  LOAF_DROP: 0.075, // badan turun sampai perut menyentuh alas
   POSE_LERP: 8,
   CALM_SPEED: 0.05 // di bawah kecepatan ini kucing dianggap diam
 };
@@ -1109,7 +1112,28 @@ export const CUSTOMIZATION = {
   // Kucing hitam: jangkauan pandang pemilik di area gelap (biasa: PERCEPTION.DARK_RANGE_MULT)
   BLACK_CAT_DARK_RANGE_MULT: 0.5,
   // Chonky: badan lebih bulat, jalan bergoyang, loaf lebih bulat (kemampuan sama)
-  CHONKY: { BODY_WIDTH: 1.35, BODY_HEIGHT: 1.15, BELLY_DROP: 0.012, WADDLE_ROLL: 0.12, WADDLE_SWAY: 0.012, LOAF_WIDEN: 1.12 }
+  CHONKY: { BODY_WIDTH: 1.35, BODY_HEIGHT: 1.15, BELLY_DROP: 0.012, WADDLE_ROLL: 0.12, WADDLE_SWAY: 0.012, LOAF_WIDEN: 1.12, LOAF_DROP: 0.05 }
+};
+
+// --- Latihan / tutorial (systems/tutorial.js, levels/level0.js) ---
+export const TUTORIAL = {
+  MOVE_DIST: 1.5, // meter berjalan untuk langkah "Gerak"
+  BOX_INDEX: 0, // kardus K1 (dekat pintu lorong)
+  GLASS_INDEX: 0, // gelas di meja kopi
+  // Pemilik lewat saat kucing di kardus: muncul di lorong, lewat di samping
+  // kardus, menoleh ke sekeliling, lalu kembali ke lorong
+  PATROL_START: { x: -5.2, z: -0.95 },
+  PATROL_POINTS: [
+    { x: -5.2, z: 0.45 },
+    { x: -3.6, z: 1.0, look: 2.5 },
+    { x: -5.2, z: -0.95 }
+  ],
+  BOX_WAIT_BEFORE_PATROL: 1.0, // detik setelah masuk kardus sebelum pemilik muncul
+  FAIL_TIME: 2.5, // lama pesan "ketahuan" sebelum langkah diulang
+  CHASE_START: { x: -5.2, z: -0.95 }, // pemilik muncul & mengejar dari sini
+  CHASE_RETRY: 1.0, // detik sebelum pemilik mengejar lagi jika kehilangan jejak
+  STEP_PAUSE: 0.8, // jeda singkat antar-langkah
+  MARKER: { COLOR: 0xfacc15, RADIUS: 0.07, LENGTH: 0.16, LIFT: 0.32, BOB_AMP: 0.05, BOB_FREQ: 3, GLASS_OFFSET: 0.12 }
 };
 
 // --- Lobi 3D: sudut rumah yang nyaman (world/lobby.js) ---

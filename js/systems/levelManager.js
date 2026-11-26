@@ -3,7 +3,7 @@
 // mengatur pencahayaan, lalu mereset dunia lewat resetGame.
 // Aturan buka level juga di sini.
 import * as CONFIG from '../config.js';
-import { LEVELS } from '../levels/index.js';
+import { LEVELS, levelAt as levelByIndex } from '../levels/index.js';
 import { levelRecord } from '../core/save.js';
 import { resetGame } from './progression.js';
 
@@ -18,8 +18,9 @@ export function levelCount() {
   return LEVELS.length;
 }
 
+// index -1 = Latihan (tutorial)
 export function levelAt(index) {
-  return LEVELS[index];
+  return levelByIndex(index);
 }
 
 // Kembalikan semua nilai config yang ditimpa level sebelumnya
@@ -72,7 +73,7 @@ export function applyLighting(lights, lighting = {}) {
 
 // Muat level ke-index (0 = level pertama) dan mulai dari awal
 export function loadLevel(ctx, index) {
-  const level = LEVELS[index];
+  const level = levelByIndex(index);
   if (!level) throw new Error(`Level ${index} tidak ada`);
   revertLevelOverrides(ctx);
   ctx.state.levelIndex = index;
@@ -96,6 +97,7 @@ export function highestUnlockedIndex(save) {
 }
 
 export function nextLevelIndex(save, index) {
+  if (index < 0) return -1;
   const n = index + 1;
   return n < LEVELS.length && isLevelUnlocked(save, n) ? n : -1;
 }

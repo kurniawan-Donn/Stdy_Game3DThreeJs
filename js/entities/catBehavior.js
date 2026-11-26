@@ -192,11 +192,14 @@ export function applyBehaviorPose(cat, dt) {
 
   if (cat.loaf || cat.sleeping) {
     // Duduk melingkar seperti roti: kaki terlipat di bawah badan
-    p.legFL.rotation.x = lerp(p.legFL.rotation.x, -1.45);
-    p.legFR.rotation.x = lerp(p.legFR.rotation.x, -1.45);
-    p.legBL.rotation.x = lerp(p.legBL.rotation.x, 1.45);
-    p.legBR.rotation.x = lerp(p.legBR.rotation.x, 1.45);
+    // Kaki depan dilipat ke belakang & kaki belakang ke depan (terselip di
+    // bawah badan), badan turun sampai perut menyentuh alas
+    p.legFL.rotation.x = lerp(p.legFL.rotation.x, IDLE.LOAF_LEG_FOLD);
+    p.legFR.rotation.x = lerp(p.legFR.rotation.x, IDLE.LOAF_LEG_FOLD);
+    p.legBL.rotation.x = lerp(p.legBL.rotation.x, -IDLE.LOAF_LEG_FOLD);
+    p.legBR.rotation.x = lerp(p.legBR.rotation.x, -IDLE.LOAF_LEG_FOLD);
     p.bodyPivot.scale.y *= 1 - IDLE.LOAF_SQUASH;
+    p.bodyPivot.position.y = -(cat.chonky ? CUSTOMIZATION.CHONKY.LOAF_DROP : IDLE.LOAF_DROP);
     if (cat.chonky) {
       // Loaf chonky lebih bulat
       p.bodyPivot.scale.x *= CUSTOMIZATION.CHONKY.LOAF_WIDEN;

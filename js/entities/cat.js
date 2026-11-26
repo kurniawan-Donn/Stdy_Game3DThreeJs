@@ -422,10 +422,13 @@ function animateCat(cat, dt) {
   } else {
     // Diam: kaki netral, efek bernapas tipis, ekor bergoyang pelan
     const k = Math.min(1, A.IDLE_LERP * dt);
-    p.legFL.rotation.x = lerp(p.legFL.rotation.x, 0, k);
-    p.legFR.rotation.x = lerp(p.legFR.rotation.x, 0, k);
-    p.legBL.rotation.x = lerp(p.legBL.rotation.x, 0, k);
-    p.legBR.rotation.x = lerp(p.legBR.rotation.x, 0, k);
+    // Kaki kembali netral (kecuali loaf/tidur: kaki dilipat oleh applyBehaviorPose)
+    if (!cat.loaf && !cat.sleeping) {
+      p.legFL.rotation.x = lerp(p.legFL.rotation.x, 0, k);
+      p.legFR.rotation.x = lerp(p.legFR.rotation.x, 0, k);
+      p.legBL.rotation.x = lerp(p.legBL.rotation.x, 0, k);
+      p.legBR.rotation.x = lerp(p.legBR.rotation.x, 0, k);
+    }
 
     // Napas biasa, atau napas cepat saat terengah
     p.bodyPivot.position.y = cat.isPanting

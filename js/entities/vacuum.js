@@ -113,18 +113,24 @@ function chaseNear(ctx, obs) {
   return (p.x - c.x) ** 2 + (p.z - c.z) ** 2 < r2 || (p.x - q.x) ** 2 + (p.z - q.z) ** 2 < r2;
 }
 
-// Menyingkir: robot bergerak menyamping ke dinding terdekat (sisi lorong) lalu
+// Menyingkir: robot bergerak ke dinding terdekat (sisi lorong) lalu
 // diam. Di ruang terbuka tanpa dinding dekat, robot cukup berhenti.
 // Mengembalikan true selama robot sedang menyingkir/diam.
 function updateYield(ctx, obs, dt) {
   const pos = obs.mesh.position;
   if (chaseNear(ctx, obs)) {
     if (!obs.yield) {
-      const left = obs.heading + Math.PI / 2;
-      const right = obs.heading - Math.PI / 2;
-      const cl = sideClearance(ctx.colliders, pos.x, pos.z, left);
-      const cr = sideClearance(ctx.colliders, pos.x, pos.z, right);
-      const dir = Math.min(cl, cr) === Infinity ? null : cl <= cr ? left : right;
+      // Dinding terdekat dari empat arah (di lorong: sisi lorong)
+      let dir = null;
+      let best = Infinity;
+      for (const d of [0, Math.PI / 2, Math.PI, -Math.PI / 2]) {
+        const c = sideClearance(ctx.colliders, pos.x, pos.z, d);
+        if (c < best) {
+          best = c;
+          dir = d;
+        }
+      }
+      if (best === Infinity) dir = null;
       obs.yield = { dir, done: dir === null, resumeIn: VACUUM.YIELD_RESUME_DELAY };
       obs.turnTarget = null;
     }

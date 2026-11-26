@@ -99,7 +99,7 @@ pilih misi kenakalan → menyelinap → lakukan kenakalan → kabur & sembunyi �
 
 | # | Nama | Durasi | Target Chaos | Ringkasan | Status |
 |---|---|---|---|---|---|
-| 0 | **Latihan** | – | – | Tutorial (bagian 15) | fase terpisah |
+| 0 | **Latihan** | – | – | Tutorial (bagian 15) | dibangun |
 | 1 | **Senin Pagi** | 4 menit | 300 | Hari kerja biasa: rutinitas, pencahayaan, dan objek seperti sekarang | dibangun |
 | 2 | **Deadline** | 4 menit | 400 | Pemilik tegang: lebih sering menoleh, dua sesi rapat video | dibangun |
 | 3 | **Sore Hujan** | – | – | (ide) | dicatat |
@@ -392,15 +392,18 @@ Preview langsung di lobi saat memilih. Item terkunci tampil dengan harga dan bis
 
 ## 15. Tutorial
 
-- **Level latihan** yang otomatis dimulai saat pertama kali main.
-- Langkah bertahap:
-  1. Gerak
-  2. Lompat
-  3. Naik ke meja
-  4. Jatuhkan gelas
-  5. Sembunyi di kardus
-  6. Ditangkap sekali **tanpa kehilangan nyawa**
-- Tutorial **bisa dilewati** dan **bisa diulang** (dari menu).
+- **Level 0 "Latihan"** di rumah yang sama, otomatis dimulai saat pertama kali menekan **Main**. Pemain lama yang sudah punya progres (tabungan atau rekor level) dianggap sudah lulus.
+- Tanpa timer dan target, tanpa robot vacuum, hanya gelas sebagai kenakalan. Tidak menambah tabungan Chaos.
+- Langkah bertahap dengan kotak petunjuk di atas layar (Latihan 1/6 … 6/6) dan panah kuning di atas sasaran:
+  1. **Gerak:** berjalan ±1,5 m.
+  2. **Lompat:** `Spasi` lalu mendarat.
+  3. **Naik ke meja:** berdiri di atas meja kopi.
+  4. **Jatuhkan gelas:** gelas pecah (`E`).
+  5. **Sembunyi di kardus:** masuk kardus K1 dan diam; pemilik muncul dari lorong, lewat di samping kardus, menoleh ke sekeliling, lalu pergi. Jika kardus bergerak saat dilihat: "Ketahuan!", langkah diulang.
+  6. **Ditangkap sekali:** pemilik muncul dan mengejar; alur KETAHUAN tampil penuh **tanpa kehilangan nyawa**.
+- Pemilik dikendalikan naskah: di luar layar (tidak melihat/mendengar) selama langkah 1–4.
+- Selesai → layar "Latihan selesai!" (Main Level 1 / Lobi).
+- **Bisa dilewati** (tombol di kotak petunjuk dan di menu pause) dan **bisa diulang** (kartu Level 0 di Pilih Level, tombol di Cara Bermain).
 
 ## 16. Prinsip teknis
 
@@ -486,7 +489,8 @@ Belum ada. Tambahkan di sini jika muncul keputusan desain yang belum ditentukan.
 - [x] Layar hasil dengan Ulangi / Level Berikutnya / Lobi; level terbuka dengan minimal 1 bintang
 - [x] Simpanan `localStorage` berversi skema (v2, migrasi dari save lama), aman tanpa `localStorage`
 - [ ] Level 3–5 (Sore Hujan, Malam Hari, Kedatangan Tamu) dan bonus Minggu Bersih-bersih
-- [ ] Tutorial bertahap yang otomatis dimulai saat pertama main, bisa dilewati dan diulang
+- [x] Tutorial bertahap (Level 0 Latihan) yang otomatis dimulai saat pertama main, bisa dilewati dan diulang
+- [x] Pose loaf dirapikan: kaki terselip di bawah badan, perut menyentuh alas
 
 ### Fase 8 — Lobi & kustomisasi
 - [x] Lobi 3D: sudut rumah nyaman, kucing di bantal berputar pelan dengan animasi idle (loaf, duduk, menjilat kaki), tabungan di pojok atas

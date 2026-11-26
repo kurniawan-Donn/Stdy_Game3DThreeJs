@@ -91,6 +91,71 @@ export function resetOwner(ctx) {
   resetMeetings(ctx);
 }
 
+// --- Naskah (tutorial) ---------------------------------------------------
+// Pemilik keluar layar: tidak terlihat, tidak melihat & tidak mendengar.
+export function ownerGoOffstage(ctx) {
+  const o = ctx.owner;
+  setState(ctx, o, 'routine');
+  o.meter = 0;
+  o.attention = null;
+  o.activity = 'offstage';
+  o.phase = 'do';
+  o.away = true;
+  o.seen = false;
+  o.mesh.visible = false;
+}
+
+// Patroli: muncul di `start`, berjalan melewati titik-titik
+// [{ x, z, look }] (look = detik menoleh ke sekeliling), lalu keluar layar.
+// Persepsi & curiga berjalan normal selama patroli.
+export function ownerStartPatrol(ctx, start, points) {
+  const o = ctx.owner;
+  setState(ctx, o, 'routine');
+  o.meter = 0;
+  o.away = false;
+  o.mesh.visible = true;
+  o.mesh.position.set(start.x, 0, start.z);
+  o.pose = 'stand';
+  o.activity = 'patrol';
+  o.phase = 'goto';
+  o.patrol = { points, i: 0 };
+  clearPath(o);
+}
+
+function updatePatrol(ctx, o, dt) {
+  const pt = o.patrol.points[o.patrol.i];
+  if (o.phase === 'goto') {
+    if (walkTo(ctx, o, pt, OWNER.WALK_SPEED, dt)) {
+      o.phase = 'look';
+      o.activityT = pt.look || 0;
+    }
+    return;
+  }
+  o.pose = 'stand';
+  o.activityT -= dt;
+  if (o.activityT > 0) {
+    o.headYaw = Math.sin(o.clock * OWNER_ANIM.LOOK_AROUND_SPEED) * OWNER_ANIM.LOOK_AROUND_YAW;
+    return;
+  }
+  o.patrol.i++;
+  if (o.patrol.i >= o.patrol.points.length) ownerGoOffstage(ctx);
+  else o.phase = 'goto';
+}
+
+// Pemilik muncul di `start` dan langsung mengejar kucing ("!")
+export function ownerStartChase(ctx, start) {
+  const o = ctx.owner;
+  o.away = false;
+  o.mesh.visible = true;
+  if (start) o.mesh.position.set(start.x, 0, start.z);
+  o.pose = 'stand';
+  o.activity = 'work';
+  o.meter = S.MAX;
+  o.attention = { x: ctx.cat.mesh.position.x, z: ctx.cat.mesh.position.z };
+  o.lastSeenAt = ctx.time;
+  setState(ctx, o, 'chase');
+}
+
 // --- Gerak & navigasi ---------------------------------------------------
 
 function turnTowards(o, targetYaw, dt) {
@@ -233,6 +298,14 @@ function updateRoutine(ctx, o, dt) {
     }
     case 'toilet':
       updateToilet(ctx, o, dt);
+      return;
+    case 'offstage':
+      // Naskah tutorial: pemilik di luar layar (tidak melihat/mendengar)
+      o.away = true;
+      o.mesh.visible = false;
+      return;
+    case 'patrol':
+      updatePatrol(ctx, o, dt);
       return;
     default:
       startWork(o);

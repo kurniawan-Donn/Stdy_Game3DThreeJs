@@ -13,6 +13,7 @@ export function countStars(chaos, target) {
 
 export function updateLevelTimer(ctx, dt) {
   const s = ctx.state;
+  if (currentLevel(s).TUTORIAL) return; // Latihan tanpa timer
   const before = s.timeLeft;
   s.timeLeft = Math.max(0, s.timeLeft - dt);
 

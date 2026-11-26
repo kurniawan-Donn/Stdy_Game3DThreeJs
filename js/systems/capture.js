@@ -11,6 +11,7 @@ import { hideInteraction } from './interaction.js';
 import { endLevel } from './level.js';
 import { tossBox } from '../entities/hideBox.js';
 import { dismount, wake } from '../entities/catBehavior.js';
+import { currentLevel } from '../core/state.js';
 
 export function createCapture() {
   return { active: false, phase: 'idle', t: 0, timeScale: 1, liftFrom: null };
@@ -145,7 +146,8 @@ export function updateCapture(ctx, dt) {
 // Saat layar hitam penuh: nyawa −1, lalu respawn atau akhir level.
 function onBlack(ctx) {
   const { state, hud, capture } = ctx;
-  state.lives -= 1;
+  // Di Latihan (tutorial) nyawa tidak berkurang
+  if (!currentLevel(state).TUTORIAL) state.lives -= 1;
   hud.setLives(state.lives);
 
   // Efek layar dibersihkan di balik layar hitam

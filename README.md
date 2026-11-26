@@ -17,6 +17,7 @@ Ditulis dengan JavaScript ES modules biasa, tanpa build tool dan tanpa aset ekst
 - 😼 **14 objek kenakalan:** dorong gelas sampai pecah (sambil menatap kamera), tumpahkan tisu, cakar sofa, injak remote sampai TV menyala, gulingkan pot, curi ikan di dapur, tarik tisu toilet, acak-acak selimut
 - 🧱 **Fisika benda buatan sendiri:** benda jatuh dari meja, memantul kecil, pecahan kaca berhamburan
 - 🔥 **Chaos & combo:** kenakalan beruntun dalam 10 detik mendapat bonus ×1,5
+- 🎓 **Latihan** bertahap saat pertama main (bisa dilewati & diulang)
 - ⏱️ **Level berwaktu** dengan target Chaos dan rating bintang ★★★: **Senin Pagi** dan **Deadline** (pemilik sering menoleh dan dua kali rapat video: jangan berisik!). Level berikutnya terbuka dengan minimal 1 bintang
 - 🔊 **Sistem suara gameplay:** setiap aksi menimbulkan suara dengan radius tertentu (dasar untuk pemilik rumah yang mendengar)
 - 🐟 **Ikan camilan** untuk mengisi stamina
@@ -116,7 +117,7 @@ Ringkasan dari peta pengembangan di [docs/GDD.md](docs/GDD.md):
 - [x] Fase 4: Ketahuan & nyawa (sekuens tertangkap, keranjang)
 - [x] Fase 5: Sembunyi (kardus, kolong, area gelap) & camilan (catnip, tidur di sinar matahari)
 - [x] Fase 6: Hal lucu (tunggangi robot vacuum, loaf pose, bola benang)
-- [ ] Fase 7: Level & tutorial (sistem level, Level 1–2, alur lobi/pause/hasil selesai; tutorial menyusul)
+- [x] Fase 7: Level & tutorial (sistem level, Latihan, Level 1–2, alur lobi/pause/hasil)
 - [x] Fase 8: Lobi 3D, kustomisasi kucing & aksesoris, pengaturan
 - [ ] Fase 9: Polish & performa
 

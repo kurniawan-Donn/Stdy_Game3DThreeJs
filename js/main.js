@@ -49,7 +49,9 @@ import { createLobby, updateLobby, setLobbyLook } from './world/lobby.js';
 import { createCustomizeMenu } from './ui/customizeMenu.js';
 import { createSettingsMenu } from './ui/settingsMenu.js';
 import { createFlow, enterLobby, openLevelSelect, playLevel, playContinue, retryLevel, playNextLevel,
-  pauseGame, resumeGame, updateFlowInput, onPointerLockChange } from './core/gameFlow.js';
+  pauseGame, resumeGame, updateFlowInput, onPointerLockChange, playTutorial, skipTutorial, finishTutorial } from './core/gameFlow.js';
+import { updateTutorial } from './systems/tutorial.js';
+import { createTutorialUi } from './ui/tutorialUi.js';
 import { loadLevel } from './systems/levelManager.js';
 
 function init() {
@@ -151,6 +153,12 @@ function init() {
       ctx.input.requestLock();
     }),
     restart: click(() => retryLevel(ctx)),
+    skip: click(() => skipTutorial(ctx)),
+    lobby: click(() => enterLobby(ctx))
+  });
+  ctx.tutorialUi = createTutorialUi({
+    skip: click(() => skipTutorial(ctx)),
+    continue: click(() => playContinue(ctx)),
     lobby: click(() => enterLobby(ctx))
   });
   // Tampilan kucing dipilih/dibeli: terapkan ke kucing pemain & lobi
@@ -179,6 +187,7 @@ function init() {
   ctx.menus = createMenus({
     play: click(() => playContinue(ctx)),
     levels: click(() => openLevelSelect(ctx)),
+    tutorial: click(() => playTutorial(ctx)),
     howto: click(() => {
       ctx.flow.state = 'lobby';
       ctx.menus.showHowto();
@@ -266,6 +275,8 @@ function gameFrame(ctx, dt) {
       updateLevelTimer(ctx, dt);
     }
     updateDoor(ctx.door, wdt);
+    // Latihan: langkah & naskah pemilik (juga selama alur KETAHUAN)
+    if (updateTutorial(ctx, dt) === 'done') finishTutorial(ctx);
   }
   updateDarkness(ctx, dt);
 

@@ -1,7 +1,7 @@
 // State permainan bersama (Chaos, combo, waktu, nyawa, timer). Data state
 // kucing (kecepatan, grounded, animasi) ada di objek cat (entities/cat.js).
 import { GAME, VACUUM } from '../config.js';
-import { LEVELS } from '../levels/index.js';
+import { levelAt } from '../levels/index.js';
 
 export function createState() {
   const state = { levelIndex: 0 };
@@ -10,7 +10,7 @@ export function createState() {
 }
 
 export function currentLevel(state) {
-  return LEVELS[state.levelIndex];
+  return levelAt(state.levelIndex);
 }
 
 // Reset nilai yang berlaku per sesi main.

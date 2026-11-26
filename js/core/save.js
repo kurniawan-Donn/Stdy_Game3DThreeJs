@@ -75,7 +75,8 @@ function normalize(data) {
       if (typeof v === typeof def) out.settings[k] = v;
     }
   }
-  out.tutorialDone = data.tutorialDone === true;
+  // Pemain lama yang sudah punya progres dianggap sudah lulus latihan
+  out.tutorialDone = data.tutorialDone === true || out.chaosBank > 0 || Object.keys(out.levels).length > 0;
   return out;
 }
 

@@ -1146,3 +1146,98 @@ body.show-fps #fps-counter {
 body.show-fps.mode-lobby #fps-counter {
   top: 54px;
 }
+
+/* ---------- Latihan (tutorial) ---------- */
+#tutorial-box {
+  position: fixed;
+  top: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: none;
+  flex-direction: column;
+  gap: 4px;
+  width: min(460px, 86vw);
+  padding: 10px 14px 12px;
+  background: rgba(15, 23, 42, 0.86);
+  border: 1px solid rgba(250, 204, 21, 0.55);
+  border-radius: 12px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+  z-index: 7;
+}
+
+#tutorial-box.active {
+  display: flex;
+}
+
+#tutorial-box .tb-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 11px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: #94a3b8;
+}
+
+#tutorial-box .tb-skip {
+  padding: 2px 8px;
+  font: inherit;
+  font-size: 11px;
+  color: #cbd5e1;
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 6px;
+  cursor: pointer;
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+#tutorial-box b {
+  font-size: 17px;
+  color: #facc15;
+}
+
+#tutorial-box p {
+  font-size: 14px;
+  color: #e2e8f0;
+}
+
+#tutorial-done {
+  position: fixed;
+  inset: 0;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  background: rgba(10, 15, 28, 0.7);
+  backdrop-filter: blur(4px);
+  z-index: 10;
+}
+
+#tutorial-done.active {
+  display: flex;
+}
+
+#pause-skip {
+  display: none;
+}
+
+body.mode-tutorial #pause-skip {
+  display: block;
+}
+
+/* Latihan: tanpa timer & target */
+body.mode-tutorial #timer-text,
+body.mode-tutorial .chaos-row,
+body.mode-tutorial #chaos-meter,
+body.mode-lobby #tutorial-box {
+  display: none !important;
+}
+
+.btn-row.left {
+  justify-content: flex-start;
+}
+
+.level-card .lc-done {
+  font-size: 13px;
+  color: #4ade80;
+}

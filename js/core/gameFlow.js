@@ -5,15 +5,18 @@
 import { GAME_FLOW } from '../config.js';
 import { loadLevel, levelAt, highestUnlockedIndex, nextLevelIndex, isLevelUnlocked } from '../systems/levelManager.js';
 import { releasePointerLock } from './input.js';
+import { writeSave } from './save.js';
+import { TUTORIAL_INDEX } from '../levels/index.js';
 
 export function createFlow() {
   return { state: 'lobby', helpShown: false, resumeLock: false };
 }
 
-function setMode(ctx, mode) {
+function setMode(ctx, mode, tutorial = false) {
   if (typeof document !== 'undefined' && document.body) {
     document.body.classList.toggle('mode-lobby', mode === 'lobby');
     document.body.classList.toggle('mode-play', mode === 'play');
+    document.body.classList.toggle('mode-tutorial', mode === 'play' && tutorial);
   }
 }
 
@@ -28,6 +31,7 @@ export function enterLobby(ctx) {
   releasePointerLock();
   ctx.results.hide();
   ctx.pause.hide();
+  if (ctx.tutorialUi) ctx.tutorialUi.hide();
   setMode(ctx, 'lobby');
   ctx.menus.showMain(ctx.save);
 }
@@ -41,23 +45,52 @@ export function openLevelSelect(ctx) {
 export function playLevel(ctx, index) {
   if (!isLevelUnlocked(ctx.save, index) || !levelAt(index)) return false;
   const flow = ctx.flow;
-  loadLevel(ctx, index);
+  if (ctx.tutorialUi) ctx.tutorialUi.hide();
+  const level = loadLevel(ctx, index);
   flow.state = 'playing';
   ctx.menus.hideAll();
   ctx.results.hide();
   ctx.pause.hide();
-  setMode(ctx, 'play');
+  setMode(ctx, 'play', !!level.TUTORIAL);
   // Bantuan kontrol muncul otomatis di level pertama yang dimainkan
-  if (!flow.helpShown) {
+  // (Latihan punya petunjuk sendiri)
+  if (!flow.helpShown && !level.TUTORIAL) {
     flow.helpShown = true;
     ctx.help.showAuto();
   }
   return true;
 }
 
-// "Main" di lobi: lanjut ke level tertinggi yang terbuka
+// "Main" di lobi: Latihan dulu jika belum pernah, selain itu lanjut ke
+// level tertinggi yang terbuka
 export function playContinue(ctx) {
+  if (!ctx.save.tutorialDone) return playTutorial(ctx);
   return playLevel(ctx, highestUnlockedIndex(ctx.save));
+}
+
+export function playTutorial(ctx) {
+  return playLevel(ctx, TUTORIAL_INDEX);
+}
+
+function markTutorialDone(ctx) {
+  ctx.save.tutorialDone = true;
+  writeSave(ctx.save);
+}
+
+// Lewati latihan: dianggap selesai, lanjut bermain
+export function skipTutorial(ctx) {
+  markTutorialDone(ctx);
+  return playContinue(ctx);
+}
+
+// Semua langkah latihan selesai (dari updateTutorial)
+export function finishTutorial(ctx) {
+  markTutorialDone(ctx);
+  ctx.state.isGameOver = true;
+  ctx.flow.state = 'results';
+  silence(ctx);
+  releasePointerLock();
+  if (ctx.tutorialUi) ctx.tutorialUi.showDone();
 }
 
 export function retryLevel(ctx) {

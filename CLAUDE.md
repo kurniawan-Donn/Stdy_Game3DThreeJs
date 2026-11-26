@@ -27,7 +27,7 @@ docs/denah.md           Denah rumah 14 × 10 m (ASCII + koordinat, loop, jalan p
 js/
   main.js               Entry point: membuat objek konteks `ctx`, menjalankan game loop (lobi / main / pause)
   config.js             SEMUA angka penyetelan (lihat aturan di bawah)
-  levels/               Satu file data per level (level1.js Senin Pagi, level2.js Deadline) + index.js (daftar & format)
+  levels/               Satu file data per level (level0.js Latihan, level1.js Senin Pagi, level2.js Deadline) + index.js (daftar & format)
   core/
     renderer.js         Scene, kamera, WebGLRenderer, resize
     input.js            Keyboard (keys/pressed) + mouse (mouseDX/DY via pointer lock atau drag, wheel)
@@ -74,6 +74,7 @@ js/
     chaos.js            scoreMischief: Chaos + combo + noise + umpan balik
     level.js            Timer level, akhir level, bintang, tabungan
     shop.js             Toko kustomisasi: harga, beli dengan tabungan, pakai item
+    tutorial.js         Latihan (Level 0): langkah, syarat selesai, panah penanda, naskah pemilik
     levelManager.js     Muat level (pengubah config + pencahayaan, dipulihkan saat ganti), aturan buka level
     progression.js      Makan ikan, reset level
     navGrid.js          Grid navigasi pemilik + A* + penghalusan jalur
@@ -89,7 +90,8 @@ js/
     hud.js              Level, waktu, Chaos Meter, combo, nyawa, stamina, meong, prompt E
     results.js          Layar hasil: bintang, Chaos, tabungan + Ulangi / Level Berikutnya / Lobi
     menus.js            Menu lobi: Main, Pilih Level (kartu), Cara Bermain
-    pause.js            Layar pause: Lanjutkan / Ulangi / Lobi
+    pause.js            Layar pause: Lanjutkan / Ulangi / (Lewati latihan) / Lobi
+    tutorialUi.js       Kotak petunjuk latihan + layar "Latihan selesai!"
     customizeMenu.js    Panel Kustomisasi: tab Kucing/Aksesoris, preview langsung, Beli/Pakai
     settingsMenu.js     Panel Pengaturan + Hapus Progres (konfirmasi di halaman, bukan dialog browser)
     floatingText.js     Teks melayang (+40, COMBO x1.5) yang mengikuti posisi 3D
@@ -107,6 +109,7 @@ js/
 - **Alur game** (`core/gameFlow.js`): `ctx.flow.state` = `lobby` | `select` | `playing` | `paused` | `results`. Dunia hanya di-update saat `playing` dan `results`; saat `paused` dunia membeku. Mulai/ganti level selalu lewat `playLevel` → `loadLevel` (jangan panggil `resetGame` langsung dari UI).
 - **Level** (`js/levels/`, `systems/levelManager.js`): file level hanya berisi data. Pengubah (`OWNER`, `LAYOUT`) menimpa objek di `config.js` selama level berjalan dan dicatat di `ctx.levelOverrides`; `loadLevel` selalu memulihkannya dulu sebelum menerapkan level berikutnya. Modul yang membaca nilai config saat dipakai (bukan disalin di level modul) otomatis ikut. Level baru = file baru + satu baris di `levels/index.js`.
 - **Memory:** objek per level yang dibuang harus lewat `removeAndDispose` (`core/dispose.js`), bukan sekadar `parent.remove`. Uji headless memeriksa tidak ada geometri/material yang bocor setelah 20× ganti level.
+- **Latihan** (`systems/tutorial.js`): Level 0 berada di luar urutan buka (`TUTORIAL_INDEX` = -1, `levelAt`). Pemilik dinaskahkan lewat `ownerGoOffstage` / `ownerStartPatrol` / `ownerStartChase` (owner/index.js). Di level dengan `TUTORIAL: true` timer tidak berjalan dan nyawa tidak berkurang saat tertangkap. `updateTutorial` dipanggil tiap frame di `gameFrame` (juga selama KETAHUAN).
 - **Kustomisasi:** tampilan kucing = `{ cat, accessory }` dari `CUSTOMIZATION` (config). Model dibuat `buildCatModel` (dipakai kucing pemain & lobi). Ganti tampilan lewat `setCatLook` (model lama di-dispose), lalu buat ulang `ctx.darkTint.cat`. Efek gameplay hanya dua: `cat.bell` (Chaos ×1,2, langkah berbunyi) dan `cat.darkStealth` (kucing hitam di area gelap); selain itu murni kosmetik.
 - **Lobi:** saat `flow.state` = `lobby`/`select`, loop merender `ctx.lobby.scene` (bukan rumah). Menu/panel di DOM (`#lobby`).
 - **Simpanan** hanya lewat `core/save.js` (`ctx.save`); semua akses localStorage dibungkus try/catch. Saat skema berubah, naikkan `SAVE.VERSION` dan tambahkan migrasi.

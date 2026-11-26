@@ -21,6 +21,7 @@ import { createHideBoxes, disposeHideBoxes } from '../entities/hideBox.js';
 import { createYarnBalls, disposeYarnBalls } from '../entities/yarn.js';
 import { resetCatnip } from '../entities/catnip.js';
 import { createNavGrid } from './navGrid.js';
+import { resetTutorial } from './tutorial.js';
 
 // Dipanggil saat kucing memakan ikan camilan.
 export function onFishEaten(ctx) {
@@ -56,6 +57,7 @@ export function resetGame(ctx) {
   ctx.nav = createNavGrid(ctx.colliders); // kardus ikut menghalangi jalur pemilik
   resetDoor(ctx.door);
   resetOwner(ctx);
+  resetTutorial(ctx); // Latihan: pemilik dinaskahkan (no-op di level biasa)
 
   for (let i = 0; i < VACUUM.INITIAL_COUNT; i++) {
     spawnObstacle(ctx);

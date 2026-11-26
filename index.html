@@ -88,6 +88,24 @@
     </div>
   </div>
 
+  <div id="tutorial-box">
+    <div class="tb-head"><span id="tutorial-step">Latihan 1/6</span><button class="tb-skip" data-action="skip">Lewati latihan</button></div>
+    <b id="tutorial-title"></b>
+    <p id="tutorial-text"></p>
+  </div>
+
+  <div id="tutorial-done">
+    <div class="modal">
+      <p class="results-reason">Latihan</p>
+      <h1 class="won">Latihan selesai!</h1>
+      <p class="results-message">Kamu siap membuat kekacauan. Ingat: jangan sampai ketahuan.</p>
+      <div class="btn-row">
+        <button class="btn primary" data-action="continue">Main Level 1</button>
+        <button class="btn" data-action="lobby">Lobi</button>
+      </div>
+    </div>
+  </div>
+
   <div id="pause">
     <div class="modal">
       <h1 class="pause-title">Pause</h1>
@@ -95,6 +113,7 @@
       <div class="btn-col">
         <button class="btn primary" data-action="resume">Lanjutkan</button>
         <button class="btn" data-action="restart">Ulangi</button>
+        <button class="btn" data-action="skip" id="pause-skip">Lewati latihan</button>
         <button class="btn" data-action="lobby">Lobi</button>
       </div>
       <p class="pause-hint">P: lanjutkan</p>
@@ -149,7 +168,10 @@
     <div class="lobby-panel wide" id="howto-panel">
       <h2>Cara Bermain</h2>
       <div class="howto-body" id="howto-body"></div>
-      <button class="btn" data-action="back">Kembali</button>
+      <div class="btn-row left">
+        <button class="btn primary" data-action="tutorial">Ulangi Latihan</button>
+        <button class="btn" data-action="back">Kembali</button>
+      </div>
     </div>
   </div>
 
