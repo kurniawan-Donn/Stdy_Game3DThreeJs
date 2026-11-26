@@ -2,7 +2,7 @@
 // di dalam), keranjang kucing (tempat muncul kembali), dan area gelap.
 import * as THREE from 'three';
 import { removeAndDispose } from '../core/dispose.js';
-import { LIGHT_ZONES } from '../config.js';
+import { LIGHT_ZONES, HOUSE, GUEST_FX } from '../config.js';
 import { DOOR, BASKET, DARK_ZONES, DARK_ZONE_VISUAL, NIGHT_LIGHTS, MATERIALS, ROOM, ROOM_HALF_W, ROOM_HALF_D } from '../config.js';
 
 // --- Pintu kamar mandi ---
@@ -102,6 +102,41 @@ export function createBasket(scene) {
 
   scene.add(group);
   return group;
+}
+
+// --- Pintu depan (Level 5: tamu datang & pulang) ---
+// Engsel di sisi barat lubang pintu di dinding selatan; membuka ke dalam.
+// Kucing tetap tertahan batas rumah, jadi pintu tidak perlu collider.
+export function createFrontDoor(scene) {
+  const fd = HOUSE.frontDoor;
+  const pivot = new THREE.Group();
+  pivot.position.set(fd.center - fd.width / 2, 0, ROOM_HALF_D + ROOM.WALL_THICKNESS / 2);
+  const panel = new THREE.Mesh(new THREE.BoxGeometry(fd.width, fd.height, 0.05), new THREE.MeshStandardMaterial({ ...MATERIALS.door }));
+  panel.position.set(fd.width / 2, fd.height / 2, 0);
+  panel.castShadow = true;
+  pivot.add(panel);
+  const knob = new THREE.Mesh(new THREE.SphereGeometry(0.035, 10, 8), new THREE.MeshStandardMaterial({ ...MATERIALS.doorHandle }));
+  knob.position.set(fd.width - 0.1, 1.0, -0.04);
+  pivot.add(knob);
+  scene.add(pivot);
+  return { pivot, angle: 0, target: 0 };
+}
+
+export function setFrontDoorOpen(door, open) {
+  door.target = open ? GUEST_FX.DOOR_OPEN_ANGLE : 0;
+}
+
+export function resetFrontDoor(door) {
+  door.angle = 0;
+  door.target = 0;
+  door.pivot.rotation.y = 0;
+}
+
+export function updateFrontDoor(door, dt) {
+  const step = GUEST_FX.DOOR_SPEED * dt;
+  if (Math.abs(door.target - door.angle) <= step) door.angle = door.target;
+  else door.angle += Math.sign(door.target - door.angle) * step;
+  door.pivot.rotation.y = door.angle;
 }
 
 // --- Area gelap ---

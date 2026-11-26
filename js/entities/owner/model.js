@@ -13,12 +13,16 @@ function box(w, h, d, mat, y = 0, x = 0, z = 0) {
   return m;
 }
 
-export function createOwnerMesh() {
-  const skin = new THREE.MeshStandardMaterial({ ...MATERIALS.ownerSkin });
-  const hair = new THREE.MeshStandardMaterial({ ...MATERIALS.ownerHair });
-  const shirt = new THREE.MeshStandardMaterial({ ...MATERIALS.ownerShirt });
-  const pants = new THREE.MeshStandardMaterial({ ...MATERIALS.ownerPants });
-  const shoes = new THREE.MeshStandardMaterial({ ...MATERIALS.ownerShoes });
+// look (opsional, untuk tamu Level 5): { skin, hair, shirt, pants, shoes }
+// (parameter material), hairStyle 'short' | 'bun' | 'long', scale (tinggi
+// relatif). Tanpa look = pemilik rumah.
+export function createOwnerMesh(look = {}) {
+  const mat = (key, fallback) => new THREE.MeshStandardMaterial({ ...(look[key] || fallback) });
+  const skin = mat('skin', MATERIALS.ownerSkin);
+  const hair = mat('hair', MATERIALS.ownerHair);
+  const shirt = mat('shirt', MATERIALS.ownerShirt);
+  const pants = mat('pants', MATERIALS.ownerPants);
+  const shoes = mat('shoes', MATERIALS.ownerShoes);
   const eyeMat = new THREE.MeshStandardMaterial({ ...MATERIALS.catEye });
 
   const root = new THREE.Group();
@@ -88,11 +92,17 @@ export function createOwnerMesh() {
   head.add(box(0.21, 0.22, 0.23, skin, 0.12));
   head.add(box(0.23, 0.06, 0.25, hair, 0.25)); // atas
   head.add(box(0.23, 0.15, 0.05, hair, 0.17, 0, -0.11)); // belakang
+  if (look.hairStyle === 'bun') {
+    head.add(box(0.11, 0.1, 0.1, hair, 0.27, 0, -0.14)); // cepol
+  } else if (look.hairStyle === 'long') {
+    head.add(box(0.25, 0.3, 0.06, hair, 0.05, 0, -0.12)); // rambut panjang
+  }
   head.add(box(0.04, 0.05, 0.03, skin, 0.1, 0, 0.125)); // hidung
   for (const side of [-1, 1]) {
     head.add(box(0.035, 0.035, 0.02, eyeMat, 0.15, side * 0.055, 0.118));
   }
 
+  if (look.scale) root.scale.setScalar(look.scale);
   return {
     root,
     parts: { hips, torso, head, legL, legR, armL, armR, mug }

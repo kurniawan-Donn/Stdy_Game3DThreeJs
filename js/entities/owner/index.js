@@ -2,7 +2,8 @@
 // dan state machine RUTINITAS → CURIGA (?) → MENYELIDIKI → MENGEJAR (!).
 // Saat menangkap kucing, kendali diserahkan ke systems/capture.js.
 import { OWNER, OWNER_ROUTINE as R, SUSPICION as S, CHASE, NAV, OWNER_ANIM, HIDE_BOX, HIDE_SPOT, RIDE } from '../../config.js';
-import { createOwnerMesh } from './model.js';
+import { createOwnerMesh, HIP_Y } from './model.js';
+import { currentLevel } from '../../core/state.js';
 import { animateOwner, isSittingPose } from './animation.js';
 import { findPath } from '../../systems/navGrid.js';
 import { senseCat } from '../../systems/perception.js';
@@ -70,12 +71,18 @@ export function createOwner(scene) {
     // Malam (Level 4): tidur di kasur, senter saat terjaga
     nightMode: false,
     asleep: false,
-    flashlightOn: false
+    flashlightOn: false,
+    // Tamu (Level 5): mengobrol di meja makan, ke dapur bersama
+    guestMode: false,
+    guestSeat: null
   };
 }
 
 export function resetOwner(ctx) {
   const o = ctx.owner;
+  // Mode khusus level sebelumnya dimatikan dulu (startWork membacanya)
+  o.guestMode = false;
+  o.nightMode = false;
   const spot = R.SPOTS.desk;
   o.mesh.visible = true;
   o.away = false;
@@ -101,6 +108,109 @@ export function resetOwner(ctx) {
   o.flashlightOn = false;
   o.nightMode = !!nightConfig(ctx);
   if (o.nightMode) startSleep(ctx, o);
+  // Tamu: level dimulai dengan pemilik menyambut di depan pintu
+  const G = currentLevel(ctx.state).GUEST;
+  o.guestMode = !!G;
+  o.guestSeat = G ? G.OWNER_SEAT : null;
+  o.guestLookTime = G ? G.OWNER_LOOK_TIME : 0;
+  if (G) {
+    o.mesh.position.set(G.GREET_SPOT.x, 0, G.GREET_SPOT.z);
+    o.yaw = G.GREET_SPOT.yaw;
+    o.mesh.rotation.y = o.yaw;
+    o.activity = 'greet';
+    o.phase = 'do';
+    o.pose = 'stand';
+    o.parts.hips.position.y = HIP_Y;
+  }
+}
+
+// --- Tamu (Level 5) ----------------------------------------------------
+// Jadwal ditentukan systems/visit.js lewat ownerVisitActivity.
+export function ownerVisitActivity(ctx, activity) {
+  const o = ctx.owner;
+  if (o.state !== 'routine') return false;
+  o.activity = activity;
+  o.phase = 'goto';
+  clearPath(o);
+  return true;
+}
+
+function sitInSeat(o, seat) {
+  o.mesh.position.set(seat.x, 0, seat.z);
+  o.yaw = seat.yaw;
+  o.mesh.rotation.y = o.yaw;
+  o.pose = 'sitTalk';
+}
+
+function updateVisitRoutine(ctx, o, dt) {
+  const G = currentLevel(ctx.state).GUEST;
+  const guest = ctx.guest;
+  switch (o.activity) {
+    case 'greet':
+    case 'seeOff': {
+      // Berdiri di dekat pintu depan, menghadap pintu
+      const spot = G.GREET_SPOT;
+      if (o.activity === 'seeOff' && o.phase === 'goto') {
+        if (walkTo(ctx, o, spot, OWNER.WALK_SPEED, dt)) o.phase = 'do';
+        return true;
+      }
+      turnTowards(o, spot.yaw, dt);
+      o.pose = o.activity === 'seeOff' ? 'wave' : 'stand';
+      return true;
+    }
+    case 'toSeat': {
+      const seat = G.OWNER_SEAT;
+      if (Math.hypot(o.mesh.position.x - seat.x, o.mesh.position.z - seat.z) < 0.05) {
+        o.activity = 'chat';
+        return true;
+      }
+      if (walkTo(ctx, o, seat.approach, OWNER.WALK_SPEED, dt)) {
+        sitInSeat(o, seat);
+        o.activity = 'chat';
+        o.glanceIn = rand(...G.CHAT_GLANCE_INTERVAL);
+        o.glanceT = 0;
+      }
+      return true;
+    }
+    case 'chat': {
+      // Duduk mengobrol: kerucut pandang ke tamu; sesekali menoleh ke sekitar
+      sitInSeat(o, G.OWNER_SEAT);
+      if (o.glanceT > 0) {
+        o.glanceT -= dt;
+        o.headYaw = Math.sin(o.clock * OWNER_ANIM.LOOK_AROUND_SPEED) * OWNER_ANIM.LOOK_AROUND_YAW;
+      } else {
+        o.glanceIn -= dt;
+        if (o.glanceIn <= 0) {
+          o.glanceT = G.CHAT_GLANCE_DURATION;
+          o.glanceIn = rand(...G.CHAT_GLANCE_INTERVAL);
+        }
+        if (guest && guest.mesh.visible) lookAt(o, guest.mesh.position, dt, false);
+      }
+      o.pose = guest && guest.laughT > 0 ? 'sitLaugh' : 'sitTalk';
+      return true;
+    }
+    case 'kitchen': {
+      const spot = G.OWNER_KITCHEN;
+      if (o.phase === 'goto') {
+        if (walkTo(ctx, o, spot, OWNER.WALK_SPEED, dt)) o.phase = 'do';
+        return true;
+      }
+      turnTowards(o, spot.yaw, dt);
+      o.pose = 'drink';
+      return true;
+    }
+    default:
+      return false;
+  }
+}
+
+// Tamu mengadu ("Kucingmu nakal!"): curiga tinggi, langsung menyelidiki
+export function ownerReport(ctx, point, meter) {
+  const o = ctx.owner;
+  if (o.away || o.asleep || o.state === 'chase' || o.state === 'capture') return;
+  o.meter = Math.max(o.meter, meter);
+  o.attention = { x: point.x, z: point.z };
+  setState(ctx, o, 'investigate');
 }
 
 // --- Malam (Level 4) ---------------------------------------------------
@@ -330,6 +440,13 @@ function followPath(o, speed, dt) {
 // --- Rutinitas ----------------------------------------------------------
 
 function startWork(o) {
+  if (o.guestMode) {
+    // Tamu: "kembali bekerja" = kembali duduk mengobrol
+    o.activity = 'toSeat';
+    o.phase = 'goto';
+    clearPath(o);
+    return;
+  }
   if (o.nightMode) {
     // Malam: "kembali bekerja" = kembali tidur
     o.activity = 'toBed';
@@ -375,6 +492,7 @@ function startActivity(o, act) {
 
 function updateRoutine(ctx, o, dt) {
   if (o.nightMode && updateNightRoutine(ctx, o, dt)) return;
+  if (o.guestMode && updateVisitRoutine(ctx, o, dt)) return;
   const spots = R.SPOTS;
   o.headYaw += (0 - o.headYaw) * Math.min(1, OWNER.HEAD_TURN_SPEED * dt);
 
@@ -586,6 +704,20 @@ function updatePerception(ctx, o, dt) {
     o.seen = false;
     o.sense.ignoredSleep = true;
   }
+  // Tamu (Level 5): kucing yang sedang dielus tamu bukan kenakalan
+  if (o.seen && cat.action && cat.action.type === 'petted') {
+    o.seen = false;
+    o.sense.ignoredPetted = true;
+  }
+  // Kucing yang duduk di kursi tamu setelah merebutnya hanya membuat tamu
+  // tertawa; pemilik tidak curiga
+  if (o.seen && !cat.action && ctx.visit && ctx.visit.chairStolen) {
+    const seat = ctx.visit.G.GUEST_SEAT;
+    if (Math.hypot(cat.mesh.position.x - seat.x, cat.mesh.position.z - seat.z) < ctx.visit.G.PET_DIST) {
+      o.seen = false;
+      o.sense.ignoredChair = true;
+    }
+  }
   if (o.seen) o.lastSeenAt = ctx.time;
   if (o.seen) {
     o.attention = { x: cat.mesh.position.x, z: cat.mesh.position.z };
@@ -615,6 +747,18 @@ function updatePerception(ctx, o, dt) {
 // Dipanggil sistem noise (systems/noise.js → onNoise)
 export function ownerHearNoise(ctx, ev) {
   const o = ctx.owner;
+  // Tamu memanggil "Pus, pus!": pemilik menoleh ke arah tamu tanpa curiga
+  if (ev.source === 'guestCall') {
+    if (o && !o.away && !o.asleep && (o.state === 'routine' || o.state === 'curious') && ctx.guest) {
+      const pos = o.mesh.position;
+      if (Math.hypot(ev.x - pos.x, ev.z - pos.z) <= ev.radius) {
+        o.attention = { x: ctx.guest.mesh.position.x, z: ctx.guest.mesh.position.z };
+        setState(ctx, o, 'curious');
+        o.stateT = S.CURIOUS_LOOK_TIME - (o.guestLookTime || S.CURIOUS_LOOK_TIME);
+      }
+    }
+    return;
+  }
   // Malam: pemilik tidur tidak langsung bereaksi, suara mengisi meter terbangun
   if (o && o.asleep) {
     const N = nightConfig(ctx);
@@ -740,7 +884,7 @@ export function updateOwner(ctx, dt) {
       break;
   }
 
-  setDoorOpen(ctx.door, !bathDoorShouldClose(o));
+  setDoorOpen(ctx.door, !(bathDoorShouldClose(o) || (ctx.guest && ctx.guest.inToilet)));
 
   // Kursi kerja ikut berputar saat pemilik duduk di meja
   const chair = ctx.furnitureRefs.workChair;
@@ -752,6 +896,9 @@ export function updateOwner(ctx, dt) {
 
   animateOwner(o, dt, o.clock);
 }
+
+// Dipakai tamu (entities/guest) agar tidak menduplikasi gerak & navigasi
+export { walkTo as npcWalkTo, turnTowards as npcTurnTowards, lookAt as npcLookAt, clearPath as npcClearPath };
 
 function updateChase(ctx, o, dt) {
   const cat = ctx.cat.mesh.position;

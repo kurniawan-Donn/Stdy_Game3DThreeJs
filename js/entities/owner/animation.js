@@ -1,10 +1,11 @@
 // Animasi pemilik: pose target per kegiatan, diinterpolasi halus ke sendi.
 // Pose: stand, walk, run, sit, type, stretch, glance, drink, window, lookAround, lift, sleep (berbaring: rotasi badan di owner/index.js)
+// Level 5 (juga tamu): sitTalk, sitDrink, sitLaugh, laugh, crouch, pet, wave
 import * as THREE from 'three';
 import { OWNER_ANIM as A, OWNER_ROUTINE } from '../../config.js';
 import { HIP_Y } from './model.js';
 
-const SIT_POSES = new Set(['sit', 'type', 'stretch', 'glance']);
+const SIT_POSES = new Set(['sit', 'type', 'stretch', 'glance', 'sitTalk', 'sitDrink', 'sitLaugh']);
 
 export function isSittingPose(pose) {
   return SIT_POSES.has(pose);
@@ -80,6 +81,46 @@ function targetsFor(owner, t) {
       T.armL = [-0.9, -0.1, -0.3];
       T.armR = [-0.6, 0.1, -0.5];
       break;
+    case 'sitTalk': {
+      // Mengobrol sambil duduk: tangan sesekali bergerak
+      const g = Math.sin(t * A.TALK_FREQ) * A.TALK_AMP;
+      T.armR = [-0.6 + g, 0.12, -1.0];
+      T.headX = 0.05 + Math.sin(t * A.TALK_FREQ * 0.5) * 0.05;
+      break;
+    }
+    case 'sitDrink':
+      T.armR = [-1.25, 0.1, -1.9];
+      T.headX = -0.3;
+      break;
+    case 'sitLaugh':
+    case 'laugh': {
+      // Tertawa: badan sedikit ke belakang & berguncang
+      const shake = Math.sin(t * A.LAUGH_FREQ) * A.LAUGH_AMP;
+      T.torsoX = -0.18 + shake;
+      T.headX = -0.35 + shake;
+      T.armL = [-0.5, -0.2, -1.2];
+      T.armR = [-0.5, 0.2, -1.2];
+      break;
+    }
+    case 'crouch':
+    case 'pet': {
+      // Berjongkok (dan mengelus: tangan kanan mengusap maju-mundur)
+      T.hipsY = HIP_Y * A.CROUCH_HIP;
+      T.legL = [-1.6, 2.3];
+      T.legR = [-1.6, 2.3];
+      T.torsoX = 0.55;
+      T.headX = 0.45;
+      const stroke = pose === 'pet' ? Math.sin(t * A.PET_FREQ) * A.PET_AMP : 0;
+      T.armR = [-0.9 + stroke, 0.1, -0.2];
+      T.armL = [-0.3, -0.1, -0.4];
+      break;
+    }
+    case 'wave': {
+      // Melambai: lengan kanan terangkat, bergoyang
+      T.armR = [-2.7, 0.35 + Math.sin(t * A.WAVE_FREQ) * A.WAVE_AMP, -0.3];
+      T.headX = -0.05;
+      break;
+    }
     case 'lift':
       T.armL = [-1.35, -0.1, -0.25];
       T.armR = [-1.35, 0.1, -0.25];
@@ -113,5 +154,5 @@ export function animateOwner(owner, dt, t) {
   p.armR.elbow.rotation.x = lerp(p.armR.elbow.rotation.x, T.armR[2], k);
   p.head.rotation.x = lerp(p.head.rotation.x, T.headX, k);
   p.head.rotation.y = owner.headYaw;
-  p.mug.visible = owner.pose === 'drink';
+  p.mug.visible = owner.pose === 'drink' || owner.pose === 'sitDrink';
 }

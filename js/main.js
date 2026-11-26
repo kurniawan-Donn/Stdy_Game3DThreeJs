@@ -32,6 +32,9 @@ import { updateLevelTimer } from './systems/level.js';
 import { createNavGrid } from './systems/navGrid.js';
 import { createCapture, updateCapture } from './systems/capture.js';
 import { createOwner, updateOwner, ownerHearNoise } from './entities/owner/index.js';
+import { createFrontDoor } from './world/house.js';
+import { createGuest, updateGuest, guestHearNoise } from './entities/guest/index.js';
+import { updateVisit } from './systems/visit.js';
 import { createDoor, updateDoor, createBasket, createDarkZones, isInDarkZone, createDarkTint, updateDarkTint } from './world/house.js';
 import { createHud } from './ui/hud.js';
 import { createResultsScreen } from './ui/results.js';
@@ -77,6 +80,8 @@ function init() {
   const cat = createCat(scene, selectedLook(save));
   const fish = createFishPickup(scene);
   const owner = createOwner(scene);
+  const guest = createGuest(scene); // tamu Level 5 (tersembunyi di level lain)
+  const frontDoor = createFrontDoor(scene);
   const particles = createParticleSystem();
   const interaction = createInteractionSystem(scene);
   const mischief = createMischiefSystem(scene);
@@ -100,6 +105,8 @@ function init() {
     },
     fps: 0,
     owner,
+    guest,
+    frontDoor,
     capture: createCapture(),
     screenFx: createScreenEffects(canvas),
     ownerIndicator: createOwnerIndicator(),
@@ -221,6 +228,7 @@ function init() {
   });
   bindResize(camera, renderer);
   onNoise(ctx.noise, (ev, c) => ownerHearNoise(c, ev));
+  onNoise(ctx.noise, (ev, c) => guestHearNoise(c, ev));
   registerCatInteractions(ctx);
 
   applySettings(ctx);
@@ -262,13 +270,14 @@ function gameFrame(ctx, dt) {
       // Input dikunci; dunia tetap bergerak pelan di sekitar kucing
       updateCapture(ctx, dt);
       updateOwner(ctx, wdt);
+      updateGuest(ctx, wdt); // tamu ikut tertawa
       updateMischief(ctx, wdt);
       updateObstacles(ctx, wdt);
       updateHideBoxes(ctx);
     } else {
       ctx.time += dt;
-      // Matahari terbit (Level 4): kontrol dikunci sampai layar hasil
-      if (ctx.night && ctx.night.dawn) {
+      // Matahari terbit (Level 4) / tamu pamit (Level 5): kontrol dikunci sampai layar hasil
+      if ((ctx.night && ctx.night.dawn) || (ctx.visit && ctx.visit.outro)) {
         ctx.input.keys = {};
         ctx.input.pressed = {};
       }
@@ -282,6 +291,7 @@ function gameFrame(ctx, dt) {
       updateCatnip(ctx, dt);
       updateObstacles(ctx, dt);
       updateOwner(ctx, dt);
+      updateGuest(ctx, dt);
       updateNoise(ctx.noise, dt);
 
       ctx.hud.setStamina(ctx.stamina.value, STAMINA.MAX, isExhausted(ctx.stamina));
@@ -297,6 +307,8 @@ function gameFrame(ctx, dt) {
     // Malam: meter terbangun, matahari terbit, senter & kilau mata
     updateNight(ctx, wdt);
     updateFlashlight(ctx);
+    // Tamu: pembuka, jadwal berdua, penutup
+    updateVisit(ctx, wdt);
     // Latihan: langkah & naskah pemilik (juga selama alur KETAHUAN)
     if (updateTutorial(ctx, dt) === 'done') finishTutorial(ctx);
   }

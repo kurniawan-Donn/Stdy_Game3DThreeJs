@@ -29,6 +29,7 @@ export function createHud() {
   const meetingEl = document.getElementById('meeting-badge');
   const stormEl = document.getElementById('storm-badge');
   const wakeEl = document.getElementById('wake-badge');
+  const visitEl = document.getElementById('visit-banner');
   let lastWake;
   let lastStorm = null;
   let lastMeeting = null;
@@ -160,6 +161,10 @@ export function createHud() {
       wakeEl.style.setProperty('--wake', String(frac));
       wakeEl.classList.toggle('awake', frac >= 1);
       wakeEl.title = frac >= 1 ? 'Pemilik terjaga!' : `Pemilik tidur (terbangun ${Math.round(frac * 100)}%)`;
+    },
+    // Level 5: banner adegan pembuka ("Tamu datang!", Enter = lewati)
+    setVisitBanner(on) {
+      visitEl.classList.toggle('active', !!on);
     },
     setLives(lives) {
       const filled = '❤️'.repeat(Math.max(lives, 0));

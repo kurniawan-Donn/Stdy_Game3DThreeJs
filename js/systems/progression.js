@@ -23,6 +23,8 @@ import { resetCatnip } from '../entities/catnip.js';
 import { createNavGrid } from './navGrid.js';
 import { resetTutorial } from './tutorial.js';
 import { resetNight } from './night.js';
+import { resetGuest } from '../entities/guest/index.js';
+import { resetVisit } from './visit.js';
 import { resetFlashlight } from '../entities/flashlight.js';
 import { resetWeather } from './weather.js';
 import { resetFootprints } from '../entities/footprints.js';
@@ -63,6 +65,8 @@ export function resetGame(ctx) {
   resetNight(ctx); // Level malam (no-op di level lain); sebelum pemilik ditidurkan
   resetOwner(ctx);
   resetFlashlight(ctx);
+  resetGuest(ctx); // Level tamu (no-op di level lain)
+  resetVisit(ctx);
   resetTutorial(ctx); // Latihan: pemilik dinaskahkan (no-op di level biasa)
   resetWeather(ctx); // Level hujan: hujan, petir, genangan (no-op di level lain)
   resetFootprints(ctx);

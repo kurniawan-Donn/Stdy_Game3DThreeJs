@@ -84,6 +84,9 @@ export const HOUSE = {
     { axis: 'z', at: -0.4, from: -5, to: -1.5, openings: [] }, // kamar mandi | ruang kerja
     { axis: 'z', at: 3.5, from: -5, to: -1.5, openings: [] } // ruang kerja | dapur
   ],
+  // Pintu depan di dinding selatan ruang tamu (Level 5: tamu datang). Selalu
+  // tertutup bagi kucing (batas rumah); hanya dibuka saat adegan.
+  frontDoor: { wall: 'south', center: 2.6, width: 0.9, height: 2.05 },
   // Jendela di dinding luar. type: 'sun' (cahaya matahari), 'plain', 'curtain' (tirai tertutup)
   windows: [
     { wall: 'west', from: 1.0, to: 3.6, yMin: 0.8, yMax: 2.2, type: 'sun' }, // ruang tamu
@@ -728,6 +731,12 @@ export const AUDIO = {
     clockTick: [[2400, 1800, 0.015, 'square', 0.012, 0]], // detak jam
     alarmRing: [[1500, 1500, 0.08, 'square', 0.05, 0], [1500, 1500, 0.08, 'square', 0.05, 0.15], [1500, 1500, 0.08, 'square', 0.05, 0.3], [1500, 1500, 0.08, 'square', 0.05, 0.45], [1500, 1500, 0.08, 'square', 0.05, 0.6], [1500, 1500, 0.08, 'square', 0.05, 0.75]], // jam beker berdering
     ownerYawn: [[220, 160, 0.6, 'sawtooth', 0.04, 0]], // pemilik terbangun
+    doorbell: [[784, 784, 0.35, 'sine', 0.09, 0], [659, 659, 0.5, 'sine', 0.09, 0.35]], // ding-dong
+    pusPus: [[1300, 1700, 0.08, 'triangle', 0.05, 0], [1300, 1700, 0.08, 'triangle', 0.05, 0.16]], // "Pus, pus!"
+    guestLaugh: [[420, 360, 0.09, 'sawtooth', 0.05, 0], [440, 370, 0.09, 'sawtooth', 0.05, 0.13], [460, 380, 0.09, 'sawtooth', 0.05, 0.26], [430, 350, 0.12, 'sawtooth', 0.045, 0.39]], // tawa tamu
+    purr: [[55, 50, 0.4, 'sawtooth', 0.04, 0]], // dengkur
+    fishTreat: [[880, 1320, 0.12, 'sine', 0.06, 0]], // camilan dari tamu
+    frontDoor: [[200, 140, 0.25, 'square', 0.035, 0]], // pintu depan
     meetingBusted: [[880, 300, 0.35, 'square', 0.07, 0], [600, 200, 0.4, 'square', 0.06, 0.12]], // ketahuan berisik saat rapat
     alarm: [
       [880, 880, 0.08, 'square', 0.08, 0],
@@ -814,6 +823,10 @@ export const MISCHIEF = {
   kitchenFish: { CHAOS: 80, NOISE_RADIUS: 1.2 }, // curi ikan di dapur
   toiletPaper: { CHAOS: 35, NOISE_RADIUS: 1.2 }, // tarik gulungan tisu toilet (gulungan berderak)
   blanket: { CHAOS: 25, NOISE_RADIUS: 0.6 }, // acak-acak selimut (kain, sangat senyap)
+  cake: { CHAOS: 70, NOISE_RADIUS: 0.5 }, // mencuri kue dari piring tamu (Level 5)
+  guestBag: { CHAOS: 45, NOISE_RADIUS: 0 }, // tidur di tas/jaket tamu (Level 5), senyap
+  teacup: { CHAOS: 45, NOISE_RADIUS: 4 }, // menjatuhkan cangkir teh tamu (Level 5)
+  guestChair: { CHAOS: 20, NOISE_RADIUS: 0 }, // merebut kursi tamu saat ia di toilet (Level 5)
   knead: { CHAOS: 60, NOISE_RADIUS: 0.8 }, // menginjak-injak selimut di atas pemilik tidur (Level 4)
   alarmClock: { CHAOS: 40, NOISE_RADIUS: 5 }, // jam beker jatuh & berdering (Level 4)
   wetPaws: { CHAOS: 5, NOISE_RADIUS: 0, NO_COMBO: true } // jejak kaki basah di sofa/kasur/meja (Level 3), sekali per perabot, tanpa bonus combo
@@ -1078,6 +1091,8 @@ export const CAMERA_SHAKE = {
 // --- Teks melayang (+40, COMBO x1.5) ---
 export const FLOAT_TEXT = {
   DURATION: 1.3,
+  SPEECH_DURATION: 2.0, // balon teks NPC ("Pus, pus!")
+  SPEECH_HEIGHT: 0.25, // di atas kepala
   RISE_PX: 70,
   COMBO_OFFSET_PX: 30,
   START_HEIGHT: 0.2
@@ -1236,6 +1251,35 @@ export const ALARM_CLOCK = {
   RING_WOBBLE: 0.12,
   RING_FREQ: 40
 };
+
+// --- Tamu (Level 5 "Kedatangan Tamu"). Jadwal & aturan di file level (GUEST). ---
+export const GUEST_FX = {
+  // Tampilan tamu: model pemilik dengan parameter lain (owner/model.js)
+  LOOK: {
+    skin: { color: 0xc68a5c, roughness: 0.7 },
+    hair: { color: 0x1c1410, roughness: 0.85 },
+    shirt: { color: 0xd9577a, roughness: 0.85 },
+    pants: { color: 0x3f4a63, roughness: 0.9 },
+    shoes: { color: 0x2b2b2b, roughness: 0.6 },
+    hairStyle: 'bun', // 'short' (pemilik) | 'bun' (cepol) | 'long'
+    height: 1.62
+  },
+  OWNER_HEIGHT: 1.7, // tinggi model dasar (skala tamu = height / OWNER_HEIGHT)
+  PERCEPTION_HZ: 15, // persepsi tamu dihitung 15×/detik (hemat raycast)
+  CROUCH_HEIGHT: 0.55, // pinggul saat berjongkok
+  PET_HEARTS_INTERVAL: 0.6,
+  PURR_INTERVAL: 0.9,
+  // Pintu depan (adegan pembuka/penutup)
+  DOOR_OPEN_ANGLE: 1.4,
+  DOOR_SPEED: 2.5,
+  OUTSIDE: { BACKDROP_COLOR: 0xbfe3ff, PORCH_COLOR: 0x8c8c8c }
+};
+
+// --- Kenakalan tamu (Level 5) ---
+export const CAKE = { RADIUS: 0.05, HEIGHT: 0.045, PLATE_RADIUS: 0.09, COLOR: 0xf2c38f, CREAM: 0xfff4e6, PLATE: 0xf8fafc, ACTION_DURATION: 0.9, MARKER_OFFSET: 0.12 };
+export const TEACUP = { RADIUS: 0.04, HEIGHT: 0.06, COLOR: 0xf1f5f9, TEA: 0x9a5b2a, SAUCER_RADIUS: 0.07 };
+export const GUEST_BAG = { SIZE: { W: 0.38, H: 0.12, D: 0.3 }, COLOR: 0x8a5a3b, STRAP: 0x5c3a24, HOLD: 0.6, NAP_DURATION: 4, MARKER_HEIGHT: 0.2 };
+export const GUEST_CHAIR = { SIT_DURATION: 1.2, MARKER_HEIGHT: 0.15 };
 
 // --- Latihan / tutorial (systems/tutorial.js, levels/level0.js) ---
 export const TUTORIAL = {
@@ -1449,6 +1493,15 @@ export const OWNER_ANIM = {
   RUN_ARM_SWING: 0.9,
   TYPE_FREQ: 16,
   TYPE_AMP: 0.08,
+  TALK_FREQ: 2.2, // Level 5: tangan bergerak saat mengobrol
+  TALK_AMP: 0.25,
+  LAUGH_FREQ: 22, // berguncang saat tertawa
+  LAUGH_AMP: 0.06,
+  CROUCH_HIP: 0.55, // pinggul relatif saat berjongkok
+  PET_FREQ: 7, // tangan mengusap saat mengelus
+  PET_AMP: 0.3,
+  WAVE_FREQ: 9,
+  WAVE_AMP: 0.35,
   LOOK_AROUND_SPEED: 1.6, // menoleh kiri-kanan saat menyelidiki
   LOOK_AROUND_YAW: 1.1,
   POSE_LERP: 10

@@ -4,6 +4,7 @@ import { currentLevel } from '../core/state.js';
 import { recordLevelResult, defaultSave } from '../core/save.js';
 import { nextLevelIndex } from './levelManager.js';
 import { startDawn } from './night.js';
+import { startOutro } from './visit.js';
 import { hideInteraction } from './interaction.js';
 
 export function countStars(chaos, target) {
@@ -28,6 +29,11 @@ export function updateLevelTimer(ctx, dt) {
     // Malam: matahari terbit dulu, lalu layar hasil
     if (ctx.night && !ctx.night.dawnDone) {
       startDawn(ctx);
+      return;
+    }
+    // Tamu: pamit & melambai dulu, lalu layar hasil
+    if (ctx.visit && !ctx.visit.outroDone) {
+      startOutro(ctx);
       return;
     }
     endLevel(ctx, 'timeUp');

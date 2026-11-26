@@ -1,7 +1,7 @@
 // Gelas: kucing mendorong pelan dengan kaki depan → menoleh ke kamera →
 // gelas meluncur jatuh dari tepi → pecah, pecahan berhamburan & memudar.
 import * as THREE from 'three';
-import { GLASS, CAT_ANIM, MATERIALS } from '../../config.js';
+import { TEACUP, GLASS, CAT_ANIM, MATERIALS } from '../../config.js';
 import { startCatAction, yawTowards } from '../cat.js';
 import { addBody, removeBody } from '../../systems/physics.js';
 import { scoreMischief } from '../../systems/chaos.js';
@@ -80,13 +80,45 @@ function spawnShards(ctx, position) {
   }
 }
 
-export function createGlass(ctx, spec) {
-  const mesh = buildGlassMesh();
-  mesh.position.set(spec.x, spec.y + GLASS.HEIGHT / 2, spec.z);
+// Cangkir teh tamu (Level 5): perilaku sama dengan gelas, model berbeda
+function buildTeacupMesh() {
+  const group = new THREE.Group();
+  const cup = new THREE.Mesh(
+    new THREE.CylinderGeometry(TEACUP.RADIUS, TEACUP.RADIUS * 0.75, TEACUP.HEIGHT, 14),
+    new THREE.MeshStandardMaterial({ color: TEACUP.COLOR, roughness: 0.35 })
+  );
+  cup.castShadow = true;
+  group.add(cup);
+  const tea = new THREE.Mesh(
+    new THREE.CylinderGeometry(TEACUP.RADIUS * 0.9, TEACUP.RADIUS * 0.9, 0.004, 14),
+    new THREE.MeshStandardMaterial({ color: TEACUP.TEA, roughness: 0.2 })
+  );
+  tea.position.y = TEACUP.HEIGHT * 0.38;
+  group.add(tea);
+  const handle = new THREE.Mesh(new THREE.TorusGeometry(TEACUP.HEIGHT * 0.28, 0.006, 6, 12), cup.material);
+  handle.position.x = TEACUP.RADIUS + 0.008;
+  handle.rotation.y = Math.PI / 2;
+  group.add(handle);
+  return group;
+}
+
+const VARIANTS = {
+  glass: { type: 'glass', label: 'Dorong gelas', build: buildGlassMesh, radius: GLASS.RADIUS, height: GLASS.HEIGHT },
+  teacup: { type: 'teacup', label: 'Dorong cangkir teh', build: buildTeacupMesh, radius: TEACUP.RADIUS, height: TEACUP.HEIGHT }
+};
+
+export function createTeacup(ctx, spec) {
+  return createGlass(ctx, spec, VARIANTS.teacup);
+}
+
+export function createGlass(ctx, spec, variant = VARIANTS.glass) {
+  const V = variant;
+  const mesh = V.build();
+  mesh.position.set(spec.x, spec.y + V.height / 2, spec.z);
   ctx.mischief.group.add(mesh);
 
   const inst = {
-    type: 'glass',
+    type: V.type,
     mesh,
     phase: 'idle', // idle → pushing → falling → shattered
     body: null,
@@ -107,15 +139,15 @@ export function createGlass(ctx, spec) {
     spawnShards(ctx, pos);
     triggerShake(ctx.cameraShake, GLASS.SHAKE_AMPLITUDE, GLASS.SHAKE_DURATION);
     ctx.audio.play('shatter');
-    scoreMischief(ctx, 'glass', pos);
+    scoreMischief(ctx, V.type, pos);
   }
 
   function release() {
     inst.phase = 'falling';
     inst.body = addBody(ctx, {
       mesh,
-      radius: GLASS.RADIUS,
-      bottomOffset: GLASS.HEIGHT / 2,
+      radius: V.radius,
+      bottomOffset: V.height / 2,
       restitution: GLASS.RESTITUTION,
       friction: GLASS.FRICTION,
       frictionless: true, // meluncur bebas sampai jatuh dari tepi
@@ -127,10 +159,10 @@ export function createGlass(ctx, spec) {
   }
 
   registerMischief(ctx, inst, {
-    label: 'Dorong gelas',
+    label: V.label,
     position: mesh.position,
     surfaceY: spec.y,
-    markerHeight: GLASS.HEIGHT / 2 + GLASS.MARKER_OFFSET,
+    markerHeight: V.height / 2 + GLASS.MARKER_OFFSET,
     onInteract: (c) => {
       inst.done = true;
       inst.phase = 'pushing';

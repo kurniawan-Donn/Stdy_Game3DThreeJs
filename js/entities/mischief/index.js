@@ -3,7 +3,7 @@
 import * as THREE from 'three';
 import { MISCHIEF_LAYOUT } from '../../config.js';
 import { currentLevel } from '../../core/state.js';
-import { createGlass } from './glass.js';
+import { createGlass, createTeacup } from './glass.js';
 import { createTissue } from './tissue.js';
 import { createScratch } from './scratch.js';
 import { createRemote } from './remote.js';
@@ -13,6 +13,9 @@ import { createToiletPaper } from './toiletPaper.js';
 import { createBlanket } from './blanket.js';
 import { createKnead } from './knead.js';
 import { createAlarmClock } from './alarmClock.js';
+import { createCake } from './cake.js';
+import { createGuestBag } from './guestBag.js';
+import { createGuestChair } from './guestChair.js';
 
 const FACTORIES = {
   glass: createGlass,
@@ -24,7 +27,11 @@ const FACTORIES = {
   toiletPaper: createToiletPaper,
   blanket: createBlanket,
   knead: createKnead, // Level 4 (malam)
-  alarmClock: createAlarmClock // Level 4 (malam)
+  alarmClock: createAlarmClock, // Level 4 (malam)
+  cake: createCake, // Level 5 (tamu)
+  teacup: createTeacup,
+  guestBag: createGuestBag,
+  guestChair: createGuestChair
 };
 
 export function createMischiefSystem(scene) {

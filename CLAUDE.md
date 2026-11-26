@@ -27,7 +27,7 @@ docs/denah.md           Denah rumah 14 × 10 m (ASCII + koordinat, loop, jalan p
 js/
   main.js               Entry point: membuat objek konteks `ctx`, menjalankan game loop (lobi / main / pause)
   config.js             SEMUA angka penyetelan (lihat aturan di bawah)
-  levels/               Satu file data per level (level0.js Latihan, level1.js Senin Pagi, level2.js Deadline, level3.js Sore Hujan, level4.js Malam Hari) + index.js (daftar & format)
+  levels/               Satu file data per level (level0.js Latihan, level1.js Senin Pagi, level2.js Deadline, level3.js Sore Hujan, level4.js Malam Hari, level5.js Kedatangan Tamu) + index.js (daftar & format)
   core/
     renderer.js         Scene, kamera, WebGLRenderer, resize
     input.js            Keyboard (keys/pressed) + mouse (mouseDX/DY via pointer lock atau drag, wheel)
@@ -60,10 +60,11 @@ js/
     catnip.js           Catnip (satu per level) → zoomies
     flashlight.js       Senter pemilik (Level 4): SpotLight, kerucut cahaya, kilau mata kucing
     footprints.js       Jejak kaki basah (Level 3): InstancedMesh, Chaos di perabot, dilihat pemilik
+    guest/index.js      Tamu (Level 5): model pemilik berparameter, persepsi 15×/s, "Pus, pus!", mengelus, mengadu
     owner/              Pemilik rumah
       index.js          Rutinitas, meter curiga, state machine, mengejar, pendengaran
       meeting.js        Rapat video (Level 2): jadwal, layar laptop wajah, suara bicara samar, suara keras = "!"
-      model.js          Model manusia low-poly (pivot sendi)
+      model.js          Model manusia low-poly (pivot sendi); createOwnerMesh(look) berparameter (warna, rambut, tinggi)
       animation.js      Pose: jalan, lari, duduk mengetik, minum, meregang, mengangkat
     particles.js        Percikan partikel saat camilan diambil
     mischief/           Objek kenakalan, satu file per jenis
@@ -71,6 +72,7 @@ js/
       common.js         registerMischief, pose kucing, serpihan berfisika
       glass.js tissue.js scratch.js remote.js pot.js kitchenFish.js toiletPaper.js blanket.js
       knead.js alarmClock.js   (khusus Level 4, posisinya dari LAYOUT.MISCHIEF_LAYOUT file level)
+      cake.js guestBag.js guestChair.js (+ cangkir teh = varian glass.js)   (khusus Level 5)
   systems/
     collision.js        Lingkaran vs AABB, tinggi permukaan, cek posisi bebas
     spawn.js            Cari posisi lantai acak yang aman
@@ -78,6 +80,7 @@ js/
     chaos.js            scoreMischief: Chaos + combo + noise + umpan balik
     level.js            Timer level, akhir level, bintang, tabungan
     shop.js             Toko kustomisasi: harga, beli dengan tabungan, pakai item
+    visit.js            Kunjungan tamu (Level 5): pembuka/lewati, mengobrol, dapur bersama, toilet tamu, penutup
     night.js            Malam (Level 4): meter terbangun, ikon Zzz, matahari terbit, suara malam, aturan bayangan
     weather.js          Cuaca (Level 3): jadwal kilat/guntur, suara tertutup hujan, cahaya kilat, genangan
     tutorial.js         Latihan (Level 0): langkah, syarat selesai, panah penanda, naskah pemilik
@@ -118,6 +121,7 @@ js/
 - **Latihan** (`systems/tutorial.js`): Level 0 berada di luar urutan buka (`TUTORIAL_INDEX` = -1, `levelAt`). Pemilik dinaskahkan lewat `ownerGoOffstage` / `ownerStartPatrol` / `ownerStartChase` (owner/index.js). Di level dengan `TUTORIAL: true` timer tidak berjalan dan nyawa tidak berkurang saat tertangkap. `updateTutorial` dipanggil tiap frame di `gameFrame` (juga selama KETAHUAN).
 - **Cuaca** (`systems/weather.js`): aktif hanya di level dengan blok `WEATHER`. `ctx.weather.flashT > 0` = kilat (area gelap tidak berlaku di persepsi & peredupan), `isNoiseMasked` dipakai `ownerHearNoise`. Zona gelap tambahan per level lewat `LAYOUT.EXTRA_DARK_ZONES` (`rebuildDarkOverlays`). Objek transparan di belakang kaca jendela perlu `renderOrder` negatif (kaca menulis depth). Debug: F3 + `L` = kilat.
 - **Malam** (`systems/night.js`): aktif di level dengan blok `NIGHT`. Pemilik `nightMode`: `asleep` (tidak melihat, tidak menghalangi kucing, suara → `wakeFromNoise`), bangun → `flashlightOn` → menyelidiki → `startWork` = kembali tidur (`toBed`). Persepsi saat senter menyala ada di `perception.js` (sorotan, 2 m, `isInLightZone`). Zona terang lewat `LAYOUT.EXTRA_LIGHT_ZONES` (`LIGHT_ZONES`); zona gelap `noOverlay` tanpa lapisan redup. Lampu arah tanpa bayangan menembus dinding, jadi bulan sengaja sangat redup.
+- **Tamu** (`entities/guest`, `systems/visit.js`): aktif di level dengan blok `GUEST`. Tamu memakai `createOwnerMesh(look)`, `animateOwner`, dan fungsi gerak pemilik yang diekspor (`npcWalkTo`, `npcTurnTowards`, `npcLookAt`). Jadwal berdua memanggil `ownerVisitActivity`; tamu mengadu lewat `ownerReport`. Panggilan tamu = noise `guestCall` (pemilik menoleh tanpa curiga). Kucing yang sedang dielus (`cat.action.type === 'petted'`) bukan kenakalan. Mode khusus pemilik (`guestMode`, `nightMode`) di-reset di awal `resetOwner`.
 - **Kustomisasi:** tampilan kucing = `{ cat, accessory }` dari `CUSTOMIZATION` (config). Model dibuat `buildCatModel` (dipakai kucing pemain & lobi). Ganti tampilan lewat `setCatLook` (model lama di-dispose), lalu buat ulang `ctx.darkTint.cat`. Efek gameplay hanya dua: `cat.bell` (Chaos ×1,2, langkah berbunyi) dan `cat.darkStealth` (kucing hitam di area gelap); selain itu murni kosmetik.
 - **Lobi:** saat `flow.state` = `lobby`/`select`, loop merender `ctx.lobby.scene` (bukan rumah). Menu/panel di DOM (`#lobby`).
 - **Simpanan** hanya lewat `core/save.js` (`ctx.save`); semua akses localStorage dibungkus try/catch. Saat skema berubah, naikkan `SAVE.VERSION` dan tambahkan migrasi.

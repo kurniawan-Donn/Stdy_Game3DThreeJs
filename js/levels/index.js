@@ -18,14 +18,17 @@
 //   LAYOUT.EXTRA_DARK_ZONES      zona gelap tambahan selama level ini ({ noOverlay } = tanpa lapisan)
 //   LAYOUT.EXTRA_LIGHT_ZONES     zona terang yang membatalkan area gelap
 //   NIGHT                        malam: pemilik tidur, meter terbangun, senter (lihat level4.js)
+//   GUEST                        tamu: pembuka/penutup, jadwal berdua, AI tamu (lihat level5.js)
+//   TIME_UP_REASON               teks alasan di layar hasil saat waktu habis
 //   TUTORIAL, STEPS              hanya Level 0 (Latihan), lihat level0.js
 import level0 from './level0.js';
 import level1 from './level1.js';
 import level2 from './level2.js';
 import level3 from './level3.js';
 import level4 from './level4.js';
+import level5 from './level5.js';
 
-export const LEVELS = [level1, level2, level3, level4].map((l, i) => ({ ...l, id: i + 1 }));
+export const LEVELS = [level1, level2, level3, level4, level5].map((l, i) => ({ ...l, id: i + 1 }));
 
 // Latihan (tutorial) berada di luar urutan buka level; indeksnya -1
 export const TUTORIAL_INDEX = -1;

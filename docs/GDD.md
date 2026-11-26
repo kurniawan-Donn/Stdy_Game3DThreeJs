@@ -104,7 +104,7 @@ pilih misi kenakalan → menyelinap → lakukan kenakalan → kabur & sembunyi �
 | 2 | **Deadline** | 4 menit | 400 | Pemilik tegang: lebih sering menoleh, dua sesi rapat video | dibangun |
 | 3 | **Sore Hujan** | 4,5 menit | 450 | Hujan & petir: kilat menyingkap, guntur menutupi suara, jejak kaki basah | dibangun |
 | 4 | **Malam Hari** | 5 menit | 350 | Pemilik tidur; terbangun oleh suara, menyelidiki dengan senter | dibangun |
-| 5 | **Kedatangan Tamu** | – | – | (ide) | dicatat |
+| 5 | **Kedatangan Tamu** | 5 menit | 500 | Pemilik & tamu mengobrol; tamu ingin mengelus kucing dan mengadu ke pemilik | dibangun |
 | bonus | **Minggu Bersih-bersih** | – | – | (ide) | dicatat |
 
 - **Terbuka:** Level 1 selalu terbuka. Level berikutnya terbuka jika level sebelumnya pernah selesai dengan **minimal 1 bintang**.
@@ -193,6 +193,46 @@ Terbuka setelah Level 3 mendapat minimal 1 bintang. Durasi **5 menit**, target *
 **Performa:** maksimal **1 lampu berbayangan**: kualitas Tinggi = senter, Sedang = bulan, Rendah = tidak ada; saat matahari terbit, matahari yang berbayangan. Bulan sengaja sangat redup karena lampu arah tanpa bayangan menembus dinding; berkas bulan di lantai dibuat sebagai tambalan cahaya. Diukur di Chrome: 60 FPS.
 **Pengembang:** dengan overlay `F3` terbuka, `T` memajukan waktu ke 5 detik terakhir (melihat matahari terbit).
 
+### Level 5 — Kedatangan Tamu
+Terbuka setelah Level 4 mendapat minimal 1 bintang. Durasi **5 menit**, target **500**. Siang hari seperti Level 1.
+
+**Alur**
+- **Pintu depan** (baru, permanen) di dinding selatan ruang tamu (x 2,6). Selalu menahan kucing; hanya terbuka di adegan.
+- **Pembuka** (±5 detik; kamera tidak mengambil alih, kucing sudah bisa bergerak; `Enter` = lewati): bel pintu berbunyi, pemilik membuka pintu depan, tamu masuk, keduanya ke meja makan. Banner "Tamu datang!".
+- **Penutup** saat waktu habis (4 detik, kontrol dikunci): tamu ke pintu dan melambai, pemilik mengantar, lalu layar hasil ("Tamu pamit pulang!").
+
+**Tamu**
+- Memakai modul model pemilik dengan parameter berbeda (warna pakaian, gaya rambut, tinggi ±1,62 m), tanpa duplikasi kode.
+- Animasi tambahan: berjongkok, mengelus, tertawa, minum teh.
+- Punya kerucut pandang & line-of-sight sendiri (sistem persepsi yang sama). **Tidak bisa menangkap.**
+
+**Rutinitas berdua**
+- **Mengobrol di meja makan** sepanjang level: pemilik di kursi (4,85; 1,93) menghadap selatan, tamu di seberangnya (4,85; 3,67) menghadap utara, sehingga kerucut pandang mereka menutupi sisi yang berbeda. Tamu sesekali minum teh.
+- **Ke dapur bersama** tiap ±70 detik selama 10 detik (meja makan tak diawasi).
+- **Tamu ke toilet sekali** (detik 90–180, acak) selama 20 detik dengan pintu tertutup; pemilik tetap duduk (menatap ke arah tamu).
+- Saat mengobrol, pemilik menoleh ke sekitar hanya tiap **20–30 detik** (2,5 detik); selebihnya kerucut pandangnya mengarah ke tamu.
+
+**AI tamu**
+- **Melihat kucing:** berkata **"Pus, pus!"** (balon teks + suara), lalu mendekat (1,0 m/s) untuk mengelus. Tamu juga memanggil kucing yang hanya terlihat sebagian.
+- Panggilan tamu adalah suara **4 m** yang membuat **pemilik menoleh ke arah tamu** selama 2 detik **tanpa menambah curiga**; jika kucing terlihat pemilik di arah itu, persepsi normal berlaku.
+- Jika tamu sampai (< 0,6 m) dan kucing diam (< 0,3 m/s): **mengelus 3 detik** (kucing terkunci, mendengkur, ikon hati), lalu memberi **camilan ikan (stamina +40)**. Pemilik tidak curiga pada kucing yang sedang dielus. Jeda **45 detik** sebelum tamu mau mendekat lagi.
+- Kucing bisa kabur: tamu **menyerah** jika kucing tak terlihat 3 detik, lebih jauh dari 4 m, atau tak terjangkau (mis. di tengah meja) selama 2 detik; lalu jeda 15 detik sebelum memanggil lagi.
+- **Melihat kenakalan** (juga saat sedang mendekat): tamu tertawa keras ("Kucingmu nakal!") dan memberi tahu pemilik lokasinya: curiga pemilik naik ke **70** (di bawah "!") dan ia langsung **MENYELIDIKI** ke sana.
+- Persepsi tamu dihitung **15×/detik** (hemat raycast); jalurnya dihitung ulang paling cepat tiap 0,5 detik.
+- Tamu tidak bisa membuka kardus atau mengecek kolong.
+- **Meong** di dekat tamu (≤ 4,8 m) selalu memancingnya mendekat, tanpa jeda (pengalih untuk menarik pandangan pemilik ke arah lain).
+- Alur **KETAHUAN** tetap hanya oleh pemilik; tamu ikut tertawa di adegan itu.
+
+**Kenakalan khusus**
+- **Mencuri kue** dari piring di depan tamu: **70 Chaos**, suara 0,5 m; `E` dari atas meja makan, harus saat mereka tidak menatap meja.
+- **Tidur di tas/jaket tamu** (di kursi kosong samping pemilik, di luar kerucut pandangnya): **45 Chaos**, senyap; tahan `E` 0,6 detik, meringkuk 4 detik. Tamu yang melihatnya tertawa & memanggil pemilik.
+- **Menjatuhkan cangkir teh** tamu: **45 Chaos**, suara **4 m** (seperti gelas).
+- **Merebut kursi tamu** saat ia di toilet: **20 Chaos** (tanpa combo), senyap. Tamu kembali, tertawa "Hei, itu kursiku!" dan menunggu sampai kucing pergi; pemilik tidak curiga.
+
+**Sistem lama** tetap bekerja dengan dua NPC: kardus, kolong, robot, bola benang, meong, loaf.
+
+**Performa:** dua NPC dengan A* & persepsi masing-masing; persepsi tamu dibatasi 15×/detik. Diukur di Chrome: 60 FPS (sama dengan Level 1).
+
 ## 5. Kenakalan & Chaos
 
 Setiap kenakalan memberi Chaos dan memancarkan suara dengan radius tertentu. Pemilik yang berada di dalam radius suara akan mendengarnya.
@@ -202,6 +242,10 @@ Setiap kenakalan memberi Chaos dan memancarkan suara dengan radius tertentu. Pem
 | Tumpahkan tisu | 15 | 0,8 m |
 | Acak-acak selimut | 25 | 0,6 m |
 | Menginjak-injak selimut (Level 4) | 60 | 0,8 m (+45 meter terbangun) |
+| Mencuri kue (Level 5) | 70 | 0,5 m |
+| Tidur di tas tamu (Level 5) | 45 | 0 m |
+| Menjatuhkan cangkir teh (Level 5) | 45 | 4 m |
+| Merebut kursi tamu (Level 5) | 20 | 0 m |
 | Jatuhkan jam beker (Level 4) | 40 | 5 m |
 | Tarik tisu toilet | 35 | 1,2 m |
 | Cakar sofa | 20 | 1,6 m |
@@ -555,7 +599,8 @@ Belum ada. Tambahkan di sini jika muncul keputusan desain yang belum ditentukan.
 - [x] Simpanan `localStorage` berversi skema (v2, migrasi dari save lama), aman tanpa `localStorage`
 - [x] Level 3 Sore Hujan: hujan & tetesan di kaca, petir (kilat menyingkap, guntur menutupi suara, ikon hitung mundur), suara kecil tertutup hujan, jejak kaki basah, tutup jendela & ember, buat teh
 - [x] Level 4 Malam Hari: pemilik tidur & meter terbangun, senter (SpotLight, kilau mata), berkas bulan, camilan tengah malam, kneading & jam beker, matahari terbit, nakas baru di kamar
-- [ ] Level 5 (Kedatangan Tamu) dan bonus Minggu Bersih-bersih
+- [x] Level 5 Kedatangan Tamu: tamu (model pemilik berparameter), pembuka/penutup, mengobrol & dapur & toilet, "Pus, pus!" + mengelus + camilan, mengadu, 4 kenakalan tamu, pintu depan baru
+- [ ] Bonus Minggu Bersih-bersih
 - [x] Tutorial bertahap (Level 0 Latihan) yang otomatis dimulai saat pertama main, bisa dilewati dan diulang
 - [x] Pose loaf dirapikan: kaki terselip di bawah badan, perut menyentuh alas
 

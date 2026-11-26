@@ -6,7 +6,7 @@
 //   cameraBlockers  kotak 3D yang menahan lengan kamera (dinding dalam & ambang pintu)
 //   mergeStats      jumlah mesh sebelum/sesudah digabung
 import * as THREE from 'three';
-import { ROOM, ROOM_HALF_W, ROOM_HALF_D, HOUSE, MATERIALS, TEXTURES } from '../config.js';
+import { ROOM, ROOM_HALF_W, ROOM_HALF_D, HOUSE, MATERIALS, TEXTURES, GUEST_FX } from '../config.js';
 import { createWoodFloorTexture, createTileTexture } from './textures.js';
 import { mergeStaticGroup } from '../core/mergeStatic.js';
 
@@ -106,14 +106,41 @@ export function createLivingRoom(scene) {
   for (const [name, wall] of Object.entries(outer)) {
     const wins = HOUSE.windows.filter((w) => w.wall === name);
     const openings = wins.map((w) => ({ a: w.from, b: w.to, yMin: w.yMin, yMax: w.yMax }));
+    // Pintu depan (lubang sampai lantai; daun pintu di world/house.js)
+    const fd = HOUSE.frontDoor && HOUSE.frontDoor.wall === name ? HOUSE.frontDoor : null;
+    if (fd) openings.push({ a: fd.center - fd.width / 2, b: fd.center + fd.width / 2, yMin: 0, yMax: fd.height });
     for (const p of wallPieces(wall.from, wall.to, openings)) {
       const b = pieceBox(wall.axis, wall.at, t, p);
       const m = box(group, wallMat, b.w, p.yMax - p.yMin, b.d, b.x, (p.yMin + p.yMax) / 2, b.z, { cast: !p.full });
       m.castShadow = true; // dinding luar ikut menahan sinar matahari (hanya lewat jendela)
     }
-    // Lis bawah
-    const bb = pieceBox(wall.axis, wall.at + wall.inward * (t / 2 + ROOM.BASEBOARD_DEPTH / 2), ROOM.BASEBOARD_DEPTH, { a: wall.from + t, b: wall.to - t });
-    box(group, trimMat, bb.w, ROOM.BASEBOARD_HEIGHT, bb.d, bb.x, ROOM.BASEBOARD_HEIGHT / 2, bb.z);
+    // Lis bawah (terputus di pintu depan)
+    const segs = fd ? [[wall.from + t, fd.center - fd.width / 2], [fd.center + fd.width / 2, wall.to - t]] : [[wall.from + t, wall.to - t]];
+    for (const [a, b2] of segs) {
+      const bb = pieceBox(wall.axis, wall.at + wall.inward * (t / 2 + ROOM.BASEBOARD_DEPTH / 2), ROOM.BASEBOARD_DEPTH, { a, b: b2 });
+      box(group, trimMat, bb.w, ROOM.BASEBOARD_HEIGHT, bb.d, bb.x, ROOM.BASEBOARD_HEIGHT / 2, bb.z);
+    }
+    if (fd) {
+      // Kusen pintu depan + pemandangan luar (langit & teras)
+      const along = (x, y, z) => (wall.axis === 'z' ? [wall.at + x, y, fd.center + z] : [fd.center + z, y, wall.at + x]);
+      const faceIn = wall.axis === 'z' ? (wall.inward > 0 ? Math.PI / 2 : -Math.PI / 2) : (wall.inward > 0 ? 0 : Math.PI);
+      for (const side of [-1, 1]) {
+        const p = { a: fd.center + side * fd.width / 2 - 0.03, b: fd.center + side * fd.width / 2 + 0.03 };
+        const b = pieceBox(wall.axis, wall.at, t + 0.04, p);
+        box(group, trimMat, b.w, fd.height, b.d, b.x, fd.height / 2, b.z);
+      }
+      const top = pieceBox(wall.axis, wall.at, t + 0.04, { a: fd.center - fd.width / 2 - 0.03, b: fd.center + fd.width / 2 + 0.03 });
+      box(group, trimMat, top.w, 0.06, top.d, top.x, fd.height + 0.03, top.z);
+      const O = GUEST_FX.OUTSIDE;
+      const sky = new THREE.Mesh(new THREE.PlaneGeometry(fd.width + 2, fd.height + 1.5), new THREE.MeshBasicMaterial({ color: O.BACKDROP_COLOR }));
+      sky.position.set(...along(-wall.inward * 1.6, fd.height / 2 + 0.5, 0));
+      sky.rotation.y = faceIn;
+      group.add(sky);
+      const porch = new THREE.Mesh(new THREE.PlaneGeometry(fd.width + 2, 1.6), new THREE.MeshStandardMaterial({ color: O.PORCH_COLOR, roughness: 0.9 }));
+      porch.rotation.x = -Math.PI / 2;
+      porch.position.set(...along(-wall.inward * 0.8, 0.001, 0));
+      group.add(porch);
+    }
 
     // Jendela: kusen, palang, kaca, latar langit / tirai
     for (const w of wins) {

@@ -1331,3 +1331,47 @@ body.mode-lobby #storm-badge {
 body.mode-lobby #wake-badge {
   display: none !important;
 }
+
+/* ---------- Tamu (Level 5) ---------- */
+#visit-banner {
+  position: fixed;
+  top: 14px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: none;
+  padding: 7px 16px;
+  font-size: 15px;
+  font-weight: 800;
+  color: #0f172a;
+  background: #fde68a;
+  border-radius: 999px;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.3);
+  pointer-events: none;
+  z-index: 6;
+}
+
+#visit-banner span {
+  margin-left: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  opacity: 0.7;
+}
+
+#visit-banner.active {
+  display: block;
+}
+
+body.mode-lobby #visit-banner {
+  display: none !important;
+}
+
+/* Balon teks NPC ("Pus, pus!") */
+.float-text.speech {
+  padding: 4px 10px;
+  font-size: 15px;
+  color: #1f2937;
+  background: #ffffff;
+  border-radius: 12px;
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.3);
+  text-shadow: none;
+}

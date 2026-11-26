@@ -93,6 +93,18 @@ Hujan terlihat di luar jendela ruang tamu dan jendela dapur (jendela kamar tidur
 
 Seluruh rumah lainnya area gelap; lampu tidur lorong & lampu malam kamar tetap menyala.
 
+## Level 5 — Kedatangan Tamu
+
+| Objek | Posisi (x, z) | Catatan |
+|---|---|---|
+| Pintu depan (permanen) | dinding selatan, x 2,6 (lebar 0,9 m) | menahan kucing; terbuka saat adegan |
+| Pemilik menyambut | 2,6; 3,55 | menghadap pintu |
+| Kursi pemilik | 4,85; 1,93 (menghadap selatan) | meja makan |
+| Kursi tamu | 4,85; 3,67 (menghadap utara) | bisa direbut saat tamu ke toilet |
+| Piring kue · cangkir teh | 4,85; 3,02 · 5,2; 3,05 | di meja makan depan tamu |
+| Tas/jaket tamu | kursi 5,65; 1,93 | samping pemilik, di luar kerucut pandangnya |
+| Dapur bersama | pemilik 4,75; −4,0 · tamu 4,1; −3,6 | tiap ±70 detik |
+
 ## Titik rutinitas pemilik
 
 | Kegiatan | Titik (x, z) |

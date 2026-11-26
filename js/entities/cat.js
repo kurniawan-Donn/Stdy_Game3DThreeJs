@@ -302,6 +302,11 @@ export function updateCat(ctx, dt) {
   if (o && o.mesh.visible && !o.away && !o.asleep) {
     pushOutOfCircle(player.position, playerVel, o.mesh.position.x, o.mesh.position.z, OWNER.RADIUS, OWNER.BLOCK_HEIGHT);
   }
+  // Tubuh tamu (Level 5) juga menghalangi
+  const g = ctx.guest;
+  if (g && g.active && g.mesh.visible && !g.inToilet) {
+    pushOutOfCircle(player.position, playerVel, g.mesh.position.x, g.mesh.position.z, OWNER.RADIUS * g.scale, OWNER.BLOCK_HEIGHT * g.scale);
+  }
   for (const obs of ctx.obstacles) {
     pushOutOfCircle(player.position, playerVel, obs.mesh.position.x, obs.mesh.position.z, VACUUM.RADIUS, VACUUM.BLOCK_HEIGHT);
   }

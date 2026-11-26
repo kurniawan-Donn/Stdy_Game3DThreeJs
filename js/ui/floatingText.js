@@ -10,7 +10,8 @@ export function createFloatingText(layerEl) {
 
   return {
     // kind: 'chaos' | 'combo' (kelas CSS)
-    spawn(text, worldPos, kind) {
+    // opts.duration: lama tampil (balon teks NPC lebih lama)
+    spawn(text, worldPos, kind, opts = {}) {
       const el = document.createElement('div');
       el.className = `float-text ${kind}`;
       el.textContent = text;
@@ -19,6 +20,8 @@ export function createFloatingText(layerEl) {
         el,
         pos: new THREE.Vector3(worldPos.x, worldPos.y + FLOAT_TEXT.START_HEIGHT, worldPos.z),
         offsetY: kind === 'combo' ? FLOAT_TEXT.COMBO_OFFSET_PX : 0,
+        duration: opts.duration || FLOAT_TEXT.DURATION,
+        rise: kind === 'speech' ? 0 : FLOAT_TEXT.RISE_PX,
         age: 0
       });
     },
@@ -27,7 +30,7 @@ export function createFloatingText(layerEl) {
       for (let i = items.length - 1; i >= 0; i--) {
         const it = items[i];
         it.age += dt;
-        const k = it.age / FLOAT_TEXT.DURATION;
+        const k = it.age / it.duration;
         if (k >= 1) {
           it.el.remove();
           items.splice(i, 1);
@@ -39,9 +42,9 @@ export function createFloatingText(layerEl) {
           continue;
         }
         const x = (tmp.x * 0.5 + 0.5) * window.innerWidth;
-        const y = (-tmp.y * 0.5 + 0.5) * window.innerHeight - FLOAT_TEXT.RISE_PX * k + it.offsetY;
+        const y = (-tmp.y * 0.5 + 0.5) * window.innerHeight - it.rise * k + it.offsetY;
         it.el.style.transform = `translate(${x}px, ${y}px) translate(-50%, -50%)`;
-        it.el.style.opacity = String(1 - k * k);
+        it.el.style.opacity = String(it.rise ? 1 - k * k : Math.min(1, (1 - k) * 4));
       }
     },
 
