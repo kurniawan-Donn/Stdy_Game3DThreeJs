@@ -534,3 +534,98 @@ canvas {
   pointer-events: none;
   z-index: 7;
 }
+
+/* Ikon mata status persembunyian (HUD) */
+#hud .hide-eye {
+  position: relative;
+  display: inline-block;
+  width: 16px;
+  height: 9px;
+  border-radius: 50%;
+  border: 1.5px solid transparent;
+  overflow: hidden;
+  flex: none;
+}
+
+#hud .hide-eye::before {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 6px;
+  height: 6px;
+  margin: -3px 0 0 -3px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+#hud .hide-eye::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  height: 0;
+  background: #334155;
+}
+
+#hud .hide-eye.closed,
+#hud .hide-eye.half,
+#hud .hide-eye.open {
+  border-color: currentColor;
+}
+
+#hud .hide-eye.closed {
+  color: #4ade80;
+}
+
+#hud .hide-eye.closed::after {
+  height: 100%; /* kelopak tertutup */
+}
+
+#hud .hide-eye.half {
+  color: #facc15;
+}
+
+#hud .hide-eye.half::after {
+  height: 50%;
+}
+
+#hud .hide-eye.open {
+  color: #ef4444;
+}
+
+/* Teks melayang tingkah kucing */
+.float-text.heart {
+  font-size: 18px;
+  color: #f472b6;
+}
+
+.float-text.zzz {
+  font-size: 15px;
+  font-style: italic;
+  color: #bfdbfe;
+}
+
+/* Zoomies (catnip): tepi layar berpelangi tipis */
+#zoomies-overlay {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  z-index: 4;
+  border: 10px solid transparent;
+  border-image: linear-gradient(90deg, #f87171, #facc15, #4ade80, #38bdf8, #a78bfa, #f472b6) 1;
+  filter: blur(3px);
+  animation: zoomies-hue 0.8s linear infinite;
+}
+
+#zoomies-overlay.active {
+  opacity: 0.75;
+}
+
+@keyframes zoomies-hue {
+  from { filter: blur(3px) hue-rotate(0deg); }
+  to { filter: blur(3px) hue-rotate(360deg); }
+}

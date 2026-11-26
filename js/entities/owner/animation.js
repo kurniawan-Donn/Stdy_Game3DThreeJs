@@ -70,6 +70,16 @@ function targetsFor(owner, t) {
       T.armL = [0.35, -0.1, -0.9];
       T.armR = [0.35, 0.1, -0.9];
       break;
+    case 'kneel':
+      // Membungkuk mengecek kolong perabot
+      T.hipsY = HIP_Y * 0.5;
+      T.legL = [-1.3, 2.1];
+      T.legR = [-0.6, 1.4];
+      T.torsoX = 0.75;
+      T.headX = 0.5;
+      T.armL = [-0.9, -0.1, -0.3];
+      T.armR = [-0.6, 0.1, -0.5];
+      break;
     case 'lift':
       T.armL = [-1.35, -0.1, -0.25];
       T.armR = [-1.35, 0.1, -0.25];

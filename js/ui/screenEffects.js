@@ -4,6 +4,8 @@ export function createScreenEffects(canvas) {
   const vignetteEl = document.getElementById('vignette');
   const caughtEl = document.getElementById('caught-text');
   const fadeEl = document.getElementById('fade-overlay');
+  const zoomiesEl = document.getElementById('zoomies-overlay');
+  let zoomies = null;
 
   let desat = -1;
   let vignette = -1;
@@ -40,11 +42,18 @@ export function createScreenEffects(canvas) {
         caughtEl.classList.add('active');
       }
     },
+    // Tepi layar berpelangi tipis saat zoomies (catnip)
+    setZoomies(on) {
+      if (on === zoomies) return;
+      zoomies = on;
+      zoomiesEl.classList.toggle('active', on);
+    },
     reset() {
       fx.setDesaturation(0);
       fx.setVignette(0);
       fx.setFade(0);
       fx.showCaughtText(false);
+      fx.setZoomies(false);
     }
   };
   return fx;

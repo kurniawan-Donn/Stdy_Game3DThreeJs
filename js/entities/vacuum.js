@@ -1,8 +1,7 @@
-// Robot vacuum: bergerak bolak-balik di satu sumbu dan memantul dari
-// dinding/perabot. Tidak melukai kucing (sejak Fase 3).
+// Robot vacuum: berkeliaran di rumah (lurus, berbelok acak) dan bisa
+// ditumpangi kucing. Tidak melukai kucing (sejak Fase 3).
 import * as THREE from 'three';
-import { VACUUM, MATERIALS } from '../config.js';
-import { isPositionFree } from '../systems/collision.js';
+import { VACUUM, MATERIALS, ROOM_HALF_W, ROOM_HALF_D } from '../config.js';
 import { findFreeFloorPosition } from '../systems/spawn.js';
 
 function createRobotVacuumMesh() {
@@ -38,17 +37,23 @@ function createRobotVacuumMesh() {
   return group;
 }
 
+function randRange(a, b) {
+  return a + Math.random() * (b - a);
+}
+
 export function spawnObstacle(ctx) {
   const pos = findFreeFloorPosition(ctx.colliders, ctx.cat.mesh.position, VACUUM.RADIUS, VACUUM.MIN_PLAYER_DIST);
   const mesh = createRobotVacuumMesh();
   mesh.position.set(pos.x, 0, pos.z);
   ctx.scene.add(mesh);
 
-  const axis = Math.random() < 0.5 ? 'x' : 'z';
   ctx.obstacles.push({
     mesh,
-    axis,
-    dir: Math.random() < 0.5 ? 1 : -1
+    heading: Math.random() * Math.PI * 2, // arah jalan (yaw)
+    turnTarget: null, // arah tujuan saat sedang berbelok
+    wanderIn: randRange(VACUUM.WANDER_INTERVAL_MIN, VACUUM.WANDER_INTERVAL_MAX),
+    vel: new THREE.Vector3(), // dipakai kucing yang menumpang
+    rider: null
   });
 }
 
@@ -59,26 +64,62 @@ export function clearObstacles(ctx) {
   ctx.obstacles.length = 0;
 }
 
-// Robot vacuum bergerak bolak-balik. Sejak Fase 3 robot TIDAK melukai kucing;
-// kucing hanya tertahan tubuh robot (lihat dynamicBlockers di cat.js).
-// Fitur menunggangi robot dikerjakan di Fase 6.
+// Bebas untuk robot? Robot (tinggi 0,09 m) lewat di bawah perabot berkolong
+// dan melewati pintu yang terbuka (collider setinggi 0).
+function robotFree(colliders, x, z) {
+  const r = VACUUM.RADIUS - VACUUM.WALL_CHECK_SHRINK;
+  if (x < -ROOM_HALF_W + r || x > ROOM_HALF_W - r || z < -ROOM_HALF_D + r || z > ROOM_HALF_D - r) return false;
+  for (const box of colliders) {
+    if (box.topHeight <= VACUUM.HEIGHT * 0.2) continue;
+    if (box.crawlHeight > VACUUM.HEIGHT) continue;
+    const cx = Math.max(box.minX, Math.min(x, box.maxX));
+    const cz = Math.max(box.minZ, Math.min(z, box.maxZ));
+    if ((x - cx) ** 2 + (z - cz) ** 2 < r * r) return false;
+  }
+  return true;
+}
+
+// Robot berkeliaran: jalan lurus, berbelok acak saat menabrak dan sesekali,
+// sehingga lama-lama melewati pintu & pindah ruangan. Tidak melukai kucing;
+// kucing bisa menumpang (entities/catBehavior.js).
 export function updateObstacles(ctx, dt) {
   const { state, colliders, obstacles } = ctx;
   const speed = state.obstacleSpeed;
   const steps = speed * dt > VACUUM.SUBSTEP_THRESHOLD ? 2 : 1;
   const subDt = dt / steps;
 
-  for (let s = 0; s < steps; s++) {
-    for (const obs of obstacles) {
-      const pos = obs.mesh.position;
-      const prevVal = pos[obs.axis];
-      pos[obs.axis] += obs.dir * speed * subDt;
-      obs.mesh.rotation.y += VACUUM.SPIN_SPEED * subDt;
-
-      if (!isPositionFree(colliders, pos.x, pos.z, VACUUM.RADIUS - VACUUM.WALL_CHECK_SHRINK)) {
-        pos[obs.axis] = prevVal;
-        obs.dir *= -1;
+  for (const obs of obstacles) {
+    obs.wanderIn -= dt;
+    if (obs.wanderIn <= 0 && obs.turnTarget === null) {
+      obs.turnTarget = obs.heading + (Math.random() * 2 - 1) * VACUUM.WANDER_TURN;
+      obs.wanderIn = randRange(VACUUM.WANDER_INTERVAL_MIN, VACUUM.WANDER_INTERVAL_MAX);
+    }
+    const pos = obs.mesh.position;
+    const startX = pos.x;
+    const startZ = pos.z;
+    for (let s = 0; s < steps; s++) {
+      if (obs.turnTarget !== null) {
+        const diff = obs.turnTarget - obs.heading;
+        const step = VACUUM.TURN_RATE * subDt;
+        if (Math.abs(diff) <= step) {
+          obs.heading = obs.turnTarget;
+          obs.turnTarget = null;
+        } else {
+          obs.heading += Math.sign(diff) * step;
+        }
+      }
+      const nx = pos.x + Math.sin(obs.heading) * speed * subDt;
+      const nz = pos.z + Math.cos(obs.heading) * speed * subDt;
+      if (robotFree(colliders, nx, nz)) {
+        pos.x = nx;
+        pos.z = nz;
+      } else if (obs.turnTarget === null) {
+        // Menabrak: berbelok ke arah acak
+        const sign = Math.random() < 0.5 ? -1 : 1;
+        obs.turnTarget = obs.heading + sign * randRange(VACUUM.BOUNCE_TURN_MIN, VACUUM.BOUNCE_TURN_MAX);
       }
     }
+    obs.mesh.rotation.y += VACUUM.SPIN_SPEED * dt;
+    obs.vel.set((pos.x - startX) / Math.max(dt, 1e-6), 0, (pos.z - startZ) / Math.max(dt, 1e-6));
   }
 }

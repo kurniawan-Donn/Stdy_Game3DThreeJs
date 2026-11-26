@@ -18,6 +18,7 @@ export function resetRunState(state) {
   state.chaos = 0;
   state.mischiefCount = 0; // jumlah kenakalan yang sudah dilakukan
   state.lastMischiefTime = -Infinity; // untuk combo
+  state.recentChaos = []; // [{x, z, t}] posisi & waktu kekacauan (kucing tidur di dekatnya dicurigai)
   state.starsReached = 0;
   state.timeLeft = level.DURATION;
   state.lives = GAME.MAX_LIVES;

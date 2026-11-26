@@ -51,8 +51,25 @@ Sumber kebenaran koordinat: `HOUSE` dan `FURNITURE_LAYOUT` di `js/config.js`.
 ## Jalan pintas khusus kucing
 
 - **Rute atas:** dudukan sofa → meja kopi → rak TV → konter bar (lompat tinggi) → ruang makan/dapur. Pemilik harus memutar.
-- **Kolong:** meja kopi (0,41 m) dan meja makan (0,70 m) bisa dilewati sambil berdiri; kasur (0,28 m) harus sambil mengendap. Kucing di kolong tidak terlihat dari jauh dan **tidak bisa diraih** pemilik.
+- **Kolong:** meja kopi (0,41 m), meja makan (0,70 m), dan meja kerja (0,71 m) bisa dilewati sambil berdiri; sofa dan kasur (0,28 m) harus sambil mengendap. Kucing di kolong **tidak bisa diraih** pemilik; di kolong sofa/kasur/meja kerja/meja makan kucing yang merendah juga **tidak terlihat**.
 - **Tempat tinggi (> 1,2 m):** atas kulkas (dari konter) dan atas rak buku (dari rak rendah).
+
+## Alat stealth & mainan
+
+| Objek | Posisi (x, z) | Catatan |
+|---|---|---|
+| Kardus K1 | −4,3; 0,05 | ruang tamu, samping bukaan barat lorong (loop L1) |
+| Kardus K2 | 0,2; 4,55 | ruang tamu, dinding selatan di samping rak buku |
+| Kardus K3 | 6,6; −1,0 | dapur dekat pulau (loop L4) |
+| Kardus K4 | 3,15; −1,85 | sudut ruang kerja, dekat pos pemilik (berisiko) |
+| Bola benang Y1 | −3,0; 1,8 | ruang tamu |
+| Bola benang Y2 | −4,0; −2,3 | kamar tidur |
+| Catnip | 0,2; −4,6 | lantai samping meja kerja, di belakang pemilik |
+| Zona matahari (tidur) | x −7..−4,4, z 1,0..3,6 · x 6,0..7, z −3,6..−1,8 | berkas cahaya jendela ruang tamu & dapur |
+
+Kolong tempat sembunyi (merendah = tak terlihat): sofa (0,28 m), kasur (0,28 m), meja kerja (0,71 m), meja makan (0,70 m). Kolong meja kopi hanya bisa dilewati.
+
+Kardus K2 sengaja tidak diletakkan di koridor sekitar meja makan: koridor itu hanya selebar badan pemilik, dan kardus di sana memutus loop L3.
 
 ## Titik rutinitas pemilik
 
@@ -67,4 +84,4 @@ Sumber kebenaran koordinat: `HOUSE` dan `FURNITURE_LAYOUT` di `js/config.js`.
 ## Area gelap & terang
 
 - Gelap (jangkauan pandang pemilik ×0,7): lorong, kamar tidur.
-- Terang: depan jendela ruang tamu (berkas matahari & debu), dekat jendela dapur.
+- Terang: depan jendela ruang tamu (berkas matahari & debu), dekat jendela dapur. Keduanya zona tidur di sinar matahari.

@@ -9,6 +9,8 @@ import { triggerShake, snapCameraBehind } from '../core/camera.js';
 import { clearNoise } from './noise.js';
 import { hideInteraction } from './interaction.js';
 import { endLevel } from './level.js';
+import { tossBox } from '../entities/hideBox.js';
+import { dismount, wake } from '../entities/catBehavior.js';
 
 export function createCapture() {
   return { active: false, phase: 'idle', t: 0, timeScale: 1, liftFrom: null };
@@ -30,6 +32,12 @@ export function startCapture(ctx) {
 
   // Kenakalan yang sedang berjalan diselesaikan seketika (gelas tetap jatuh)
   finishCatAction(cat);
+  // Kardus diangkat & dilempar; kucing turun dari robot / bangun
+  if (cat.inBox) tossBox(ctx);
+  if (cat.riding) dismount(ctx, false);
+  if (cat.sleeping) wake(ctx);
+  cat.loaf = false;
+  cat.zoomiesT = 0;
   hideInteraction(ctx);
 
   c.active = true;

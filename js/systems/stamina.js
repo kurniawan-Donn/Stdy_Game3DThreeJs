@@ -36,7 +36,7 @@ export function trySpendHighJump(s) {
   return true;
 }
 
-export function updateStamina(s, dt, { running, grounded }) {
+export function updateStamina(s, dt, { running, grounded, sunNap = false }) {
   if (s.exhaustedTimer > 0) {
     s.exhaustedTimer = Math.max(0, s.exhaustedTimer - dt);
   }
@@ -45,6 +45,7 @@ export function updateStamina(s, dt, { running, grounded }) {
     s.value -= STAMINA.RUN_DRAIN_PER_SEC * dt;
     if (s.value <= 0) exhaust(s);
   } else if (grounded) {
-    s.value = Math.min(STAMINA.MAX, s.value + STAMINA.REGEN_PER_SEC * dt);
+    const regen = sunNap ? STAMINA.SUN_NAP_REGEN_PER_SEC : STAMINA.REGEN_PER_SEC;
+    s.value = Math.min(STAMINA.MAX, s.value + regen * dt);
   }
 }

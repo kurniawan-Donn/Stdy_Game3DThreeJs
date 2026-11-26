@@ -259,16 +259,44 @@ Total **3 nyawa**.
 | Camilan | Efek |
 |---|---|
 | **Ikan** | Mengisi stamina +40. Muncul acak di lantai dan di atas perabot, satu ekor dalam satu waktu. Dimakan otomatis saat disentuh, lalu muncul lagi 12 detik kemudian. |
-| **Catnip** (langka) | Mode **zoomies** selama 6 detik: kucing sangat cepat dan senyap |
+| **Catnip** (langka) | Mode **zoomies** selama 6 detik: kucing sangat cepat (6 m/s), langkah senyap, stamina tidak terkuras, tepi layar berpelangi tipis. **Satu per level**, di lantai samping meja kerja pemilik (tempat berisiko). Dimakan otomatis saat disentuh. |
 
 ## 12. Hal lucu (fitur karakter)
 
-- **Menunggangi robot vacuum:** senyap, tapi arahnya tidak bisa dikontrol. Robot vacuum **tidak melukai** kucing.
-- **Kardus untuk sembunyi:** kucing aman di dalamnya, tapi **ketahuan jika bergerak saat sedang dilihat**.
 - **Mendorong gelas pelan sambil menatap kamera:** animasi khusus saat menjatuhkan gelas.
-- **Loaf pose:** otomatis saat kucing diam selama 5 detik.
-- **Tidur di sinar matahari:** memulihkan stamina (lihat bagian 6).
-- **Bola benang:** bisa ditendang sebagai pengalih perhatian pemilik.
+
+### Kardus
+- 4 kardus (0,45 × 0,40 × 0,45 m) tersebar di rumah, sebagian dekat jalur loop (posisi di `docs/denah.md`).
+- `E` di dekat kardus = **masuk**. Kucing tidak terlihat; hanya dua mata menyala yang mengintip dari lubang. Kamera orbit tetap bebas di luar kardus.
+- Di dalam kardus: kecepatan mengendap, tidak bisa melompat, langkah senyap. `E` lagi = **keluar** lewat sisi depan.
+- Kardus **diam** = pemilik tidak curiga sama sekali. Kardus **bergerak** di dalam kerucut pandang = curiga naik ×1,6 dari biasa (dan jarak pandang tidak dikurangi efek mengendap).
+- Masuk kardus **di depan mata pemilik** (atau ≤ 1 detik setelah terlihat saat dikejar) tidak menyelamatkan: pemilik tetap mengejar, lalu mengangkat & melempar kardusnya saat menangkap.
+- Kardus yang ditinggal menjadi rintangan: kucing bisa berdiri di atasnya (0,40 m), dan jalur pemilik dihitung ulang memutarinya.
+
+### Kolong tempat sembunyi
+- Kolong **sofa** (kaki 0,28 m), **kasur** (0,28 m), **meja kerja**, dan **meja makan**: kucing yang **merendah** (mengendap, atau terpaksa merendah di kolong rendah) tidak terlihat dan tidak bisa diraih.
+- Kolong **meja kopi** bisa dilewati tetapi **bukan** tempat sembunyi; daun mejanya tetap menghalangi pandangan dari atas.
+- Pemilik yang **menyelidiki** tepat di dekat kolong (≤ 0,8 m) punya peluang **25%** membungkuk memeriksanya selama 1,5 detik. Jika kucing bersembunyi di sana, kucing **ditarik keluar** (alur KETAHUAN).
+- Kamera tetap di luar kolong (perabot yang menghalangi memudar, kamera tidak bergetar).
+
+### Menumpang robot vacuum
+- Robot (Ø 0,34 m) berkeliaran di seluruh rumah dengan kecepatan 0,6 m/s: jalan lurus, berbelok acak saat menabrak dan sesekali, sehingga bisa pindah ruangan. Robot **tidak melukai** kucing.
+- Lompat ke atas robot = **menumpang**: kucing duduk tenang, langkah senyap, **WASD tidak mengarahkan**, `Spasi` = turun. Jika robot masuk kolong yang terlalu rendah, kucing turun otomatis.
+- Pemilik yang melihat kucing menumpang: curiga naik **setengah** kecepatan biasa.
+
+### Bola benang
+- 2 bola (ruang tamu, kamar tidur). `E` = **tendang** ke arah hadap kucing (jeda 1 detik); bola menggelinding ±1,7 m.
+- Saat bola berhenti, ia memancarkan suara **1,5 m**: pemilik di dalam radius datang menyelidiki (curiga +15). Bisa ditendang berulang.
+
+### Tingkah kucing
+- **Animasi kecil acak** saat diam ±2 detik: menjilat kaki, menggaruk telinga, menguap.
+- **Loaf pose:** diam 5 detik = duduk melingkar seperti roti, ikon ♥ kecil melayang.
+- **Tidur di sinar matahari:** di zona cahaya jendela (ruang tamu & dapur), **tahan `E`** 0,6 detik. Muncul "Zzz", stamina pulih 25/detik, bangun dengan input gerak, `E`, atau `Q`. Pemilik yang melihat kucing tidur **tidak curiga**, kecuali ada kekacauan baru dalam radius 3 m selama 10 detik terakhir.
+
+### Umpan balik
+- Ikon mata di HUD: **tertutup** (hijau) = tersembunyi, **setengah** (kuning) = terlihat sebagian, **terbuka** (merah) = terlihat penuh.
+- Prompt `E` menyesuaikan konteks: Masuk kardus / Keluar kardus / Tendang / Tahan E: Tidur / kenakalan.
+- Overlay `F3` menampilkan status persembunyian.
 
 ## 13. Transisi dari prototipe
 
@@ -366,17 +394,18 @@ Belum ada. Tambahkan di sini jika muncul keputusan desain yang belum ditentukan.
 - [x] Level gagal saat nyawa habis (50% Chaos ke tabungan) — dikerjakan di Fase 2
 
 ### Fase 5 — Sembunyi & camilan
-- [ ] Kardus (ketahuan jika bergerak saat dilihat)
+- [x] Kardus (ketahuan jika bergerak saat dilihat; masuk di depan mata tidak menyelamatkan)
 - [ ] Area gelap: visual & pencahayaan yang lebih jelas (efek jangkauan ×0,7 sudah ada sejak Fase 3; lorong & kamar tidur)
-- [x] Kolong perabot untuk sembunyi (meja kopi, meja makan, kasur) — dikerjakan saat perbaikan peta
-- [ ] Catnip (zoomies 6 detik) menggantikan magnet (kode magnet sudah dihapus di Fase 3)
-- [ ] Tidur di sinar matahari untuk memulihkan stamina
+- [x] Kolong perabot untuk sembunyi — dikerjakan saat perbaikan peta; diperbarui: sofa, kasur, meja kerja, meja makan (merendah = tersembunyi), meja kopi hanya bisa dilewati, pemilik kadang membungkuk mengecek
+- [x] Catnip (zoomies 6 detik, satu per level) menggantikan magnet
+- [x] Tidur di sinar matahari untuk memulihkan stamina (pemilik tidak curiga pada kucing tidur)
 
 ### Fase 6 — Hal lucu
-- [ ] Robot vacuum bisa ditunggangi (tidak melukai sejak Fase 3)
+- [x] Robot vacuum berkeliaran & bisa ditunggangi (tidak melukai sejak Fase 3)
 - [x] Animasi mendorong gelas sambil menatap kamera — dikerjakan di Fase 2
-- [ ] Loaf pose setelah diam 5 detik
-- [ ] Bola benang yang bisa ditendang sebagai pengalih
+- [x] Loaf pose setelah diam 5 detik + animasi idle acak (menjilat, menggaruk, menguap)
+- [x] Bola benang yang bisa ditendang sebagai pengalih
+- [x] Ikon mata status persembunyian di HUD, prompt E kontekstual, status sembunyi di F3
 
 ### Perbaikan peta (di luar fase)
 - [x] Rumah 14 × 10 m: ruang tamu, ruang makan + dapur, lorong, kamar tidur, kamar mandi, ruang kerja

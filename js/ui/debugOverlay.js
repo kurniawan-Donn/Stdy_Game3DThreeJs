@@ -8,6 +8,7 @@ import { DEBUG, INTERACT, NOISE, PLAYER, STAMINA, MEOW, OWNER, HOUSE } from '../
 import { isExhausted } from '../systems/stamina.js';
 import { recentMeowCount, isAnnoying } from '../systems/meow.js';
 import { comboTimeLeft } from '../systems/chaos.js';
+import { hideStatus } from '../systems/hiding.js';
 import { remainingMischief } from '../entities/mischief/index.js';
 
 const RING_Y = 0.03;
@@ -146,6 +147,7 @@ export function updateDebugOverlay(ctx) {
     `aksi      : ${cat.action ? cat.action.type + ' ' + cat.action.t.toFixed(2) + 's' : '-'}`,
     `fisika    : ${ctx.physics.bodies.length} benda, waktu ${ctx.state.timeLeft.toFixed(1)}s`,
     `ruangan   : ${roomAt(ctx.cat.mesh.position)}${cat.underCrawl ? ' (di kolong)' : ''}`,
+    `sembunyi  : ${hideDebugText(ctx)}`,
     `kamera    : yaw ${(ctx.camRig.yaw * 57.3).toFixed(0)}° pitch ${(ctx.camRig.pitch * 57.3).toFixed(0)}° lengan ${ctx.camRig.arm.toFixed(2)}/${ctx.camRig.zoom.toFixed(2)} m, pudar ${ctx.cameraFading}${ctx.input.pointerLocked ? ', mouse terkunci' : ''}`
   ].join('\n');
 }
@@ -204,4 +206,20 @@ function updateOwnerDebug(ctx, overlay) {
     pp.needsUpdate = true;
     overlay.path.geometry.setDrawRange(0, k);
   }
+}
+
+function hideDebugText(ctx) {
+  const h = hideStatus(ctx);
+  const cat = ctx.cat;
+  const names = { box: 'kardus diam', boxMoving: 'kardus BERGERAK', spot: 'kolong', ride: 'menumpang robot', sleep: 'tidur', loaf: 'loaf' };
+  const parts = [];
+  parts.push(h.kind ? names[h.kind] : '-');
+  if (h.compromised) parts.push('TERBONGKAR');
+  parts.push(h.hidden ? 'tersembunyi' : 'tidak tersembunyi');
+  if (cat.zoomiesT > 0) parts.push(`zoomies ${cat.zoomiesT.toFixed(1)}s`);
+  if (cat.idleAnim) parts.push(`idle:${cat.idleAnim.type}`);
+  const o = ctx.owner;
+  if (o && o.checkingSpot) parts.push('pemilik membungkuk');
+  if (o && o.sense && o.sense.ignoredSleep) parts.push('tidur diabaikan');
+  return parts.join(', ');
 }

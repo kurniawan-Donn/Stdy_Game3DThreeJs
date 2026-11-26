@@ -23,7 +23,8 @@ function addFurnitureCollider(colliders, c) {
     climbable: c.climbable === true,
     occludes: c.occludes !== false,
     navBlocks: c.navBlocks !== false,
-    crawlHeight: c.crawlHeight || 0
+    crawlHeight: c.crawlHeight || 0,
+    hideSpot: c.hideSpot === true // kolong tempat sembunyi (kucing merendah = tak terlihat)
   });
 }
 
@@ -102,23 +103,23 @@ export function createFurniture(scene) {
     const g = new THREE.Group();
     g.position.set(L.sofa.x, 0, L.sofa.z);
     const W = seatC.width;
-    const LEG = 0.08;
+    const LEG = seatC.crawlHeight; // kaki tinggi: kolong untuk kucing mengendap
+    const BACK_BASE = 0.08; // sandaran sampai dekat lantai (sesuai collider padat)
     const seatZ = seatC.z - L.sofa.z;
     const backZ = backC.z - L.sofa.z;
     const frontEdge = seatZ - seatC.depth / 2;
     const backEdge = backZ + backC.depth / 2;
     g.add(mesh(new THREE.BoxGeometry(W, seatC.topHeight - LEG, seatC.depth), M.fabricSofa, 0, LEG + (seatC.topHeight - LEG) / 2, seatZ));
-    const backH = backC.topHeight - LEG;
-    g.add(mesh(new THREE.BoxGeometry(W, backH, backC.depth), M.fabricSofa, 0, LEG + backH / 2, backZ));
+    const backH = backC.topHeight - BACK_BASE;
+    g.add(mesh(new THREE.BoxGeometry(W, backH, backC.depth), M.fabricSofa, 0, BACK_BASE + backH / 2, backZ));
     const armW = 0.14;
     for (const side of [-1, 1]) {
       g.add(mesh(new THREE.BoxGeometry(armW, 0.16, seatC.depth), M.fabricSofa, side * (W / 2 - armW / 2), seatC.topHeight + 0.08, seatZ));
       const pillow = mesh(new THREE.BoxGeometry(0.3, 0.26, 0.09), M.cushion, side * 0.58, seatC.topHeight + 0.13, backZ - backC.depth / 2 - 0.05, false);
       pillow.rotation.set(-0.2, side * 0.18, side * 0.08);
       g.add(pillow);
-      for (const edge of [frontEdge + 0.08, backEdge - 0.08]) {
-        g.add(mesh(new THREE.CylinderGeometry(0.025, 0.018, LEG, 8), M.woodDark, side * (W / 2 - 0.08), LEG / 2, edge, false));
-      }
+      g.add(mesh(new THREE.CylinderGeometry(0.025, 0.018, LEG, 8), M.woodDark, side * (W / 2 - 0.08), LEG / 2, frontEdge + 0.08, false));
+      g.add(mesh(new THREE.CylinderGeometry(0.025, 0.018, BACK_BASE, 8), M.woodDark, side * (W / 2 - 0.08), BACK_BASE / 2, backEdge - 0.08, false));
     }
     refs.sofaSeat = finish(ctx, g, L.sofa.colliders)[0];
   }

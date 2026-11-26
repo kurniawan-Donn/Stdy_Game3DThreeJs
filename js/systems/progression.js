@@ -17,6 +17,10 @@ import { resetCapture } from './capture.js';
 import { resetCameraOcclusion } from './cameraOcclusion.js';
 import { resetOwner } from '../entities/owner/index.js';
 import { resetDoor } from '../world/house.js';
+import { createHideBoxes, disposeHideBoxes } from '../entities/hideBox.js';
+import { createYarnBalls, disposeYarnBalls } from '../entities/yarn.js';
+import { resetCatnip } from '../entities/catnip.js';
+import { createNavGrid } from './navGrid.js';
 
 // Dipanggil saat kucing memakan ikan camilan.
 export function onFishEaten(ctx) {
@@ -43,6 +47,13 @@ export function resetGame(ctx) {
   clearBodies(ctx);
   resetMischief(ctx);
   resetCapture(ctx);
+  // Alat stealth & mainan: kardus, bola benang, catnip
+  disposeHideBoxes(ctx);
+  ctx.hideBoxes = createHideBoxes(ctx);
+  disposeYarnBalls(ctx);
+  ctx.yarnBalls = createYarnBalls(ctx);
+  resetCatnip(ctx);
+  ctx.nav = createNavGrid(ctx.colliders); // kardus ikut menghalangi jalur pemilik
   resetDoor(ctx.door);
   resetOwner(ctx);
 
@@ -62,5 +73,6 @@ export function resetGame(ctx) {
   hud.setLives(state.lives);
   hud.setStamina(ctx.stamina.value, STAMINA.MAX, false);
   hud.setMeowCooldown(0);
+  hud.setHideStatus('');
   ctx.results.hide();
 }

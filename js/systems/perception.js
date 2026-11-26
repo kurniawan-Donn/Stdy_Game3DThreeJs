@@ -4,19 +4,22 @@
 //   jika ada line-of-sight ke titik-titik tubuhnya (ray vs kotak perabot).
 // - Jarak sangat dekat: selalu terlihat kecuali line-of-sight terhalang total.
 import * as THREE from 'three';
-import { OWNER, PERCEPTION } from '../config.js';
+import { OWNER, PERCEPTION, HIDE_BOX } from '../config.js';
 import { isInDarkZone } from '../world/house.js';
+import { hideSpotOf, isBoxMoving } from './hiding.js';
 
 const HALF_ANGLE = THREE.MathUtils.degToRad(OWNER.VISION_ANGLE_DEG / 2);
 
-// Ray (segmen) dari a ke b memotong kotak perabot (0..topHeight)?
+// Ray (segmen) dari a ke b memotong kotak perabot?
+// Rentang tinggi kotak: lantai..topHeight; perabot berkolong hanya bagian atas
+// (crawlHeight..topHeight), jadi kolong meja yang terbuka bisa dilihat tembus.
 // Mengabaikan potongan di dekat ujung b (titik tubuh kucing itu sendiri).
 export function segmentHitsBox(ax, ay, az, bx, by, bz, box) {
   let tmin = 0;
   let tmax = 1 - PERCEPTION.LOS_EPSILON / Math.max(1e-6, Math.hypot(bx - ax, by - ay, bz - az));
   const axes = [
     [ax, bx - ax, box.minX, box.maxX],
-    [ay, by - ay, 0, box.topHeight],
+    [ay, by - ay, box.crawlHeight || 0, box.topHeight],
     [az, bz - az, box.minZ, box.maxZ]
   ];
   for (const [o, d, lo, hi] of axes) {
@@ -76,7 +79,8 @@ export function senseCat(ctx, eye, lookYaw) {
   const distance = Math.hypot(dx, dz);
 
   let range = OWNER.VISION_RANGE;
-  if (cat.moveMode === 'sneak') range *= PERCEPTION.SNEAK_RANGE_MULT;
+  // Mengendap memperpendek jarak pandang (kecuali di dalam kardus: yang dilihat kardusnya)
+  if (cat.moveMode === 'sneak' && !cat.inBox) range *= PERCEPTION.SNEAK_RANGE_MULT;
   if (isInDarkZone(p.x, p.z)) range *= PERCEPTION.DARK_RANGE_MULT;
 
   // Sudut terhadap arah pandang
@@ -86,8 +90,24 @@ export function senseCat(ctx, eye, lookYaw) {
   const close = distance <= PERCEPTION.CLOSE_RANGE;
   const inCone = close || (distance <= range && Math.abs(angle) <= HALF_ANGLE);
 
-  const result = { visibility: 0, distance, range, inCone, rays: [] };
+  const result = { visibility: 0, distance, range, inCone, rays: [], box: !!cat.inBox, boxMoving: false, hiddenSpot: false };
   if (!inCone) return result;
+
+  // Di dalam kardus: yang terlihat hanya kardusnya
+  if (cat.inBox) {
+    result.boxMoving = isBoxMoving(cat);
+    let clearBox = 0;
+    const pts = boxSamplePoints(cat.inBox);
+    for (const to of pts) {
+      const ok = hasLineOfSight(ctx.colliders, eye, to, cat.inBox.collider);
+      result.rays.push({ to, clear: ok });
+      if (ok) clearBox++;
+    }
+    const v = clearBox / pts.length;
+    // Kardus diam = tidak dicurigai, kecuali pemilik melihat kucing masuk
+    result.visibility = result.boxMoving || cat.inBox.compromised ? v : 0;
+    return result;
+  }
 
   // Perabot yang sedang dipijak kucing tidak menutupi kucing itu sendiri
   // (mis. kucing di atas kulkas tetap terlihat dari bawah).
@@ -100,5 +120,22 @@ export function senseCat(ctx, eye, lookYaw) {
     if (ok) clear++;
   }
   result.visibility = clear / PERCEPTION.SAMPLE_POINTS.length;
+
+  // Kolong tempat sembunyi: kucing yang merendah tak terlihat, kecuali pemilik
+  // sedang membungkuk memeriksa kolong itu
+  const spot = hideSpotOf(cat);
+  if (spot && !(ctx.owner && ctx.owner.checkingSpot === spot)) {
+    result.visibility = 0;
+    result.hiddenSpot = true;
+  }
   return result;
+}
+
+function boxSamplePoints(box) {
+  const p = box.mesh.position;
+  const h = HIDE_BOX.HEIGHT;
+  return [
+    { x: p.x, y: h * 0.5, z: p.z },
+    { x: p.x, y: h * 0.95, z: p.z }
+  ];
 }

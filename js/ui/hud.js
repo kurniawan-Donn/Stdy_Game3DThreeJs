@@ -24,6 +24,8 @@ export function createHud() {
   const staminaFillEl = document.getElementById('stamina-fill');
   const meowStatusEl = document.getElementById('meow-status');
   const promptEl = document.getElementById('interact-prompt');
+  const hideEl = document.getElementById('hide-status');
+  let lastHide = null;
 
   // Garis target & tanda bintang pada Chaos Meter
   const starEls = STAR_THRESHOLDS.map((t, i) => {
@@ -112,6 +114,13 @@ export function createHud() {
       } else {
         promptEl.classList.remove('active');
       }
+    },
+    // '' | 'closed' (tersembunyi) | 'half' (terlihat sebagian) | 'open' (terlihat penuh)
+    setHideStatus(state) {
+      if (state === lastHide) return;
+      lastHide = state;
+      hideEl.className = state ? `hide-eye ${state}` : 'hide-eye';
+      hideEl.title = { closed: 'Tersembunyi', half: 'Terlihat sebagian', open: 'Terlihat!' }[state] || 'Status persembunyian';
     },
     setLives(lives) {
       const filled = '❤️'.repeat(Math.max(lives, 0));

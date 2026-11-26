@@ -46,7 +46,11 @@ js/
     cat.js              Kucing pemain: model, gerak, lompat, animasi, aksi (startCatAction)
     fish.js             Ikan camilan (isi stamina), menggantikan kristal
     fishModel.js        Model ikan prosedural
-    vacuum.js           Robot vacuum yang bergerak bolak-balik (tidak melukai, hanya menghalangi)
+    vacuum.js           Robot vacuum berkeliaran (lurus, belok acak); tidak melukai, bisa ditumpangi
+    catBehavior.js      Tingkah kucing: menumpang robot, tidur di sinar matahari, loaf, animasi idle, zoomies
+    hideBox.js          Kardus: masuk/keluar, ikut bergerak, terbongkar, dilempar saat tertangkap
+    yarn.js             Bola benang: ditendang (E), noise saat berhenti (pengalih)
+    catnip.js           Catnip (satu per level) → zoomies
     owner/              Pemilik rumah
       index.js          Rutinitas, meter curiga, state machine, mengejar, pendengaran
       model.js          Model manusia low-poly (pivot sendi)
@@ -64,7 +68,8 @@ js/
     level.js            Timer level, akhir level, bintang, tabungan
     progression.js      Makan ikan, reset level
     navGrid.js          Grid navigasi pemilik + A* + penghalusan jalur
-    perception.js       Penglihatan pemilik: kerucut, jangkauan, line-of-sight
+    perception.js       Penglihatan pemilik: kerucut, jangkauan, line-of-sight (kardus, kolong tempat sembunyi)
+    hiding.js           Status persembunyian (hideStatus, hideSpotOf) untuk persepsi, HUD, F3
     capture.js          Alur KETAHUAN: slow motion, efek layar, keranjang, nyawa −1
     cameraOcclusion.js  Perabot yang menghalangi kamera ke kucing memudar (fadeables)
     noise.js            Event suara gameplay (emitNoise / onNoise) untuk didengar pemilik
@@ -91,7 +96,9 @@ js/
 - Pemilik mendengar lewat `onNoise` (didaftarkan di `main.js` → `ownerHearNoise`). Penglihatan dihitung di `systems/perception.js`. Collider perabot dengan `occludes: false` tidak menghalangi pandangan, dan `navBlocks: false` tidak menghalangi jalur pemilik.
 - **Kenakalan baru:** buat file di `js/entities/mischief/`, daftarkan di `FACTORIES` (`index.js`), tambahkan posisinya di `MISCHIEF_LAYOUT` dan nilainya di `MISCHIEF` (config). Selesaikan kenakalan lewat `scoreMischief(ctx, type, posisi)`, yang otomatis memanggil `emitNoise` dengan radius dari GDD. Animasi kucing dijalankan lewat `startCatAction(cat, { duration, faceYaw, pose, events })`, dan semua perubahan tampilan harus dikembalikan di `inst.dispose()` karena objek dibuat ulang setiap level diulang.
 - **Rumah:** semua collider = dinding dalam (`wall: true`) + perabot + pintu kamar mandi (`door: true`, `topHeight` 0 saat terbuka). Kamera ditahan dinding dalam & pintu tertutup lewat `ctx.cameraBlockers`. Perabot baru dibangun di `furniture.js` lalu ditutup dengan `finish(ctx, group, colliders)` (gabung geometri + collider + fadeable). Tata letak ada di `HOUSE` & `FURNITURE_LAYOUT`; perbarui `docs/denah.md` bila denah berubah dan pastikan loop/rute pemilik tetap lolos uji A*.
-- **Kolong:** collider dengan `crawlHeight` bisa dilewati kucing yang tingginya (berdiri 0,35 m / mengendap 0,26 m) muat. `cat.underCrawl` menandai kucing di kolong: tidak bisa melompat, tak terlihat (LOS), dan tidak bisa diraih pemilik.
+- **Kolong:** collider dengan `crawlHeight` bisa dilewati kucing yang tingginya (berdiri 0,35 m / mengendap 0,26 m) muat. `cat.underCrawl` menandai kucing di kolong: tidak bisa melompat dan tidak bisa diraih pemilik. Daun perabot berkolong hanya menghalangi pandangan di atas `crawlHeight`. Collider dengan `hideSpot: true` menyembunyikan kucing yang merendah (`hideSpotOf`), kecuali pemilik sedang membungkuk memeriksanya (`owner.checkingSpot`).
+- **Status kucing** (`cat.inBox`, `cat.riding`, `cat.sleeping`, `cat.loaf`, `cat.zoomiesT`) dikelola `catBehavior.js` & `hideBox.js`; `systems/hiding.js` adalah satu-satunya tempat menentukan "tersembunyi". Kardus yang ditempati collider-nya setinggi 0; saat kardus berpindah, `ctx.nav` dibangun ulang.
+- **Interaksi** mendukung `maxDist`, `bias` (prioritas), `inBoxOnly`, dan `hold` (tahan E).
 - **Performa:** hanya matahari yang memakai bayangan; jangan menambah lampu dengan bayangan. Gabung geometri statis baru dengan `mergeStaticGroup`.
 - Benda yang jatuh, memantul, atau berserakan memakai `addBody(ctx, {...})` dari `systems/physics.js`. Semua benda dibersihkan saat level diulang.
 - **Kamera** mengorbit kucing (`ctx.camRig`) dan bisa menghadap ke mana saja, jadi objek dan perubahan tampilan harus terlihat dari semua arah. Dinding luar, dinding dalam, plafon, dan pintu tertutup ditangani spring arm (kamera tidak pernah menembus dinding); perabot yang menghalangi memudar lewat `furnitureRefs.fadeables` (diisi otomatis oleh `finish` di `furniture.js`).

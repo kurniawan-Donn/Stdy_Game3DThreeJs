@@ -26,8 +26,8 @@ export function isPositionFree(colliders, x, z, radius) {
 
 // Dorong kucing keluar dari dinding & perabot (mengubah position dan vel).
 // bodyHeight: tinggi badan kucing saat ini (untuk lewat kolong perabot)
-export function resolveRoomCollisions(position, vel, colliders, bodyHeight = 0) {
-  resolveCircleCollisions(position, vel, colliders, PLAYER.RADIUS, position.y, bodyHeight);
+export function resolveRoomCollisions(position, vel, colliders, bodyHeight = 0, radius = PLAYER.RADIUS) {
+  resolveCircleCollisions(position, vel, colliders, radius, position.y, bodyHeight);
 }
 
 // Collider berkolong (crawlHeight) tempat titik (x, z) berada di bawahnya, atau null.

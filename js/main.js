@@ -16,6 +16,11 @@ import { createFishPickup, updateFish } from './entities/fish.js';
 import { updateObstacles } from './entities/vacuum.js';
 import { createParticleSystem, updateParticles } from './entities/particles.js';
 import { createMischiefSystem, updateMischief } from './entities/mischief/index.js';
+import { updateHideBoxes } from './entities/hideBox.js';
+import { updateYarnBalls } from './entities/yarn.js';
+import { createCatnip, updateCatnip } from './entities/catnip.js';
+import { registerCatInteractions } from './entities/catBehavior.js';
+import { hideStatus } from './systems/hiding.js';
 import { onFishEaten, resetGame } from './systems/progression.js';
 import { createNoiseSystem, updateNoise, onNoise } from './systems/noise.js';
 import { createStamina, isExhausted } from './systems/stamina.js';
@@ -57,6 +62,7 @@ function init() {
   const particles = createParticleSystem();
   const interaction = createInteractionSystem(scene);
   const mischief = createMischiefSystem(scene);
+  const catnip = createCatnip(scene);
   const debug = createDebugOverlay(scene);
 
   const audio = createAudio();
@@ -82,6 +88,9 @@ function init() {
     dust,
     cat,
     fish,
+    catnip,
+    hideBoxes: [],
+    yarnBalls: [],
     particles,
     obstacles: [],
     state: createState(),
@@ -112,10 +121,19 @@ function init() {
   });
   bindResize(camera, renderer);
   onNoise(ctx.noise, (ev, c) => ownerHearNoise(c, ev));
+  registerCatInteractions(ctx);
 
   resetGame(ctx);
   ctx.help.showAuto();
   startLoop(ctx);
+}
+
+// Ikon mata HUD: tertutup = tersembunyi, setengah = terlihat sebagian, terbuka = terlihat
+function hideIcon(ctx) {
+  if (hideStatus(ctx).hidden) return 'closed';
+  const o = ctx.owner;
+  if (!o || o.away || !o.seen) return '';
+  return o.sense.visibility < 1 ? 'half' : 'open';
 }
 
 function startLoop(ctx) {
@@ -138,6 +156,7 @@ function startLoop(ctx) {
         updateOwner(ctx, wdt);
         updateMischief(ctx, wdt);
         updateObstacles(ctx, wdt);
+        updateHideBoxes(ctx);
       } else {
         ctx.time += dt;
         updateCat(ctx, dt);
@@ -145,6 +164,9 @@ function startLoop(ctx) {
         updateInteraction(ctx, dt);
         updateMischief(ctx, dt);
         if (updateFish(ctx, dt)) onFishEaten(ctx);
+        updateHideBoxes(ctx);
+        updateYarnBalls(ctx, dt);
+        updateCatnip(ctx, dt);
         updateObstacles(ctx, dt);
         updateOwner(ctx, dt);
         updateNoise(ctx.noise, dt);
@@ -152,6 +174,7 @@ function startLoop(ctx) {
         ctx.hud.setStamina(ctx.stamina.value, STAMINA.MAX, isExhausted(ctx.stamina));
         ctx.hud.setMeowCooldown(ctx.meow.cooldown);
         ctx.hud.setCombo(comboTimeLeft(ctx), COMBO.MULTIPLIER);
+        ctx.hud.setHideStatus(hideIcon(ctx));
         updateLevelTimer(ctx, dt);
       }
       updateDoor(ctx.door, wdt);

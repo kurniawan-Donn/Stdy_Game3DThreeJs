@@ -38,6 +38,9 @@ Ditulis dengan JavaScript ES modules biasa, tanpa build tool dan tanpa aset ekst
 | Mouse | Putar kamera (klik layar untuk mengunci mouse, `Esc` untuk melepas; atau tahan klik kiri + geser) |
 | Roda mouse | Zoom kamera |
 | `H` | Layar bantuan kontrol |
+| `E` dekat kardus | Masuk / keluar kardus |
+| Tahan `E` di sinar matahari | Tidur (stamina pulih cepat) |
+| Lompat ke robot vacuum | Menumpang (`Spasi` untuk turun) |
 
 **Aturan:**
 

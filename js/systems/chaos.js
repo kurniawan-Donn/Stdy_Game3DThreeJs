@@ -29,6 +29,8 @@ export function scoreMischief(ctx, type, position, noisePosition = position) {
   s.chaos += amount;
   s.mischiefCount += 1;
   s.lastMischiefTime = ctx.time;
+  s.recentChaos.push({ x: position.x, z: position.z, t: ctx.time });
+  if (s.recentChaos.length > 20) s.recentChaos.shift();
 
   emitNoise(ctx, {
     x: noisePosition.x,

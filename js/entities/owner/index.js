@@ -1,7 +1,7 @@
 // Pemilik rumah (GDD §8–9): rutinitas waypoint, persepsi, meter curiga,
 // dan state machine RUTINITAS → CURIGA (?) → MENYELIDIKI → MENGEJAR (!).
 // Saat menangkap kucing, kendali diserahkan ke systems/capture.js.
-import { OWNER, OWNER_ROUTINE as R, SUSPICION as S, CHASE, NAV, OWNER_ANIM } from '../../config.js';
+import { OWNER, OWNER_ROUTINE as R, SUSPICION as S, CHASE, NAV, OWNER_ANIM, HIDE_BOX, HIDE_SPOT, RIDE } from '../../config.js';
 import { createOwnerMesh } from './model.js';
 import { animateOwner, isSittingPose } from './animation.js';
 import { findPath } from '../../systems/navGrid.js';
@@ -9,6 +9,7 @@ import { senseCat } from '../../systems/perception.js';
 import { isAnnoying } from '../../systems/meow.js';
 import { setDoorOpen, isDoorOpen, isDoorClosed } from '../../world/house.js';
 import { startCapture } from '../../systems/capture.js';
+import { hideSpotOf, recentChaosNear } from '../../systems/hiding.js';
 
 const HEAD_MAX = (OWNER.HEAD_MAX_YAW_DEG * Math.PI) / 180;
 
@@ -271,8 +272,46 @@ function bathDoorShouldClose(o) {
 
 // --- State curiga -------------------------------------------------------
 
+// Kolong tempat sembunyi terdekat dari titik p (≤ HIDE_SPOT.CHECK_DIST), atau null
+function hideSpotNear(ctx, p) {
+  if (!p) return null;
+  let best = null;
+  let bestD = HIDE_SPOT.CHECK_DIST;
+  for (const box of ctx.colliders) {
+    if (!box.hideSpot) continue;
+    const cx = Math.max(box.minX, Math.min(p.x, box.maxX));
+    const cz = Math.max(box.minZ, Math.min(p.z, box.maxZ));
+    const d = Math.hypot(p.x - cx, p.z - cz);
+    if (d <= bestD) {
+      best = box;
+      bestD = d;
+    }
+  }
+  return best;
+}
+
+// Membungkuk mengecek kolong; jika kucing bersembunyi di sana → ditarik keluar
+function updateKneel(ctx, o, dt) {
+  const spot = o.checkingSpot;
+  o.stateT += dt;
+  o.pose = 'kneel';
+  lookAt(o, { x: (spot.minX + spot.maxX) / 2, z: (spot.minZ + spot.maxZ) / 2 }, dt, true);
+  if (o.stateT < HIDE_SPOT.KNEEL_DURATION) return;
+  o.checkingSpot = null;
+  if (hideSpotOf(ctx.cat) === spot && ctx.state.invulnerableTimer <= 0 && !ctx.capture.active) {
+    o.meter = S.MAX;
+    o.state = 'chase';
+    ctx.audio.play('alarm');
+    startCapture(ctx);
+    return;
+  }
+  o.phase = 'search';
+  o.stateT = 0;
+}
+
 function setState(ctx, o, state) {
   const prev = o.state;
+  o.checkingSpot = null;
   o.state = state;
   o.stateT = 0;
   o.lostT = 0;
@@ -311,6 +350,13 @@ function updatePerception(ctx, o, dt) {
   o.seen = o.sense.visibility > 0;
 
   const cat = ctx.cat;
+  // Kucing tidur di sinar matahari tidak dicurigai, kecuali ada kekacauan
+  // baru di dekatnya
+  if (o.seen && cat.sleeping && !recentChaosNear(ctx, cat.mesh.position.x, cat.mesh.position.z)) {
+    o.seen = false;
+    o.sense.ignoredSleep = true;
+  }
+  if (o.seen) o.lastSeenAt = ctx.time;
   if (o.seen) {
     o.attention = { x: cat.mesh.position.x, z: cat.mesh.position.z };
     if (cat.action) {
@@ -320,7 +366,9 @@ function updatePerception(ctx, o, dt) {
       const near = S.GAIN_NEAR_DIST;
       const far = Math.max(near + 0.01, o.sense.range);
       const f = Math.max(0, Math.min(1, (o.sense.distance - near) / (far - near)));
-      const gain = S.GAIN_NEAR + (S.GAIN_FAR - S.GAIN_NEAR) * f;
+      let gain = S.GAIN_NEAR + (S.GAIN_FAR - S.GAIN_NEAR) * f;
+      if (o.sense.boxMoving) gain *= HIDE_BOX.MOVE_GAIN_MULT; // kardus bergerak: mencurigakan
+      if (cat.riding) gain *= RIDE.SUSPICION_MULT; // kucing santai di atas robot
       o.meter += gain * o.sense.visibility * suspicionGain(ctx, o) * dt;
     }
   } else if (o.state !== 'chase') {
@@ -389,12 +437,19 @@ export function updateOwner(ctx, dt) {
     }
 
     case 'investigate': {
-      if (o.phase !== 'search') {
+      if (o.phase === 'kneel') {
+        updateKneel(ctx, o, dt);
+      } else if (o.phase !== 'search') {
         const arrived = walkTo(ctx, o, o.attention, OWNER.INVESTIGATE_SPEED, dt, true);
         lookAt(o, o.attention, dt, false);
         if (arrived) {
           o.phase = 'search';
           o.stateT = 0;
+          const spot = hideSpotNear(ctx, o.attention);
+          if (spot && Math.random() < HIDE_SPOT.CHECK_CHANCE) {
+            o.phase = 'kneel';
+            o.checkingSpot = spot;
+          }
         }
       } else {
         // Menoleh ke sekeliling di titik penyelidikan
@@ -460,6 +515,7 @@ function updateChase(ctx, o, dt) {
     hDist <= CHASE.CATCH_RADIUS &&
     cat.y <= CHASE.REACH_HEIGHT &&
     !hidden &&
+    !(ctx.cat.inBox && !ctx.cat.inBox.compromised) &&
     ctx.state.invulnerableTimer <= 0 &&
     !ctx.capture.active
   ) {

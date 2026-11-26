@@ -1,9 +1,10 @@
 // Kucing pemain: model low-poly, gerakan relatif kamera, lompat, dan animasi.
 import * as THREE from 'three';
-import { PLAYER, PHYSICS, CAT_ANIM, MATERIALS, NOISE, OWNER, VACUUM, REAL_SCALE } from '../config.js';
+import { PLAYER, PHYSICS, CAT_ANIM, MATERIALS, NOISE, OWNER, VACUUM, REAL_SCALE, HIDE_BOX, CATNIP } from '../config.js';
 import { resolveRoomCollisions, getGroundHeight, pushOutOfCircle, crawlBoxAt } from '../systems/collision.js';
 import { canRun, trySpendHighJump, updateStamina, isExhausted } from '../systems/stamina.js';
 import { emitNoise } from '../systems/noise.js';
+import { resetCatBehavior, updateRiding, updateIdle, tryMountRobot, wake, applyBehaviorPose } from './catBehavior.js';
 
 // Parameter per mode gerak
 const MODE_SPEED = {
@@ -151,7 +152,19 @@ export function createCat(scene) {
     meowTimer: 0,
     camYaw: 0, // sudut ke kamera relatif terhadap badan (untuk menoleh)
     action: null, // aksi kenakalan yang sedang berjalan (lihat startCatAction)
-    underCrawl: null // collider berkolong tempat kucing bersembunyi (atau null)
+    underCrawl: null, // collider berkolong tempat kucing berada di bawahnya (atau null)
+    // Tingkah (entities/catBehavior.js): inBox, riding, sleeping, loaf, zoomiesT, ...
+    inBox: null,
+    riding: null,
+    sleeping: false,
+    loaf: false,
+    idleT: 0,
+    idleAnim: null,
+    nextIdleAnimAt: 0,
+    heartT: 0,
+    zzzT: 0,
+    zoomiesT: 0,
+    remountBlockT: 0
   };
 }
 
@@ -235,7 +248,9 @@ export function resetCat(cat) {
   cat.meowTimer = 0;
   cat.action = null;
   cat.parts.headGroup.rotation.set(0, 0, 0);
+  cat.parts.tailPivot.rotation.x = 0;
   cat.lastStepIndex = Math.floor(cat.walkCycle / Math.PI);
+  resetCatBehavior(cat);
 }
 
 // Update gerakan, lompat, tabrakan, animasi, dan kedip kebal.
@@ -244,6 +259,20 @@ export function updateCat(ctx, dt) {
   const keys = input.keys;
   const player = cat.mesh;
   const playerVel = cat.vel;
+
+  const hasMoveInput = !!(keys['KeyW'] || keys['KeyA'] || keys['KeyS'] || keys['KeyD'] ||
+    keys['ArrowUp'] || keys['ArrowDown'] || keys['ArrowLeft'] || keys['ArrowRight'] || keys['Space']);
+
+  // Tidur: bangun dengan input gerak, E, atau Q
+  if (cat.sleeping && (hasMoveInput || input.pressed['KeyE'] || input.pressed['KeyQ'])) wake(ctx);
+  // Menumpang robot: posisi mengikuti robot (Spasi = turun)
+  if (cat.riding) updateRiding(ctx, dt);
+  if (cat.riding || cat.sleeping) {
+    updateStamina(stamina, dt, { running: false, grounded: true, sunNap: cat.sleeping });
+    updateIdle(ctx, dt, false);
+    finishCatFrame(ctx, dt);
+    return;
+  }
 
   // Selama aksi kenakalan, kontrol dikunci
   const locked = !!cat.action;
@@ -276,11 +305,13 @@ export function updateCat(ctx, dt) {
   // Di kolong yang lebih rendah dari tinggi berdiri: kucing otomatis merunduk
   cat.underCrawl = crawlBoxAt(colliders, player.position.x, player.position.z, player.position.y);
   const forcedCrouch = !!cat.underCrawl && cat.underCrawl.crawlHeight < PLAYER.HEIGHT_STAND;
-  const sneaking = (wantsSneak || forcedCrouch) && cat.isGrounded;
-  const running = !wantsSneak && wantsRun && moveLen > 0 && canRun(stamina);
+  const zoomies = cat.zoomiesT > 0;
+  // Di dalam kardus: selalu pelan (kecepatan mengendap)
+  const sneaking = ((wantsSneak || forcedCrouch) && cat.isGrounded) || !!cat.inBox;
+  const running = !sneaking && moveLen > 0 && (zoomies || (wantsRun && canRun(stamina)));
   cat.moveMode = sneaking ? 'sneak' : running ? 'run' : 'walk';
   cat.profile = sneaking ? PLAYER.SNEAK_PROFILE : PLAYER.NORMAL_PROFILE;
-  const maxSpeed = MODE_SPEED[cat.moveMode];
+  const maxSpeed = zoomies && !sneaking ? CATNIP.SPEED : MODE_SPEED[cat.moveMode];
 
   if (moveLen > 0) {
     moveX /= moveLen;
@@ -329,7 +360,7 @@ export function updateCat(ctx, dt) {
   }
 
   // Lompat: Spasi = lompat biasa (gratis); Shift + Spasi = lompat tinggi (pakai stamina)
-  if (!locked && keys['Space'] && cat.isGrounded && !cat.underCrawl) {
+  if (!locked && keys['Space'] && cat.isGrounded && !cat.underCrawl && !cat.inBox) {
     const highJump = wantsRun && trySpendHighJump(stamina);
     playerVel.y = highJump ? PLAYER.HIGH_JUMP_FORCE : PLAYER.JUMP_FORCE;
     cat.isGrounded = false;
@@ -343,8 +374,14 @@ export function updateCat(ctx, dt) {
   player.position.z += playerVel.z * dt;
   player.position.y += playerVel.y * dt;
 
-  const bodyHeight = cat.moveMode === 'sneak' ? PLAYER.HEIGHT_SNEAK : PLAYER.HEIGHT_STAND;
-  resolveRoomCollisions(player.position, playerVel, colliders, bodyHeight);
+  // Mendarat di atas robot vacuum = menumpang
+  if (!cat.isGrounded && tryMountRobot(ctx, prevY)) {
+    finishCatFrame(ctx, dt);
+    return;
+  }
+
+  const bodyHeight = cat.inBox ? HIDE_BOX.HEIGHT : cat.moveMode === 'sneak' ? PLAYER.HEIGHT_SNEAK : PLAYER.HEIGHT_STAND;
+  resolveRoomCollisions(player.position, playerVel, colliders, bodyHeight, cat.inBox ? HIDE_BOX.RADIUS : PLAYER.RADIUS);
 
   // Penghalang bergerak: tubuh pemilik dan robot vacuum
   const o = ctx.owner;
@@ -372,11 +409,20 @@ export function updateCat(ctx, dt) {
     cat.isGrounded = false;
   }
 
-  updateStamina(stamina, dt, { running: cat.moveMode === 'run', grounded: cat.isGrounded });
+  updateStamina(stamina, dt, { running: cat.moveMode === 'run' && !zoomies, grounded: cat.isGrounded });
   if (stamina.justExhausted) {
     stamina.justExhausted = false;
     audio.playPant();
   }
+  updateIdle(ctx, dt, hasMoveInput || locked);
+  finishCatFrame(ctx, dt, true);
+}
+
+// Bagian akhir frame kucing (dipakai juga saat tidur / menumpang):
+// sudut ke kamera, animasi, aksi, suara langkah, dan kedip kebal.
+function finishCatFrame(ctx, dt, footsteps = false) {
+  const { cat, camera, state, stamina } = ctx;
+  const player = cat.mesh;
   cat.isPanting = isExhausted(stamina);
 
   // Sudut ke kamera relatif terhadap badan (dipakai animasi menoleh)
@@ -389,10 +435,11 @@ export function updateCat(ctx, dt) {
   updateCatAction(cat, dt);
 
   // Suara langkah: satu event per setengah siklus jalan
+  // (senyap saat zoomies, di dalam kardus, atau menumpang robot)
   const stepIndex = Math.floor(cat.walkCycle / Math.PI);
   if (stepIndex !== cat.lastStepIndex) {
     cat.lastStepIndex = stepIndex;
-    if (cat.isGrounded) {
+    if (footsteps && cat.isGrounded && cat.zoomiesT <= 0 && !cat.inBox) {
       emitNoise(ctx, {
         x: player.position.x,
         z: player.position.z,
@@ -411,6 +458,8 @@ export function updateCat(ctx, dt) {
       player.visible = true;
     }
   }
+  // Di dalam kardus hanya mata yang terlihat (lewat mesh kardus)
+  if (cat.inBox) player.visible = false;
 }
 
 function animateCat(cat, dt) {
@@ -437,7 +486,7 @@ function animateCat(cat, dt) {
     p.tailPivot.rotation.z = Math.sin(cat.animClock * A.AIR_TAIL_FREQ) * A.AIR_TAIL_AMP;
   } else if (horizSpeed > A.WALK_SPEED_THRESHOLD) {
     // Berjalan: kaki berayun bergantian, ekor bergoyang, badan condong ke depan
-    cat.walkCycle += dt * (A.WALK_CADENCE_BASE + speedRatio * A.WALK_CADENCE_SPEED);
+    cat.walkCycle += dt * (cat.zoomiesT > 0 ? CATNIP.ANIM_CADENCE : A.WALK_CADENCE_BASE + speedRatio * A.WALK_CADENCE_SPEED);
     const swing = Math.sin(cat.walkCycle) * A.WALK_LEG_SWING * speedRatio;
     p.legFL.rotation.x = swing;
     p.legBR.rotation.x = swing;
@@ -491,8 +540,9 @@ function animateCat(cat, dt) {
     p.headGroup.rotation.x = 0;
   }
 
-  // Pose khusus aksi kenakalan (menimpa pose normal)
+  // Pose tingkah (loaf, tidur, menumpang, animasi idle), lalu pose aksi kenakalan
   p.headGroup.rotation.y = 0;
+  applyBehaviorPose(cat, dt);
   if (cat.action && cat.action.pose) {
     cat.action.pose(p, cat.action.t, cat);
   }
