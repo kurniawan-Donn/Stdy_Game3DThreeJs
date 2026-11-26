@@ -27,7 +27,7 @@ docs/denah.md           Denah rumah 14 × 10 m (ASCII + koordinat, loop, jalan p
 js/
   main.js               Entry point: membuat objek konteks `ctx`, menjalankan game loop (lobi / main / pause)
   config.js             SEMUA angka penyetelan (lihat aturan di bawah)
-  levels/               Satu file data per level (level0.js Latihan, level1.js Senin Pagi, level2.js Deadline) + index.js (daftar & format)
+  levels/               Satu file data per level (level0.js Latihan, level1.js Senin Pagi, level2.js Deadline, level3.js Sore Hujan) + index.js (daftar & format)
   core/
     renderer.js         Scene, kamera, WebGLRenderer, resize
     input.js            Keyboard (keys/pressed) + mouse (mouseDX/DY via pointer lock atau drag, wheel)
@@ -45,6 +45,7 @@ js/
     room.js             Rumah dari HOUSE: lantai kayu/keramik, dinding luar+jendela, dinding dalam+bukaan, plafon
     furniture.js        Perabot seluruh rumah + collider AABB (crawlHeight = kolong); { colliders, refs, mergeStats }
     dust.js             Partikel debu di berkas cahaya jendela
+    rain.js             Visual hujan (Level 3): garis hujan InstancedMesh, tetesan di kaca, genangan & ember
     lobby.js            Lobi 3D (scene terpisah): sudut rumah, kucing di bantal berputar, siklus pose idle
     house.js            Pintu kamar mandi (collider dinamis), keranjang kucing, area gelap (isInDarkZone, lapisan redup, lampu malam, createDarkTint/updateDarkTint)
   entities/
@@ -57,6 +58,7 @@ js/
     hideBox.js          Kardus: masuk/keluar, ikut bergerak, terbongkar, dilempar saat tertangkap
     yarn.js             Bola benang: ditendang (E), noise saat berhenti (pengalih)
     catnip.js           Catnip (satu per level) → zoomies
+    footprints.js       Jejak kaki basah (Level 3): InstancedMesh, Chaos di perabot, dilihat pemilik
     owner/              Pemilik rumah
       index.js          Rutinitas, meter curiga, state machine, mengejar, pendengaran
       meeting.js        Rapat video (Level 2): jadwal, layar laptop wajah, suara bicara samar, suara keras = "!"
@@ -74,6 +76,7 @@ js/
     chaos.js            scoreMischief: Chaos + combo + noise + umpan balik
     level.js            Timer level, akhir level, bintang, tabungan
     shop.js             Toko kustomisasi: harga, beli dengan tabungan, pakai item
+    weather.js          Cuaca (Level 3): jadwal kilat/guntur, suara tertutup hujan, cahaya kilat, genangan
     tutorial.js         Latihan (Level 0): langkah, syarat selesai, panah penanda, naskah pemilik
     levelManager.js     Muat level (pengubah config + pencahayaan, dipulihkan saat ganti), aturan buka level
     progression.js      Makan ikan, reset level
@@ -110,6 +113,7 @@ js/
 - **Level** (`js/levels/`, `systems/levelManager.js`): file level hanya berisi data. Pengubah (`OWNER`, `LAYOUT`) menimpa objek di `config.js` selama level berjalan dan dicatat di `ctx.levelOverrides`; `loadLevel` selalu memulihkannya dulu sebelum menerapkan level berikutnya. Modul yang membaca nilai config saat dipakai (bukan disalin di level modul) otomatis ikut. Level baru = file baru + satu baris di `levels/index.js`.
 - **Memory:** objek per level yang dibuang harus lewat `removeAndDispose` (`core/dispose.js`), bukan sekadar `parent.remove`. Uji headless memeriksa tidak ada geometri/material yang bocor setelah 20× ganti level.
 - **Latihan** (`systems/tutorial.js`): Level 0 berada di luar urutan buka (`TUTORIAL_INDEX` = -1, `levelAt`). Pemilik dinaskahkan lewat `ownerGoOffstage` / `ownerStartPatrol` / `ownerStartChase` (owner/index.js). Di level dengan `TUTORIAL: true` timer tidak berjalan dan nyawa tidak berkurang saat tertangkap. `updateTutorial` dipanggil tiap frame di `gameFrame` (juga selama KETAHUAN).
+- **Cuaca** (`systems/weather.js`): aktif hanya di level dengan blok `WEATHER`. `ctx.weather.flashT > 0` = kilat (area gelap tidak berlaku di persepsi & peredupan), `isNoiseMasked` dipakai `ownerHearNoise`. Zona gelap tambahan per level lewat `LAYOUT.EXTRA_DARK_ZONES` (`rebuildDarkOverlays`). Objek transparan di belakang kaca jendela perlu `renderOrder` negatif (kaca menulis depth). Debug: F3 + `L` = kilat.
 - **Kustomisasi:** tampilan kucing = `{ cat, accessory }` dari `CUSTOMIZATION` (config). Model dibuat `buildCatModel` (dipakai kucing pemain & lobi). Ganti tampilan lewat `setCatLook` (model lama di-dispose), lalu buat ulang `ctx.darkTint.cat`. Efek gameplay hanya dua: `cat.bell` (Chaos ×1,2, langkah berbunyi) dan `cat.darkStealth` (kucing hitam di area gelap); selain itu murni kosmetik.
 - **Lobi:** saat `flow.state` = `lobby`/`select`, loop merender `ctx.lobby.scene` (bukan rumah). Menu/panel di DOM (`#lobby`).
 - **Simpanan** hanya lewat `core/save.js` (`ctx.save`); semua akses localStorage dibungkus try/catch. Saat skema berubah, naikkan `SAVE.VERSION` dan tambahkan migrasi.

@@ -1,6 +1,7 @@
 // Elemen rumah yang dinamis/khusus: pintu kamar mandi (tertutup saat pemilik
 // di dalam), keranjang kucing (tempat muncul kembali), dan area gelap.
 import * as THREE from 'three';
+import { removeAndDispose } from '../core/dispose.js';
 import { DOOR, BASKET, DARK_ZONES, DARK_ZONE_VISUAL, NIGHT_LIGHTS, MATERIALS, ROOM, ROOM_HALF_W, ROOM_HALF_D } from '../config.js';
 
 // --- Pintu kamar mandi ---
@@ -106,7 +107,7 @@ export function createBasket(scene) {
 // Lapisan redup hangat di lantai, dinding (dalam & luar), dan plafon setiap
 // zona, ditambah lampu malam lemah. wallBoxes = kotak dinding dalam (termasuk
 // ambang pintu) dari room.js.
-export function createDarkZones(scene, wallBoxes = []) {
+function buildDarkOverlays(wallBoxes) {
   const V = DARK_ZONE_VISUAL;
   const make = (opacity) => new THREE.MeshBasicMaterial({ color: V.COLOR, transparent: true, opacity, depthWrite: false });
   const floorMat = make(V.FLOOR_OPACITY);
@@ -168,6 +169,14 @@ export function createDarkZones(scene, wallBoxes = []) {
     if (Math.abs(minZ + ROOM_HALF_D) < tol) wallPlane('z', -ROOM_HALF_D, 1, minX, maxX, 0, H);
     if (Math.abs(maxZ - ROOM_HALF_D) < tol) wallPlane('z', ROOM_HALF_D, -1, minX, maxX, 0, H);
   }
+  return { group, materials: [floorMat, wallMat, ceilMat] };
+}
+
+// Lapisan area gelap + lampu malam. Lapisan dibangun ulang saat level
+// menambah zona gelap (rebuildDarkOverlays).
+export function createDarkZones(scene, wallBoxes = []) {
+  const overlays = buildDarkOverlays(wallBoxes);
+  const group = overlays.group;
   scene.add(group);
 
   // Lampu malam: point light lemah tanpa bayangan + titik kecil yang berpendar
@@ -182,7 +191,25 @@ export function createDarkZones(scene, wallBoxes = []) {
     scene.add(bulb);
     lights.push(light);
   }
-  return { group, lights };
+  return { group, lights, wallBoxes, materials: overlays.materials, scene };
+}
+
+// Bangun ulang lapisan sesuai DARK_ZONES saat ini (zona tambahan dari level)
+export function rebuildDarkOverlays(fx) {
+  removeAndDispose(fx.group);
+  const overlays = buildDarkOverlays(fx.wallBoxes);
+  fx.group = overlays.group;
+  fx.materials = overlays.materials;
+  fx.scene.add(fx.group);
+}
+
+// Kilat: lapisan gelap memudar (f = 0 normal, 1 = hilang)
+export function setDarkOverlayFade(fx, f) {
+  const V = DARK_ZONE_VISUAL;
+  const [floor, wall, ceil] = fx.materials;
+  floor.opacity = V.FLOOR_OPACITY * (1 - f);
+  wall.opacity = V.WALL_OPACITY * (1 - f);
+  ceil.opacity = V.CEILING_OPACITY * (1 - f);
 }
 
 // Peredup warna entitas (kucing, pemilik) saat berada di area gelap.

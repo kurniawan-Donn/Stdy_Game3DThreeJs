@@ -102,6 +102,7 @@ export function createLivingRoom(scene) {
   const backdropMat = new THREE.MeshBasicMaterial({ ...MATERIALS.windowBackdrop });
   const curtainMat = new THREE.MeshStandardMaterial({ ...MATERIALS.curtain, side: THREE.DoubleSide });
 
+  const windows = []; // info jendela untuk efek cuaca (hujan, tetesan di kaca)
   for (const [name, wall] of Object.entries(outer)) {
     const wins = HOUSE.windows.filter((w) => w.wall === name);
     const openings = wins.map((w) => ({ a: w.from, b: w.to, yMin: w.yMin, yMax: w.yMax }));
@@ -145,6 +146,17 @@ export function createLivingRoom(scene) {
       glass.position.set(...along(wall.inward * (t / 2 - F.GLASS_INSET), cy, 0));
       glass.rotation.y = faceIn;
       group.add(glass);
+      windows.push({
+        type: w.type,
+        axis: wall.axis,
+        inward: wall.inward,
+        faceIn,
+        len,
+        h,
+        center: along(0, cy, 0), // tengah jendela di bidang dinding
+        glassPos: along(wall.inward * (t / 2 - F.GLASS_INSET), cy, 0),
+        outward: [wall.axis === 'z' ? -wall.inward : 0, 0, wall.axis === 'x' ? -wall.inward : 0]
+      });
       if (w.type === 'curtain') {
         // Tirai tertutup: kamar tidur gelap
         const curtain = new THREE.Mesh(new THREE.PlaneGeometry(len + 0.3, h + 0.3), curtainMat);
@@ -191,5 +203,5 @@ export function createLivingRoom(scene) {
 
   const mergeStats = mergeStaticGroup(group);
   scene.add(group);
-  return { colliders, cameraBlockers, mergeStats };
+  return { colliders, cameraBlockers, mergeStats, windows, backdropMat };
 }

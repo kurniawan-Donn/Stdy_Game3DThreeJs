@@ -82,7 +82,9 @@ export function senseCat(ctx, eye, lookYaw) {
   // Mengendap memperpendek jarak pandang (kecuali di dalam kardus: yang dilihat kardusnya)
   if (cat.moveMode === 'sneak' && !cat.inBox) range *= PERCEPTION.SNEAK_RANGE_MULT;
   // Area gelap; kucing hitam lebih sulit terlihat di sana (GDD §14)
-  if (isInDarkZone(p.x, p.z)) range *= cat.darkStealth ? CUSTOMIZATION.BLACK_CAT_DARK_RANGE_MULT : PERCEPTION.DARK_RANGE_MULT;
+  // (kilat petir di Level 3: area gelap tidak berlaku)
+  const flashing = ctx.weather && ctx.weather.flashT > 0;
+  if (!flashing && isInDarkZone(p.x, p.z)) range *= cat.darkStealth ? CUSTOMIZATION.BLACK_CAT_DARK_RANGE_MULT : PERCEPTION.DARK_RANGE_MULT;
 
   // Sudut terhadap arah pandang
   let angle = Math.atan2(dx, dz) - lookYaw;

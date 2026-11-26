@@ -22,6 +22,7 @@ function setMode(ctx, mode, tutorial = false) {
 
 function silence(ctx) {
   if (ctx.audio.murmur) ctx.audio.murmur(0);
+  if (ctx.audio.rain) ctx.audio.rain(0);
 }
 
 export function enterLobby(ctx) {

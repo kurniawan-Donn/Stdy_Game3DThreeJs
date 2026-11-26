@@ -22,6 +22,8 @@ import { createYarnBalls, disposeYarnBalls } from '../entities/yarn.js';
 import { resetCatnip } from '../entities/catnip.js';
 import { createNavGrid } from './navGrid.js';
 import { resetTutorial } from './tutorial.js';
+import { resetWeather } from './weather.js';
+import { resetFootprints } from '../entities/footprints.js';
 
 // Dipanggil saat kucing memakan ikan camilan.
 export function onFishEaten(ctx) {
@@ -58,6 +60,8 @@ export function resetGame(ctx) {
   resetDoor(ctx.door);
   resetOwner(ctx);
   resetTutorial(ctx); // Latihan: pemilik dinaskahkan (no-op di level biasa)
+  resetWeather(ctx); // Level hujan: hujan, petir, genangan (no-op di level lain)
+  resetFootprints(ctx);
 
   for (let i = 0; i < VACUUM.INITIAL_COUNT; i++) {
     spawnObstacle(ctx);

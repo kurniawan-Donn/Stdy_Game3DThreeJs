@@ -1,5 +1,5 @@
 // Efek suara sintetis memakai Web Audio API (tanpa file eksternal).
-import { AUDIO, MEETING } from '../config.js';
+import { AUDIO, MEETING, RAIN_FX } from '../config.js';
 
 export function createAudio() {
   let audioCtx = null;
@@ -159,6 +159,63 @@ export function createAudio() {
     }
   }
 
+  // Hujan terus-menerus (Level 3): noise → bandpass lebar. level 0 = berhenti.
+  let rainNodes = null;
+  function rain(level) {
+    if (!audioCtx) return;
+    if (level <= 0) {
+      if (rainNodes) {
+        const now = audioCtx.currentTime;
+        rainNodes.gain.gain.setTargetAtTime(0, now, 0.1);
+        rainNodes.src.stop(now + 0.5);
+        rainNodes = null;
+      }
+      return;
+    }
+    if (!rainNodes) {
+      const src = audioCtx.createBufferSource();
+      src.buffer = getNoiseBuffer();
+      src.loop = true;
+      const filter = audioCtx.createBiquadFilter();
+      filter.type = 'bandpass';
+      filter.frequency.value = RAIN_FX.AUDIO.RAIN_FREQ;
+      filter.Q.value = RAIN_FX.AUDIO.RAIN_Q;
+      const gain = audioCtx.createGain();
+      gain.gain.value = 0;
+      src.connect(filter);
+      filter.connect(gain);
+      gain.connect(master);
+      src.start();
+      rainNodes = { src, gain };
+    }
+    rainNodes.gain.gain.setTargetAtTime(level, audioCtx.currentTime, 0.3);
+  }
+
+  // Guntur: noise lowpass rendah yang menggelegar lalu bergemuruh pelan
+  function thunder() {
+    if (!audioCtx) return;
+    const A = RAIN_FX.AUDIO;
+    const now = audioCtx.currentTime;
+    const src = audioCtx.createBufferSource();
+    src.buffer = getNoiseBuffer();
+    src.loop = true;
+    const filter = audioCtx.createBiquadFilter();
+    filter.type = 'lowpass';
+    filter.frequency.setValueAtTime(A.THUNDER_FREQ * 3, now);
+    filter.frequency.exponentialRampToValueAtTime(A.THUNDER_FREQ, now + A.THUNDER_DURATION);
+    const gain = audioCtx.createGain();
+    gain.gain.setValueAtTime(AUDIO.FADE_TO, now);
+    gain.gain.linearRampToValueAtTime(A.THUNDER_VOLUME, now + 0.08);
+    gain.gain.setValueAtTime(A.THUNDER_VOLUME * 0.6, now + 0.5);
+    gain.gain.linearRampToValueAtTime(A.THUNDER_VOLUME * 0.8, now + 0.9);
+    gain.gain.exponentialRampToValueAtTime(AUDIO.FADE_TO, now + A.THUNDER_DURATION);
+    src.connect(filter);
+    filter.connect(gain);
+    gain.connect(master);
+    src.start(now);
+    src.stop(now + A.THUNDER_DURATION);
+  }
+
   function setVolume(v) {
     volume = v;
     if (master) master.gain.value = v;
@@ -168,6 +225,8 @@ export function createAudio() {
     ensure,
     play,
     murmur,
+    rain,
+    thunder,
     setVolume,
     playJump: () => playSfx(AUDIO.SFX.jump),
     playPant: () => playSfx(AUDIO.SFX.pant),

@@ -6,6 +6,7 @@ import * as CONFIG from '../config.js';
 import { LEVELS, levelAt as levelByIndex } from '../levels/index.js';
 import { levelRecord } from '../core/save.js';
 import { resetGame } from './progression.js';
+import { rebuildDarkOverlays } from '../world/house.js';
 
 // Posisi objek di file level → objek & kunci config yang ditimpa
 const LAYOUT_TARGETS = {
@@ -27,8 +28,9 @@ export function levelAt(index) {
 export function revertLevelOverrides(ctx) {
   const list = ctx.levelOverrides || [];
   for (let i = list.length - 1; i >= 0; i--) {
-    const { obj, key, had, prev } = list[i];
-    if (had) obj[key] = prev;
+    const { obj, key, had, prev, revert } = list[i];
+    if (revert) revert();
+    else if (had) obj[key] = prev;
     else delete obj[key];
   }
   ctx.levelOverrides = [];
@@ -51,6 +53,13 @@ function applyOverrides(ctx, level) {
   }
   for (const [field, [name, key]] of Object.entries(LAYOUT_TARGETS)) {
     if (layout[field]) override(ctx, CONFIG[name], key, layout[field]);
+  }
+  // Zona gelap tambahan (ditambahkan ke DARK_ZONES, dilepas saat ganti level)
+  if (layout.EXTRA_DARK_ZONES && layout.EXTRA_DARK_ZONES.length) {
+    const zones = CONFIG.DARK_ZONES;
+    const n = zones.length;
+    zones.push(...layout.EXTRA_DARK_ZONES);
+    ctx.levelOverrides.push({ revert: () => zones.splice(n) });
   }
 }
 
@@ -79,6 +88,7 @@ export function loadLevel(ctx, index) {
   ctx.state.levelIndex = index;
   applyOverrides(ctx, level);
   applyLighting(ctx.lights, level.LIGHTING);
+  if (ctx.darkFx) rebuildDarkOverlays(ctx.darkFx); // zona gelap bisa berbeda per level
   resetGame(ctx);
   return level;
 }

@@ -174,7 +174,9 @@ export const DEBUG = {
   DARK_ZONE_COLOR: 0x818cf8, // batas area gelap di lantai
   DARK_ZONE_OPACITY: 0.85,
   DARK_ZONE_BORDER: 0.06, // lebar pita batas (m)
-  DARK_ZONE_INSET: 0.1 // jarak pita dari tepi zona (tepi zona = tengah dinding)
+  DARK_ZONE_INSET: 0.1, // jarak pita dari tepi zona (tepi zona = tengah dinding)
+  LIGHTNING_KEY: 'KeyL', // (F3 terbuka, level hujan) picu kilat untuk menyetel visual
+  LIGHTNING_HOLD: 1.5 // detik kilat ditahan saat dipicu dari debug
 };
 
 // --- Animasi kucing ---
@@ -709,6 +711,8 @@ export const AUDIO = {
     suspicious: [[520, 700, 0.15, 'sine', 0.08, 0]], // "?"
     bellStep: [[2600, 2450, 0.12, 'sine', 0.025, 0], [3300, 3150, 0.1, 'sine', 0.018, 0.03]], // kalung lonceng
     tutorialStep: [[660, 660, 0.09, 'sine', 0.08, 0], [990, 990, 0.14, 'sine', 0.08, 0.09]], // langkah latihan selesai
+    kettle: [[1800, 2100, 0.6, 'sine', 0.03, 0.4], [1900, 2200, 0.8, 'sine', 0.03, 1.0]], // ceret teh (Level 3)
+    windowClose: [[220, 160, 0.12, 'square', 0.06, 0], [180, 140, 0.1, 'square', 0.05, 0.1]], // jendela ditutup
     meetingBusted: [[880, 300, 0.35, 'square', 0.07, 0], [600, 200, 0.4, 'square', 0.06, 0.12]], // ketahuan berisik saat rapat
     alarm: [
       [880, 880, 0.08, 'square', 0.08, 0],
@@ -792,7 +796,8 @@ export const MISCHIEF = {
   pot: { CHAOS: 50, NOISE_RADIUS: 3.2 }, // gulingkan pot
   kitchenFish: { CHAOS: 80, NOISE_RADIUS: 1.2 }, // curi ikan di dapur
   toiletPaper: { CHAOS: 35, NOISE_RADIUS: 1.2 }, // tarik gulungan tisu toilet (gulungan berderak)
-  blanket: { CHAOS: 25, NOISE_RADIUS: 0.6 } // acak-acak selimut (kain, sangat senyap)
+  blanket: { CHAOS: 25, NOISE_RADIUS: 0.6 }, // acak-acak selimut (kain, sangat senyap)
+  wetPaws: { CHAOS: 5, NOISE_RADIUS: 0, NO_COMBO: true } // jejak kaki basah di sofa/kasur/meja (Level 3), sekali per perabot, tanpa bonus combo
 };
 export const COMBO = {
   WINDOW: 10, // detik sejak kenakalan sebelumnya
@@ -1113,6 +1118,50 @@ export const CUSTOMIZATION = {
   BLACK_CAT_DARK_RANGE_MULT: 0.5,
   // Chonky: badan lebih bulat, jalan bergoyang, loaf lebih bulat (kemampuan sama)
   CHONKY: { BODY_WIDTH: 1.35, BODY_HEIGHT: 1.15, BELLY_DROP: 0.012, WADDLE_ROLL: 0.12, WADDLE_SWAY: 0.012, LOAF_WIDEN: 1.12, LOAF_DROP: 0.05 }
+};
+
+// --- Cuaca (Level 3 "Sore Hujan"). Aturan main (jadwal petir, genangan,
+// jejak) ada di file level (WEATHER); di sini hanya tampilan & suara. ---
+export const RAIN_FX = {
+  // Garis hujan di luar jendela (satu InstancedMesh)
+  STREAKS_PER_WINDOW: 90,
+  STREAK_LENGTH: 0.4,
+  STREAK_WIDTH: 0.01,
+  SPEED: 7.5, // m/detik
+  SLANT: 0.12, // kemiringan (rad)
+  COLOR: 0x8796aa, // dijumlahkan (additive) ke latar
+  OPACITY: 0.45,
+  DEPTH_MIN: 0.06, // jarak dari dinding ke luar (sebelum latar langit 0,5 m)
+  DEPTH_MAX: 0.42,
+  SPAN_PAD: 0.4,
+  HEIGHT_PAD: 0.4,
+  BACKDROP_COLOR: 0x1d2128, // langit mendung (tampil lebih terang setelah konversi sRGB)
+  // Tetesan mengalir di kaca (kanvas beranimasi)
+  DROPS: { SIZE: 128, COUNT: 26, SPEED_MIN: 6, SPEED_MAX: 40, RADIUS_MIN: 1.5, RADIUS_MAX: 3.5, FPS: 20, COLOR: 'rgba(214, 226, 240, 0.7)', TRAIL: 'rgba(214, 226, 240, 0.25)', OFFSET: 0.012, TILE_METERS: 0.8 },
+  // Genangan bocor & ember
+  PUDDLE: { COLOR: 0x2f4a63, OPACITY: 0.6, ROUGHNESS: 0.05, LIFT: 0.006, RIPPLE_PERIOD: 1.1, RIPPLE_COLOR: 0xcfe0f0 },
+  BUCKET: { RADIUS: 0.13, HEIGHT: 0.22, COLOR: 0x4f7cac },
+  // Kilat: hanya menaikkan intensitas lampu yang ada (tanpa lampu baru)
+  FLASH: { SUN_BOOST: 2.6, HEMI_BOOST: 2.4, FLICKER: 0.25, FLICKER_FREQ: 55, BACKDROP_COLOR: 0xeef3ff },
+  THUNDER_SHAKE: { AMPLITUDE: 0.035, DURATION: 0.9 },
+  AUDIO: { RAIN_VOLUME: 0.05, RAIN_FREQ: 1500, RAIN_Q: 0.5, THUNDER_VOLUME: 0.4, THUNDER_DURATION: 2.6, THUNDER_FREQ: 120 }
+};
+
+// --- Jejak kaki basah (entities/footprints.js) ---
+export const FOOTPRINTS = {
+  MAX: 240, // jejak sekaligus (InstancedMesh)
+  STEP: 0.17, // meter antar-jejak
+  SIDE: 0.035, // jejak kiri/kanan bergantian
+  SIZE: 0.045,
+  COLOR: 0x1a120c,
+  OPACITY: 0.6,
+  ROUGHNESS: 0.2,
+  LIFT: 0.004,
+  SHRINK_FROM: 0.7, // mulai mengecil (memudar) setelah 70% umur
+  ON_FURNITURE_TOL: 0.06, // jejak dianggap di atas perabot jika setinggi permukaannya
+  CHECK_INTERVAL: 0.2, // detik antar-pemeriksaan "pemilik melihat jejak"
+  SIGHT_LIFT: 0.03, // titik pandang sedikit di atas jejak
+  TELEPORT_DIST: 0.5 // perpindahan per frame sejauh ini bukan langkah
 };
 
 // --- Latihan / tutorial (systems/tutorial.js, levels/level0.js) ---

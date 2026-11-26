@@ -26,7 +26,8 @@ export function scoreMischief(ctx, type, position, noisePosition = position) {
   const combo = isComboActive(ctx);
   // Kalung lonceng: Chaos ×1,2 (GDD §14)
   const bell = ctx.cat && ctx.cat.bell ? CUSTOMIZATION.BELL.CHAOS_MULT : 1;
-  const amount = Math.round(def.CHAOS * (combo ? COMBO.MULTIPLIER : 1) * bell);
+  // NO_COMBO: nilai tetap (mis. jejak kaki basah +5 per perabot)
+  const amount = Math.round(def.CHAOS * (combo && !def.NO_COMBO ? COMBO.MULTIPLIER : 1) * bell);
 
   s.chaos += amount;
   s.mischiefCount += 1;
@@ -42,7 +43,7 @@ export function scoreMischief(ctx, type, position, noisePosition = position) {
   });
 
   ctx.floatText.spawn(`+${amount}`, position, 'chaos');
-  if (combo) {
+  if (combo && !def.NO_COMBO) {
     ctx.floatText.spawn(`COMBO x${COMBO.MULTIPLIER}`, position, 'combo');
     ctx.audio.play('combo');
   } else {

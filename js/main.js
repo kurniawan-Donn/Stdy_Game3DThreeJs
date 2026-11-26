@@ -51,6 +51,8 @@ import { createSettingsMenu } from './ui/settingsMenu.js';
 import { createFlow, enterLobby, openLevelSelect, playLevel, playContinue, retryLevel, playNextLevel,
   pauseGame, resumeGame, updateFlowInput, onPointerLockChange, playTutorial, skipTutorial, finishTutorial } from './core/gameFlow.js';
 import { updateTutorial } from './systems/tutorial.js';
+import { updateWeather } from './systems/weather.js';
+import { updateFootprints } from './entities/footprints.js';
 import { createTutorialUi } from './ui/tutorialUi.js';
 import { loadLevel } from './systems/levelManager.js';
 
@@ -67,7 +69,7 @@ function init() {
   // Semua collider: dinding dalam + perabot + pintu kamar mandi (dinamis)
   const colliders = [...house.colliders, ...furniture.colliders, door.collider];
   createBasket(scene);
-  createDarkZones(scene, house.cameraBlockers);
+  const darkFx = createDarkZones(scene, house.cameraBlockers);
   const dust = createDust(scene);
   const save = loadSave();
   const cat = createCat(scene, selectedLook(save));
@@ -125,6 +127,9 @@ function init() {
     hud: createHud(),
     floatText: createFloatingText(document.getElementById('float-layer')),
     lights,
+    darkFx, // lapisan area gelap (dibangun ulang per level)
+    windows: house.windows, // info jendela untuk efek hujan
+    backdropMat: house.backdropMat,
     levelOverrides: [], // nilai config yang ditimpa level aktif (systems/levelManager.js)
     save,
     lobby: createLobby(selectedLook(save)),
@@ -226,10 +231,11 @@ function init() {
 // Area gelap: kucing & pemilik meredup, tanda bulan pada ikon mata HUD
 function updateDarkness(ctx, dt) {
   const cp = ctx.cat.mesh.position;
-  const catDark = isInDarkZone(cp.x, cp.z);
+  const flashing = ctx.weather && ctx.weather.flashT > 0; // kilat menerangi semua
+  const catDark = !flashing && isInDarkZone(cp.x, cp.z);
   updateDarkTint(ctx.darkTint.cat, catDark, dt);
   const op = ctx.owner.mesh.position;
-  updateDarkTint(ctx.darkTint.owner, isInDarkZone(op.x, op.z), dt);
+  updateDarkTint(ctx.darkTint.owner, !flashing && isInDarkZone(op.x, op.z), dt);
   ctx.hud.setDarkZone(catDark);
 }
 
@@ -275,6 +281,9 @@ function gameFrame(ctx, dt) {
       updateLevelTimer(ctx, dt);
     }
     updateDoor(ctx.door, wdt);
+    // Cuaca (hujan, petir) & jejak kaki basah — hanya di level hujan
+    updateWeather(ctx, wdt);
+    updateFootprints(ctx, wdt);
     // Latihan: langkah & naskah pemilik (juga selama alur KETAHUAN)
     if (updateTutorial(ctx, dt) === 'done') finishTutorial(ctx);
   }

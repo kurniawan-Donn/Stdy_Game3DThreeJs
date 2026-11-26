@@ -71,6 +71,16 @@ Kolong tempat sembunyi (merendah = tak terlihat): sofa (0,28 m), kasur (0,28 m),
 
 Kardus K2 sengaja tidak diletakkan di koridor sekitar meja makan: koridor itu hanya selebar badan pemilik, dan kardus di sana memutus loop L3.
 
+## Level 3 — Sore Hujan
+
+| Objek | Posisi (x, z) | Catatan |
+|---|---|---|
+| Genangan bocor | −6,5; 1,3 (r 0,45 m → 0,2 m setelah ember) | lantai di bawah jendela ruang tamu |
+| Ember | −6,5; 1,3 | muncul setelah pemilik menutup jendela |
+| Area gelap tambahan | x 0,5..3,5, z −0,3..5 · x 3,5..7, z −0,3..5 | ruang tamu sisi timur & ruang makan |
+
+Hujan terlihat di luar jendela ruang tamu dan jendela dapur (jendela kamar tidur bertirai).
+
 ## Titik rutinitas pemilik
 
 | Kegiatan | Titik (x, z) |

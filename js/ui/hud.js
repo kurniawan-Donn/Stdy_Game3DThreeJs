@@ -27,6 +27,8 @@ export function createHud() {
   const hideEl = document.getElementById('hide-status');
   const darkEl = document.getElementById('dark-status');
   const meetingEl = document.getElementById('meeting-badge');
+  const stormEl = document.getElementById('storm-badge');
+  let lastStorm = null;
   let lastMeeting = null;
   let lastHide = null;
   let lastDark = null;
@@ -137,6 +139,15 @@ export function createHud() {
       if (on === lastDark) return;
       lastDark = on;
       darkEl.classList.toggle('active', on);
+    },
+    // Petir (Level 3): hitung mundur kilat → guntur, lalu "GUNTUR" saat suara tertutup
+    setStorm(s) {
+      const text = !s ? '' : s.countdown !== undefined ? `⚡ ${s.countdown.toFixed(1)}` : '⚡ GUNTUR';
+      if (text === lastStorm) return;
+      lastStorm = text;
+      stormEl.textContent = text;
+      stormEl.classList.toggle('active', !!s);
+      stormEl.classList.toggle('thunder', !!s && s.countdown === undefined);
     },
     setLives(lives) {
       const filled = '❤️'.repeat(Math.max(lives, 0));

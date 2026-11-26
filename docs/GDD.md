@@ -102,7 +102,7 @@ pilih misi kenakalan → menyelinap → lakukan kenakalan → kabur & sembunyi �
 | 0 | **Latihan** | – | – | Tutorial (bagian 15) | dibangun |
 | 1 | **Senin Pagi** | 4 menit | 300 | Hari kerja biasa: rutinitas, pencahayaan, dan objek seperti sekarang | dibangun |
 | 2 | **Deadline** | 4 menit | 400 | Pemilik tegang: lebih sering menoleh, dua sesi rapat video | dibangun |
-| 3 | **Sore Hujan** | – | – | (ide) | dicatat |
+| 3 | **Sore Hujan** | 4,5 menit | 450 | Hujan & petir: kilat menyingkap, guntur menutupi suara, jejak kaki basah | dibangun |
 | 4 | **Malam Hari** | – | – | Pemilik membawa **senter** (ide) | dicatat |
 | 5 | **Kedatangan Tamu** | – | – | (ide) | dicatat |
 | bonus | **Minggu Bersih-bersih** | – | – | (ide) | dicatat |
@@ -129,6 +129,36 @@ pilih misi kenakalan → menyelinap → lakukan kenakalan → kabur & sembunyi �
 | ★ | Chaos ≥ 100% target |
 | ★★ | Chaos ≥ 150% target |
 | ★★★ | Chaos ≥ 200% target |
+
+### Level 3 — Sore Hujan
+Terbuka setelah Level 2 mendapat minimal 1 bintang. Durasi **4,5 menit**, target **450**.
+
+**Suasana**
+- Cahaya sore kelabu-jingga yang redup (lampu berdiri menyala hangat), dengan **lebih banyak area gelap** daripada Level 1: selain lorong & kamar tidur, juga **ruang tamu sisi timur** (TV & meja kopi) dan **ruang makan**. Sisi barat dekat jendela tetap remang kelabu; ruang kerja tetap terang.
+- Tidak ada sinar matahari: tidur di sinar matahari tidak tersedia, dan debu berkilau di berkas cahaya tidak tampil.
+- Hujan di luar jendela: garis-garis hujan (instanced, ringan) dan tetesan yang mengalir di kaca (tekstur prosedural beranimasi).
+- Suara hujan prosedural (white noise difilter) terus-menerus.
+
+**Petir (mekanik utama)**
+- Tiap **25–45 detik** (acak), tanpa peringatan: **KILAT**, seluruh rumah terang **0,4 detik**.
+  - Selama kilat, area gelap tidak berlaku: pemilik bisa melihat kucing yang tadinya tersembunyi di area gelap.
+  - Kucing di kolong atau di dalam kardus tetap tidak terlihat.
+- **1–2 detik** setelah kilat: **GUNTUR** (gemuruh prosedural, getaran kamera kecil). Selama **2,5 detik** guntur, **semua suara kucing diabaikan pemilik**: barang bisa dipecahkan tanpa ketahuan jika waktunya tepat.
+- Setelah kilat, HUD menampilkan **ikon petir kecil** yang menghitung mundur ke guntur.
+- Selama hujan (di luar guntur), **suara kecil kucing (radius < 3 m) tertutup hujan** dan diabaikan pemilik.
+
+**Jejak kaki basah**
+- Ada **genangan kecil** (radius 0,45 m) di lantai bawah jendela ruang tamu yang bocor. Kucing yang menginjaknya meninggalkan **jejak kaki selama 15 detik** berikutnya (kiri-kanan bergantian, tiap ±0,17 m).
+- Jejak di lantai: tanpa Chaos. Jejak di **sofa, kasur, meja kopi, meja makan, atau meja kerja**: **Chaos +5 per perabot** (sekali per perabot, maksimal +25, tanpa bonus combo).
+- Jejak **segar** = umur ≤ **20 detik**. Pemilik hanya bereaksi pada jejak yang benar-benar **terlihat** (kerucut pandang, jangkauan, area gelap, terhalang perabot; kilat ikut menyingkap): curiga **+20**, lalu MENYELIDIKI ke **jejak terbaru**. Tiap jejak hanya memicu sekali. Jejak memudar dalam **60 detik**.
+
+**Pemilik**
+- **Menutup jendela bocor & menaruh ember:** pasti sekali per level, sebagai kegiatan pertama setelah **detik ke-60** (5 detik di jendela). Sesudahnya ember muncul dan genangan mengecil ke radius **0,2 m**. Jika terputus (misalnya mengejar), dicoba lagi nanti.
+- **Membuat teh** (12 detik di dapur, bunyi ceret) **menggantikan** "ambil minum".
+- Pengubah lain sama seperti Level 1.
+
+**Performa:** garis hujan dan jejak kaki masing-masing satu `InstancedMesh`; kilat hanya menaikkan intensitas lampu matahari & langit yang sudah ada (tanpa lampu baru). Diukur di Chrome: 60 FPS normal maupun saat kilat berulang.
+**Pengembang:** dengan overlay `F3` terbuka, `L` memicu kilat yang ditahan 1,5 detik untuk menyetel visual.
 
 ## 5. Kenakalan & Chaos
 
@@ -488,7 +518,8 @@ Belum ada. Tambahkan di sini jika muncul keputusan desain yang belum ditentukan.
 - [x] State game LOBI → PILIH LEVEL → MAIN → PAUSE → HASIL; pause `P` & saat kunci mouse lepas
 - [x] Layar hasil dengan Ulangi / Level Berikutnya / Lobi; level terbuka dengan minimal 1 bintang
 - [x] Simpanan `localStorage` berversi skema (v2, migrasi dari save lama), aman tanpa `localStorage`
-- [ ] Level 3–5 (Sore Hujan, Malam Hari, Kedatangan Tamu) dan bonus Minggu Bersih-bersih
+- [x] Level 3 Sore Hujan: hujan & tetesan di kaca, petir (kilat menyingkap, guntur menutupi suara, ikon hitung mundur), suara kecil tertutup hujan, jejak kaki basah, tutup jendela & ember, buat teh
+- [ ] Level 4–5 (Malam Hari, Kedatangan Tamu) dan bonus Minggu Bersih-bersih
 - [x] Tutorial bertahap (Level 0 Latihan) yang otomatis dimulai saat pertama main, bisa dilewati dan diulang
 - [x] Pose loaf dirapikan: kaki terselip di bawah badan, perut menyentuh alas
 

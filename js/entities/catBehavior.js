@@ -41,7 +41,7 @@ export function registerCatInteractions(ctx) {
     hold: SUN_NAP.HOLD_TIME,
     bias: SUN_NAP.PROMPT_BIAS, // objek lain di dekatnya didahulukan
     isEnabled: (c) => c.cat.isGrounded && !c.cat.inBox && !c.cat.riding && !c.cat.sleeping && !c.cat.underCrawl &&
-      c.cat.zoomiesT <= 0 && isInSunZone(c.cat.mesh.position.x, c.cat.mesh.position.z),
+      c.cat.zoomiesT <= 0 && !c.weather && isInSunZone(c.cat.mesh.position.x, c.cat.mesh.position.z), // hujan: tidak ada sinar matahari
     onInteract: (c) => startSleep(c)
   });
 }

@@ -11,6 +11,7 @@ import { setDoorOpen, isDoorOpen, isDoorClosed } from '../../world/house.js';
 import { startCapture } from '../../systems/capture.js';
 import { hideSpotOf, recentChaosNear } from '../../systems/hiding.js';
 import { resetMeetings, updateMeeting, endMeeting, dueMeeting, isLoudDuringMeeting } from './meeting.js';
+import { isNoiseMasked, weatherConfig } from '../../systems/weather.js';
 
 const HEAD_MAX = (OWNER.HEAD_MAX_YAW_DEG * Math.PI) / 180;
 
@@ -142,6 +143,16 @@ function updatePatrol(ctx, o, dt) {
   else o.phase = 'goto';
 }
 
+// Jejak kaki basah terlihat (entities/footprints.js): curiga naik, lalu
+// menyelidiki ke jejak terbaru. Seperti suara, tidak bisa langsung "!".
+export function ownerNoticeTrail(ctx, point, gain) {
+  const o = ctx.owner;
+  if (o.away || o.state === 'chase' || o.state === 'capture') return;
+  o.meter = Math.min(o.meter + gain * suspicionGain(ctx, o), Math.max(o.meter, S.NOISE_CAP));
+  o.attention = { x: point.x, z: point.z };
+  setState(ctx, o, 'investigate');
+}
+
 // Pemilik muncul di `start` dan langsung mengejar kucing ("!")
 export function ownerStartChase(ctx, start) {
   const o = ctx.owner;
@@ -223,7 +234,14 @@ function startWork(o) {
   clearPath(o);
 }
 
-function pickNextActivity(o) {
+function pickNextActivity(ctx, o) {
+  // Level hujan: sekali per level, kegiatan pertama setelah WINDOW_FIX_AFTER
+  // detik adalah menutup jendela bocor & menaruh ember
+  const W = weatherConfig(ctx);
+  // (jika sempat terputus, misalnya karena mengejar, dicoba lagi nanti)
+  if (W && ctx.weather && !ctx.weather.windowFixed && ctx.time >= W.WINDOW_FIX_AFTER) {
+    return { id: 'closeWindow', duration: W.WINDOW_FIX_DURATION };
+  }
   const options = R.ACTIVITIES.filter((a) => !(a.id === 'toilet' && o.toiletUsed));
   const total = options.reduce((sum, a) => sum + a.weight, 0);
   let r = Math.random() * total;
@@ -278,20 +296,30 @@ function updateRoutine(ctx, o, dt) {
       const glancing = o.glanceT > 0;
       turnTowards(o, glancing ? spots.desk.yaw + Math.PI : spots.desk.yaw, dt);
       o.pose = o.stretchT > 0 ? 'stretch' : glancing ? 'glance' : 'type';
-      if (o.activityT <= 0) startActivity(o, pickNextActivity(o));
+      if (o.activityT <= 0) startActivity(o, pickNextActivity(ctx, o));
       return;
     }
     case 'drink':
+    case 'tea': // Level hujan: membuat teh (menggantikan ambil minum)
     case 'window':
+    case 'closeWindow': // Level hujan: menutup jendela bocor & menaruh ember
     case 'bedroom': {
-      const spot = o.activity === 'drink' ? spots.kitchen : o.activity === 'window' ? spots.window : spots.bedroom;
+      const a = o.activity;
+      const spot = a === 'drink' || a === 'tea' ? spots.kitchen : a === 'window' || a === 'closeWindow' ? spots.window : spots.bedroom;
       if (o.phase === 'goto') {
-        if (walkTo(ctx, o, spot, OWNER.WALK_SPEED, dt)) o.phase = 'do';
+        if (walkTo(ctx, o, spot, OWNER.WALK_SPEED, dt)) {
+          o.phase = 'do';
+          if (a === 'tea') ctx.audio.play('kettle');
+        }
         return;
       }
       turnTowards(o, spot.yaw, dt);
-      o.pose = o.activity === 'bedroom' ? 'window' : o.activity;
+      o.pose = a === 'bedroom' || a === 'closeWindow' ? 'window' : a === 'tea' ? 'drink' : a;
       o.activityT -= dt;
+      if (a === 'closeWindow' && o.activityT <= 0 && ctx.weather) {
+        ctx.weather.windowFixed = true;
+        ctx.audio.play('windowClose');
+      }
       // Jadwal rapat tiba: kegiatan dipersingkat, kembali ke meja
       if (o.activityT <= 0 || dueMeeting(ctx)) startWork(o);
       return;
@@ -472,6 +500,8 @@ export function ownerHearNoise(ctx, ev) {
   const pos = o.mesh.position;
   if (Math.hypot(ev.x - pos.x, ev.z - pos.z) > ev.radius) return;
 
+  // Level hujan: suara tertutup guntur / hujan
+  if (isNoiseMasked(ctx, ev)) return;
   const isStep = ev.source.startsWith('step-') || ev.source === 'land';
   const point = { x: ev.x, z: ev.z };
 

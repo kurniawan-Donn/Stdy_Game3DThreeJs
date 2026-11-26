@@ -18,7 +18,7 @@ Ditulis dengan JavaScript ES modules biasa, tanpa build tool dan tanpa aset ekst
 - 🧱 **Fisika benda buatan sendiri:** benda jatuh dari meja, memantul kecil, pecahan kaca berhamburan
 - 🔥 **Chaos & combo:** kenakalan beruntun dalam 10 detik mendapat bonus ×1,5
 - 🎓 **Latihan** bertahap saat pertama main (bisa dilewati & diulang)
-- ⏱️ **Level berwaktu** dengan target Chaos dan rating bintang ★★★: **Senin Pagi** dan **Deadline** (pemilik sering menoleh dan dua kali rapat video: jangan berisik!). Level berikutnya terbuka dengan minimal 1 bintang
+- ⏱️ **Level berwaktu** dengan target Chaos dan rating bintang ★★★: **Senin Pagi** dan **Deadline** (pemilik sering menoleh dan dua kali rapat video: jangan berisik!), dan **Sore Hujan** (kilat menyingkap, guntur menutupi suara, awas jejak kaki basah). Level berikutnya terbuka dengan minimal 1 bintang
 - 🔊 **Sistem suara gameplay:** setiap aksi menimbulkan suara dengan radius tertentu (dasar untuk pemilik rumah yang mendengar)
 - 🐟 **Ikan camilan** untuk mengisi stamina
 - 🛋️ **Lobi 3D** dengan kucingmu di bantal, menu Pilih Level, Cara Bermain, dan Pengaturan (kualitas grafis, volume, sensitivitas, balik sumbu Y, FPS)
@@ -51,7 +51,7 @@ Ditulis dengan JavaScript ES modules biasa, tanpa build tool dan tanpa aset ekst
 1. Dekati objek sampai muncul prompt **E**, lalu tekan `E` untuk berbuat nakal. Beberapa objek (gelas, tisu, remote, ikan dapur) hanya bisa dijangkau dari atas perabot.
 2. Setiap objek hanya bisa dipakai **sekali per level**.
 3. Lakukan kenakalan beruntun dalam **10 detik** untuk bonus **COMBO ×1,5**.
-4. Capai target Chaos (**300** di Senin Pagi, **400** di Deadline) dalam **4 menit** untuk menang. ★ = 100%, ★★ = 150%, ★★★ = 200% target.
+4. Capai target Chaos (**300** Senin Pagi, **400** Deadline, **450** Sore Hujan) sebelum waktu habis untuk menang. ★ = 100%, ★★ = 150%, ★★★ = 200% target.
 5. Jangan sampai dipergoki **pemilik rumah**. Ikon **?** berarti curiga, **!** berarti mengejar. Tertangkap = **KETAHUAN!**, kucing dikembalikan ke keranjang dan **nyawa −1** (total 3). Nyawa habis = level gagal, dan hanya 50% Chaos yang masuk tabungan.
 6. Makan ikan untuk mengisi stamina.
 
@@ -117,7 +117,7 @@ Ringkasan dari peta pengembangan di [docs/GDD.md](docs/GDD.md):
 - [x] Fase 4: Ketahuan & nyawa (sekuens tertangkap, keranjang)
 - [x] Fase 5: Sembunyi (kardus, kolong, area gelap) & camilan (catnip, tidur di sinar matahari)
 - [x] Fase 6: Hal lucu (tunggangi robot vacuum, loaf pose, bola benang)
-- [x] Fase 7: Level & tutorial (sistem level, Latihan, Level 1–2, alur lobi/pause/hasil)
+- [x] Fase 7: Level & tutorial (sistem level, Latihan, Level 1–3, alur lobi/pause/hasil); Level 4–5 menyusul
 - [x] Fase 8: Lobi 3D, kustomisasi kucing & aksesoris, pengaturan
 - [ ] Fase 9: Polish & performa
 

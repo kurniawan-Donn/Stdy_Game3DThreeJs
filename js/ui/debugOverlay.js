@@ -6,6 +6,8 @@
 import * as THREE from 'three';
 import { DEBUG, INTERACT, NOISE, PLAYER, STAMINA, MEOW, OWNER, HOUSE, DARK_ZONES } from '../config.js';
 import { isInDarkZone } from '../world/house.js';
+import { removeAndDispose } from '../core/dispose.js';
+import { strikeLightning } from '../systems/weather.js';
 import { isExhausted } from '../systems/stamina.js';
 import { recentMeowCount, isAnnoying } from '../systems/meow.js';
 import { comboTimeLeft } from '../systems/chaos.js';
@@ -34,6 +36,29 @@ function makeLine(maxPoints, color, segments, xray = false) {
   line.frustumCulled = false;
   line.renderOrder = 999;
   return line;
+}
+
+// Pita batas area gelap di lantai (garis WebGL hanya 1 px, jadi pakai pita)
+function buildDarkBorders() {
+  const darkMat = new THREE.MeshBasicMaterial({ color: DEBUG.DARK_ZONE_COLOR, transparent: true, opacity: DEBUG.DARK_ZONE_OPACITY, depthWrite: false, fog: false });
+  const darkEdges = new THREE.Group();
+  const bw = DEBUG.DARK_ZONE_BORDER;
+  const inset = DEBUG.DARK_ZONE_INSET + bw / 2; // geser ke dalam agar tidak tertutup dinding & lis
+  for (const z of DARK_ZONES) {
+    const x0 = z.x - z.width / 2 + inset, x1 = z.x + z.width / 2 - inset;
+    const z0 = z.z - z.depth / 2 + inset, z1 = z.z + z.depth / 2 - inset;
+    const w = x1 - x0 + bw, d = z1 - z0 + bw;
+    for (const [cx, cz, sw, sd] of [[z.x, z0, w, bw], [z.x, z1, w, bw], [x0, z.z, bw, d], [x1, z.z, bw, d]]) {
+      const strip = new THREE.Mesh(new THREE.PlaneGeometry(sw, sd), darkMat);
+      strip.rotation.x = -Math.PI / 2;
+      strip.position.set(cx, RING_Y, cz);
+      strip.renderOrder = 998;
+      darkEdges.add(strip);
+    }
+  }
+  darkEdges.name = 'darkZoneBorders';
+  darkEdges.userData.sig = DARK_ZONES.length;
+  return darkEdges;
 }
 
 export function createDebugOverlay(scene) {
@@ -67,29 +92,14 @@ export function createDebugOverlay(scene) {
   // Jalur A* pemilik
   const path = makeLine(MAX_PATH_POINTS + 1, DEBUG.PATH_COLOR, false);
   group.add(path);
-  // Batas area gelap di lantai (pita tipis; garis WebGL hanya 1 px)
-  const darkMat = new THREE.MeshBasicMaterial({ color: DEBUG.DARK_ZONE_COLOR, transparent: true, opacity: DEBUG.DARK_ZONE_OPACITY, depthWrite: false, fog: false });
-  const darkEdges = new THREE.Group();
-  const bw = DEBUG.DARK_ZONE_BORDER;
-  const inset = DEBUG.DARK_ZONE_INSET + bw / 2; // geser ke dalam agar tidak tertutup dinding & lis
-  for (const z of DARK_ZONES) {
-    const x0 = z.x - z.width / 2 + inset, x1 = z.x + z.width / 2 - inset;
-    const z0 = z.z - z.depth / 2 + inset, z1 = z.z + z.depth / 2 - inset;
-    const w = x1 - x0 + bw, d = z1 - z0 + bw;
-    for (const [cx, cz, sw, sd] of [[z.x, z0, w, bw], [z.x, z1, w, bw], [x0, z.z, bw, d], [x1, z.z, bw, d]]) {
-      const strip = new THREE.Mesh(new THREE.PlaneGeometry(sw, sd), darkMat);
-      strip.rotation.x = -Math.PI / 2;
-      strip.position.set(cx, RING_Y, cz);
-      strip.renderOrder = 998;
-      darkEdges.add(strip);
-    }
-  }
-  darkEdges.name = 'darkZoneBorders';
+  // Batas area gelap di lantai (dibangun ulang bila zona berubah per level)
+  const darkEdges = buildDarkBorders();
   group.add(darkEdges);
 
   const overlay = {
     cone,
     los,
+    darkEdges,
     path,
     enabled: DEBUG.ENABLED_AT_START,
     group,
@@ -133,6 +143,14 @@ export function updateDebugOverlay(ctx) {
   }
   if (!overlay.enabled) return;
 
+  // Pengembang: picu kilat di level hujan (ditahan agar bisa diperiksa)
+  if (ctx.input.pressed[DEBUG.LIGHTNING_KEY] && ctx.weather) strikeLightning(ctx, DEBUG.LIGHTNING_HOLD);
+  // Zona gelap berubah (level lain) → bangun ulang pita batas
+  if (overlay.darkEdges.userData.sig !== DARK_ZONES.length) {
+    removeAndDispose(overlay.darkEdges);
+    overlay.darkEdges = buildDarkBorders();
+    overlay.group.add(overlay.darkEdges);
+  }
   const { cat, noise, stamina, meow, interaction } = ctx;
   const p = cat.mesh.position;
   overlay.interactRing.position.set(p.x, p.y + RING_Y, p.z);
