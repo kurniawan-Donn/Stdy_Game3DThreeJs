@@ -28,6 +28,8 @@ export function createHud() {
   const darkEl = document.getElementById('dark-status');
   const meetingEl = document.getElementById('meeting-badge');
   const stormEl = document.getElementById('storm-badge');
+  const wakeEl = document.getElementById('wake-badge');
+  let lastWake;
   let lastStorm = null;
   let lastMeeting = null;
   let lastHide = null;
@@ -148,6 +150,16 @@ export function createHud() {
       stormEl.textContent = text;
       stormEl.classList.toggle('active', !!s);
       stormEl.classList.toggle('thunder', !!s && s.countdown === undefined);
+    },
+    // Malam: ikon "Zzz" memudar menjadi mata terbuka (frac 0..1, null = sembunyi)
+    setWake(frac) {
+      if (frac === lastWake) return;
+      lastWake = frac;
+      wakeEl.classList.toggle('active', frac !== null);
+      if (frac === null) return;
+      wakeEl.style.setProperty('--wake', String(frac));
+      wakeEl.classList.toggle('awake', frac >= 1);
+      wakeEl.title = frac >= 1 ? 'Pemilik terjaga!' : `Pemilik tidur (terbangun ${Math.round(frac * 100)}%)`;
     },
     setLives(lives) {
       const filled = '❤️'.repeat(Math.max(lives, 0));

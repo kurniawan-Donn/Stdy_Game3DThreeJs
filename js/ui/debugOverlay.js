@@ -145,6 +145,8 @@ export function updateDebugOverlay(ctx) {
 
   // Pengembang: picu kilat di level hujan (ditahan agar bisa diperiksa)
   if (ctx.input.pressed[DEBUG.LIGHTNING_KEY] && ctx.weather) strikeLightning(ctx, DEBUG.LIGHTNING_HOLD);
+  // Pengembang: lompat ke akhir level (mis. melihat matahari terbit di Level 4)
+  if (ctx.input.pressed[DEBUG.SKIP_TIME_KEY] && !ctx.state.isGameOver) ctx.state.timeLeft = Math.min(ctx.state.timeLeft, DEBUG.SKIP_TIME_LEFT);
   // Zona gelap berubah (level lain) → bangun ulang pita batas
   if (overlay.darkEdges.userData.sig !== DARK_ZONES.length) {
     removeAndDispose(overlay.darkEdges);

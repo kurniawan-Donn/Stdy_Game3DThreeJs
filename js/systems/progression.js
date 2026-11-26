@@ -22,6 +22,8 @@ import { createYarnBalls, disposeYarnBalls } from '../entities/yarn.js';
 import { resetCatnip } from '../entities/catnip.js';
 import { createNavGrid } from './navGrid.js';
 import { resetTutorial } from './tutorial.js';
+import { resetNight } from './night.js';
+import { resetFlashlight } from '../entities/flashlight.js';
 import { resetWeather } from './weather.js';
 import { resetFootprints } from '../entities/footprints.js';
 
@@ -58,10 +60,14 @@ export function resetGame(ctx) {
   resetCatnip(ctx);
   ctx.nav = createNavGrid(ctx.colliders); // kardus ikut menghalangi jalur pemilik
   resetDoor(ctx.door);
+  resetNight(ctx); // Level malam (no-op di level lain); sebelum pemilik ditidurkan
   resetOwner(ctx);
+  resetFlashlight(ctx);
   resetTutorial(ctx); // Latihan: pemilik dinaskahkan (no-op di level biasa)
   resetWeather(ctx); // Level hujan: hujan, petir, genangan (no-op di level lain)
   resetFootprints(ctx);
+  // Debu berkilau di berkas matahari hanya di siang yang cerah
+  if (ctx.dust && ctx.dust.points) ctx.dust.points.visible = !ctx.weather && !ctx.night;
 
   for (let i = 0; i < VACUUM.INITIAL_COUNT; i++) {
     spawnObstacle(ctx);
@@ -81,5 +87,6 @@ export function resetGame(ctx) {
   hud.setMeowCooldown(0);
   hud.setHideStatus('');
   if (hud.setMeeting) hud.setMeeting(false);
+  if (hud.setWake && !ctx.night) hud.setWake(null);
   ctx.results.hide();
 }

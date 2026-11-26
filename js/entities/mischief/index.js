@@ -11,6 +11,8 @@ import { createPot } from './pot.js';
 import { createKitchenFish } from './kitchenFish.js';
 import { createToiletPaper } from './toiletPaper.js';
 import { createBlanket } from './blanket.js';
+import { createKnead } from './knead.js';
+import { createAlarmClock } from './alarmClock.js';
 
 const FACTORIES = {
   glass: createGlass,
@@ -20,7 +22,9 @@ const FACTORIES = {
   pot: createPot,
   kitchenFish: createKitchenFish,
   toiletPaper: createToiletPaper,
-  blanket: createBlanket
+  blanket: createBlanket,
+  knead: createKnead, // Level 4 (malam)
+  alarmClock: createAlarmClock // Level 4 (malam)
 };
 
 export function createMischiefSystem(scene) {

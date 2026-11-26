@@ -5,7 +5,7 @@
 // - Jarak sangat dekat: selalu terlihat kecuali line-of-sight terhalang total.
 import * as THREE from 'three';
 import { OWNER, PERCEPTION, HIDE_BOX, CUSTOMIZATION } from '../config.js';
-import { isInDarkZone } from '../world/house.js';
+import { isInDarkZone, isInLightZone } from '../world/house.js';
 import { hideSpotOf, isBoxMoving } from './hiding.js';
 
 const HALF_ANGLE = THREE.MathUtils.degToRad(OWNER.VISION_ANGLE_DEG / 2);
@@ -91,7 +91,25 @@ export function senseCat(ctx, eye, lookYaw) {
   while (angle > Math.PI) angle -= Math.PI * 2;
   while (angle < -Math.PI) angle += Math.PI * 2;
   const close = distance <= PERCEPTION.CLOSE_RANGE;
-  const inCone = close || (distance <= range && Math.abs(angle) <= HALF_ANGLE);
+  let inCone = close || (distance <= range && Math.abs(angle) <= HALF_ANGLE);
+
+  // Malam (Level 4), pemilik terjaga membawa senter: terlihat di sorotan
+  // (35°, 12 m; area gelap tidak berlaku), di sekitar (2 m), atau di berkas
+  // cahaya bulan (pandangan biasa). Mengendap & kucing hitam memperpendek.
+  const torch = ctx.night && ctx.owner && ctx.owner.flashlightOn && !ctx.owner.asleep ? ctx.night.N.FLASHLIGHT : null;
+  if (torch) {
+    const black = cat.darkStealth ? CUSTOMIZATION.BLACK_CAT_DARK_RANGE_MULT : 1;
+    const sneak = cat.moveMode === 'sneak' && !cat.inBox ? PERCEPTION.SNEAK_RANGE_MULT : 1;
+    const beamRange = torch.RANGE * sneak * black;
+    const nearRange = torch.NEAR_RANGE * black;
+    const moonRange = OWNER.VISION_RANGE * sneak;
+    const a = Math.abs(angle);
+    const inBeam = distance <= beamRange && a <= THREE.MathUtils.degToRad(torch.ANGLE_DEG / 2);
+    const inMoon = isInLightZone(p.x, p.z) && distance <= moonRange && a <= HALF_ANGLE;
+    const inNear = distance <= nearRange && a <= HALF_ANGLE;
+    inCone = close || inBeam || inMoon || inNear;
+    range = inBeam ? beamRange : inMoon ? moonRange : nearRange;
+  }
 
   const result = { visibility: 0, distance, range, inCone, rays: [], box: !!cat.inBox, boxMoving: false, hiddenSpot: false };
   if (!inCone) return result;

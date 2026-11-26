@@ -53,6 +53,8 @@ import { createFlow, enterLobby, openLevelSelect, playLevel, playContinue, retry
 import { updateTutorial } from './systems/tutorial.js';
 import { updateWeather } from './systems/weather.js';
 import { updateFootprints } from './entities/footprints.js';
+import { updateNight } from './systems/night.js';
+import { updateFlashlight } from './entities/flashlight.js';
 import { createTutorialUi } from './ui/tutorialUi.js';
 import { loadLevel } from './systems/levelManager.js';
 
@@ -222,6 +224,9 @@ function init() {
   registerCatInteractions(ctx);
 
   applySettings(ctx);
+  // Pengembangan saja: buka dengan ?debug untuk memeriksa ctx dari konsol
+  // browser (pemeriksaan visual & screenshot). Tanpa ?debug tidak ada efek.
+  if (new URLSearchParams(window.location.search).has('debug')) window.__meongCtx = ctx;
   // Dunia disiapkan dengan level 1, lalu mulai dari lobi
   loadLevel(ctx, 0);
   enterLobby(ctx);
@@ -262,6 +267,11 @@ function gameFrame(ctx, dt) {
       updateHideBoxes(ctx);
     } else {
       ctx.time += dt;
+      // Matahari terbit (Level 4): kontrol dikunci sampai layar hasil
+      if (ctx.night && ctx.night.dawn) {
+        ctx.input.keys = {};
+        ctx.input.pressed = {};
+      }
       updateCat(ctx, dt);
       updateMeow(ctx, dt);
       updateInteraction(ctx, dt);
@@ -284,6 +294,9 @@ function gameFrame(ctx, dt) {
     // Cuaca (hujan, petir) & jejak kaki basah — hanya di level hujan
     updateWeather(ctx, wdt);
     updateFootprints(ctx, wdt);
+    // Malam: meter terbangun, matahari terbit, senter & kilau mata
+    updateNight(ctx, wdt);
+    updateFlashlight(ctx);
     // Latihan: langkah & naskah pemilik (juga selama alur KETAHUAN)
     if (updateTutorial(ctx, dt) === 'done') finishTutorial(ctx);
   }

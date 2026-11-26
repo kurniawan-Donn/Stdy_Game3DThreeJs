@@ -81,6 +81,18 @@ Kardus K2 sengaja tidak diletakkan di koridor sekitar meja makan: koridor itu ha
 
 Hujan terlihat di luar jendela ruang tamu dan jendela dapur (jendela kamar tidur bertirai).
 
+## Level 4 — Malam Hari
+
+| Objek | Posisi (x, z) | Catatan |
+|---|---|---|
+| Nakas (permanen) | −6,5; −4,55 (0,45 × 0,4 m, tinggi 0,5) | sisi kepala kasur, antara kasur & dinding barat |
+| Jam beker | di atas nakas | dijatuhkan dari nakas atau dari tepi kasur |
+| Pemilik tidur | kasur (kaki di −5,2; −3,05) | bangun di sisi timur kasur (−4,0; −3,9) |
+| Kulkas (camilan) | berdiri di −6,4; −3,75 | lampu kulkas menyala saat camilan |
+| Berkas cahaya bulan | x −7..−4,4, z 1,0..3,6 | satu-satunya zona terang |
+
+Seluruh rumah lainnya area gelap; lampu tidur lorong & lampu malam kamar tetap menyala.
+
 ## Titik rutinitas pemilik
 
 | Kegiatan | Titik (x, z) |

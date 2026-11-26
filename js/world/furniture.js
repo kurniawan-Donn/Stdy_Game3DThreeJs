@@ -347,6 +347,20 @@ export function createFurniture(scene) {
     g.add(mesh(new THREE.BoxGeometry(0.6, 0.7, 0.02), M.mirror, 0, c.topHeight + 0.5, c.depth / 2 - 0.01, false));
     finish(ctx, g, L.dresser.colliders);
   }
+  {
+    // Nakas di sisi kepala kasur (tempat jam beker di Level 4)
+    const c = L.nightstand.colliders[0];
+    const g = new THREE.Group();
+    g.position.set(L.nightstand.x, 0, L.nightstand.z);
+    g.add(mesh(new THREE.BoxGeometry(c.width, c.topHeight - 0.06, c.depth), M.woodWarm, 0, (c.topHeight - 0.06) / 2 + 0.06, 0));
+    g.add(mesh(new THREE.BoxGeometry(c.width - 0.06, 0.012, 0.01), M.woodDark, 0, c.topHeight * 0.6, c.depth / 2 + 0.005, false));
+    for (const lx of [-1, 1]) {
+      for (const lz of [-1, 1]) {
+        g.add(mesh(new THREE.BoxGeometry(0.03, 0.06, 0.03), M.woodDark, lx * (c.width / 2 - 0.03), 0.03, lz * (c.depth / 2 - 0.03), false));
+      }
+    }
+    finish(ctx, g, L.nightstand.colliders);
+  }
 
   // ===================== KAMAR MANDI =====================
   {

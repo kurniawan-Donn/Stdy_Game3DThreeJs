@@ -1272,3 +1272,62 @@ body.mode-lobby #tutorial-box {
 body.mode-lobby #storm-badge {
   display: none !important;
 }
+
+/* ---------- Malam (Level 4): meter terbangun Zzz → mata terbuka ---------- */
+#wake-badge {
+  --wake: 0;
+  position: fixed;
+  top: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: none;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 12px;
+  background: rgba(15, 23, 42, 0.8);
+  border: 1px solid rgba(147, 197, 253, 0.45);
+  border-radius: 999px;
+  pointer-events: none;
+  z-index: 6;
+}
+
+#wake-badge.active {
+  display: flex;
+}
+
+#wake-badge .zzz {
+  font-size: 15px;
+  font-weight: 800;
+  font-style: italic;
+  color: #93c5fd;
+  opacity: calc(1 - var(--wake));
+}
+
+#wake-badge .eye-open {
+  font-size: 16px;
+  opacity: var(--wake);
+}
+
+#wake-badge .wake-bar {
+  width: 70px;
+  height: 6px;
+  background: rgba(255, 255, 255, 0.12);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+#wake-badge .wake-fill {
+  display: block;
+  height: 100%;
+  width: calc(var(--wake) * 100%);
+  background: linear-gradient(90deg, #60a5fa, #f87171);
+}
+
+#wake-badge.awake {
+  border-color: #f87171;
+  animation: meeting-blink 1s ease-in-out infinite;
+}
+
+body.mode-lobby #wake-badge {
+  display: none !important;
+}

@@ -61,6 +61,13 @@ function applyOverrides(ctx, level) {
     zones.push(...layout.EXTRA_DARK_ZONES);
     ctx.levelOverrides.push({ revert: () => zones.splice(n) });
   }
+  // Zona terang (membatalkan area gelap), mis. berkas cahaya bulan
+  if (layout.EXTRA_LIGHT_ZONES && layout.EXTRA_LIGHT_ZONES.length) {
+    const zones = CONFIG.LIGHT_ZONES;
+    const n = zones.length;
+    zones.push(...layout.EXTRA_LIGHT_ZONES);
+    ctx.levelOverrides.push({ revert: () => zones.splice(n) });
+  }
 }
 
 // Pencahayaan: mulai dari LIGHTS (config), lalu timpa dengan level.LIGHTING

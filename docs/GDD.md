@@ -103,7 +103,7 @@ pilih misi kenakalan → menyelinap → lakukan kenakalan → kabur & sembunyi �
 | 1 | **Senin Pagi** | 4 menit | 300 | Hari kerja biasa: rutinitas, pencahayaan, dan objek seperti sekarang | dibangun |
 | 2 | **Deadline** | 4 menit | 400 | Pemilik tegang: lebih sering menoleh, dua sesi rapat video | dibangun |
 | 3 | **Sore Hujan** | 4,5 menit | 450 | Hujan & petir: kilat menyingkap, guntur menutupi suara, jejak kaki basah | dibangun |
-| 4 | **Malam Hari** | – | – | Pemilik membawa **senter** (ide) | dicatat |
+| 4 | **Malam Hari** | 5 menit | 350 | Pemilik tidur; terbangun oleh suara, menyelidiki dengan senter | dibangun |
 | 5 | **Kedatangan Tamu** | – | – | (ide) | dicatat |
 | bonus | **Minggu Bersih-bersih** | – | – | (ide) | dicatat |
 
@@ -160,6 +160,39 @@ Terbuka setelah Level 2 mendapat minimal 1 bintang. Durasi **4,5 menit**, target
 **Performa:** garis hujan dan jejak kaki masing-masing satu `InstancedMesh`; kilat hanya menaikkan intensitas lampu matahari & langit yang sudah ada (tanpa lampu baru). Diukur di Chrome: 60 FPS normal maupun saat kilat berulang.
 **Pengembang:** dengan overlay `F3` terbuka, `L` memicu kilat yang ditahan 1,5 detik untuk menyetel visual.
 
+### Level 4 — Malam Hari
+Terbuka setelah Level 3 mendapat minimal 1 bintang. Durasi **5 menit**, target **350**.
+
+**Suasana**
+- Rumah gelap: lampu ruangan mati, cahaya bulan biru pucat yang sangat redup, satu lampu tidur kecil di lorong, cahaya jam digital (jam beker) di kamar.
+- **Hampir seluruh rumah dihitung area gelap**, kecuali **berkas cahaya bulan** di lantai bawah jendela ruang tamu (tambalan cahaya biru lembut dengan bayang palang jendela).
+- Gelapnya dari pencahayaan, bukan lapisan redup; tidak ada debu berkilau sampai matahari terbit.
+- Suara malam prosedural: jangkrik samar, detak jam.
+- Saat waktu habis: **matahari terbit** selama 5 detik (cahaya berubah hangat bertahap, kontrol dikunci), pemilik bangun pagi, lalu layar hasil ("Pagi telah tiba!").
+
+**Pemilik tidur**
+- Level dimulai dengan pemilik tidur di kasur.
+- **Meter TERBANGUN (0–100):** suara "sampai ke kamar" jika jarak sumber ke kepala pemilik ≤ **2 × radius suara**; isinya **25 × radius × (1 − jarak / (2 × radius))**. Meter turun **3/detik**. Contoh: gelas pecah 3 m dari kepala → +62,5; lari di samping kasur → ±+37; jalan biasa beberapa meter → 0. Di HUD tampil sebagai ikon **"Zzz"** yang memudar menjadi **mata terbuka**, dengan bilah meter.
+- Pemilik yang tidur tidak melihat apa pun dan tidak menghalangi kucing (kucing bisa berjalan di atas kasur).
+- Meter penuh = pemilik bangun: duduk di tepi kasur **1,5 detik**, menyalakan **senter**, berjalan ke sumber suara terakhir, menyorot sekeliling **6 detik**, lalu kembali tidur (meter 0) jika tidak menemukan apa-apa. Jika melihat kucing: curiga/kejar seperti biasa; setelah menangkap, ia kembali tidur.
+- Tiap kali terbangun karena suara, pengali meter naik **×1,25** (kumulatif).
+- **Camilan tengah malam** sekali per level di **detik 150**: pemilik bangun sendiri, berjalan ke kulkas dengan senter, 8 detik di depan kulkas yang terbuka (lampu kulkas menyala), lalu kembali tidur. Tidak menaikkan pengali.
+
+**Senter**
+- Saat terjaga, pandangan pemilik = **kerucut senter 35°, jangkauan 12 m** (area gelap tidak berlaku di sorotan). Di luar sorotan, pemilik hanya melihat dalam **2 m** (kerucut pandang biasa 70°).
+- Mengendap ×0,5 (sorotan 6 m). **Kucing hitam:** bonus area gelap berlaku penuh, ×0,5 lagi (sorotan 6 m, sambil mengendap 3 m, di luar sorotan 1 m).
+- Kucing di **berkas cahaya bulan** terlihat dengan pandangan biasa (70°, 3,2 m) walau di luar sorotan.
+- Sorotan terlihat jelas (SpotLight + kerucut cahaya semi-transparan, senter di tangan kanan).
+- **Mata kucing berkilau** saat kepalanya di sorotan (≤ 12 m, tidak terhalang) dan menghadap kira-kira ke pemilik (±50°); tidak berlaku di kardus atau kolong. Jika kucing berkilau tapi tidak terlihat, curiga naik **+10/detik**, maksimal **80** (tidak bisa memicu "!" sendiri).
+
+**Kenakalan khusus malam**
+- **Menginjak-injak selimut** (kneading) di atas pemilik yang tidur: **60 Chaos**, suara 0,8 m, dan meter terbangun langsung **+45** (ikut pengali). Hanya saat pemilik tidur dan kucing di dekat badannya; sekali per level.
+- **Menjatuhkan jam beker** dari **nakas** (di sisi kepala kasur): **40 Chaos**, suara **5 m**; jam berdering 3 detik di lantai. Di samping kasur, dering ini hampir pasti membangunkan pemilik.
+- "Acak-acak selimut" tidak tersedia di Level 4 (digantikan kneading).
+
+**Performa:** maksimal **1 lampu berbayangan**: kualitas Tinggi = senter, Sedang = bulan, Rendah = tidak ada; saat matahari terbit, matahari yang berbayangan. Bulan sengaja sangat redup karena lampu arah tanpa bayangan menembus dinding; berkas bulan di lantai dibuat sebagai tambalan cahaya. Diukur di Chrome: 60 FPS.
+**Pengembang:** dengan overlay `F3` terbuka, `T` memajukan waktu ke 5 detik terakhir (melihat matahari terbit).
+
 ## 5. Kenakalan & Chaos
 
 Setiap kenakalan memberi Chaos dan memancarkan suara dengan radius tertentu. Pemilik yang berada di dalam radius suara akan mendengarnya.
@@ -168,6 +201,8 @@ Setiap kenakalan memberi Chaos dan memancarkan suara dengan radius tertentu. Pem
 |---|---|---|
 | Tumpahkan tisu | 15 | 0,8 m |
 | Acak-acak selimut | 25 | 0,6 m |
+| Menginjak-injak selimut (Level 4) | 60 | 0,8 m (+45 meter terbangun) |
+| Jatuhkan jam beker (Level 4) | 40 | 5 m |
 | Tarik tisu toilet | 35 | 1,2 m |
 | Cakar sofa | 20 | 1,6 m |
 | Injak remote (TV menyala) | 30 | 2,4 m |
@@ -440,7 +475,7 @@ Preview langsung di lobi saat memilih. Item terkunci tampil dengan harga dan bis
 - **Tanpa aset eksternal.** Semua model, tekstur, dan suara dibuat secara prosedural (bentuk dasar Three.js, Canvas, Web Audio).
 - **Ringan** dan lancar di laptop biasa.
 - **Semua angka penyetelan ada di `js/config.js`.**
-- **Performa:** hanya matahari (directional) yang memakai bayangan; lampu ruangan tanpa bayangan. Geometri statis digabung per material (rumah dan tiap perabot). Target 60 FPS di laptop biasa; FPS tampil di overlay `F3`.
+- **Performa:** hanya satu lampu yang memakai bayangan (matahari; di Level 4 senter atau bulan); lampu ruangan tanpa bayangan. Geometri statis digabung per material (rumah dan tiap perabot). Target 60 FPS di laptop biasa; FPS tampil di overlay `F3`.
 
 ## 17. Pertanyaan terbuka
 
@@ -519,7 +554,8 @@ Belum ada. Tambahkan di sini jika muncul keputusan desain yang belum ditentukan.
 - [x] Layar hasil dengan Ulangi / Level Berikutnya / Lobi; level terbuka dengan minimal 1 bintang
 - [x] Simpanan `localStorage` berversi skema (v2, migrasi dari save lama), aman tanpa `localStorage`
 - [x] Level 3 Sore Hujan: hujan & tetesan di kaca, petir (kilat menyingkap, guntur menutupi suara, ikon hitung mundur), suara kecil tertutup hujan, jejak kaki basah, tutup jendela & ember, buat teh
-- [ ] Level 4–5 (Malam Hari, Kedatangan Tamu) dan bonus Minggu Bersih-bersih
+- [x] Level 4 Malam Hari: pemilik tidur & meter terbangun, senter (SpotLight, kilau mata), berkas bulan, camilan tengah malam, kneading & jam beker, matahari terbit, nakas baru di kamar
+- [ ] Level 5 (Kedatangan Tamu) dan bonus Minggu Bersih-bersih
 - [x] Tutorial bertahap (Level 0 Latihan) yang otomatis dimulai saat pertama main, bisa dilewati dan diulang
 - [x] Pose loaf dirapikan: kaki terselip di bawah badan, perut menyentuh alas
 

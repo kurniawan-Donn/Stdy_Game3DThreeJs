@@ -145,7 +145,7 @@ export function buildCatModel(look) {
     tailMesh.material = patMat2;
   }
 
-  const parts = { bodyPivot, headGroup, legFL, legFR, legBL, legBR, tailPivot };
+  const parts = { bodyPivot, headGroup, legFL, legFR, legBL, legBR, tailPivot, eyeMat }; // eyeMat: kilau mata (senter)
 
   // --- Aksesoris (satu slot) ---
   const acc = accessoryItem(look.accessory);

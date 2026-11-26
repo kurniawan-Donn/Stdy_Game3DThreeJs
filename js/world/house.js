@@ -2,6 +2,7 @@
 // di dalam), keranjang kucing (tempat muncul kembali), dan area gelap.
 import * as THREE from 'three';
 import { removeAndDispose } from '../core/dispose.js';
+import { LIGHT_ZONES } from '../config.js';
 import { DOOR, BASKET, DARK_ZONES, DARK_ZONE_VISUAL, NIGHT_LIGHTS, MATERIALS, ROOM, ROOM_HALF_W, ROOM_HALF_D } from '../config.js';
 
 // --- Pintu kamar mandi ---
@@ -135,6 +136,7 @@ function buildDarkOverlays(wallBoxes) {
   }
 
   for (const z of DARK_ZONES) {
+    if (z.noOverlay) continue; // gelapnya dari pencahayaan (mis. malam), tanpa lapisan
     const minX = z.x - z.width / 2, maxX = z.x + z.width / 2;
     const minZ = z.z - z.depth / 2, maxZ = z.z + z.depth / 2;
 
@@ -241,7 +243,16 @@ export function updateDarkTint(t, inDark, dt) {
   }
 }
 
+// Zona terang (berkas cahaya bulan, Level 4) membatalkan area gelap
+export function isInLightZone(x, z) {
+  for (const d of LIGHT_ZONES) {
+    if (Math.abs(x - d.x) <= d.width / 2 && Math.abs(z - d.z) <= d.depth / 2) return true;
+  }
+  return false;
+}
+
 export function isInDarkZone(x, z) {
+  if (LIGHT_ZONES.length && isInLightZone(x, z)) return false;
   for (const d of DARK_ZONES) {
     if (Math.abs(x - d.x) <= d.width / 2 && Math.abs(z - d.z) <= d.depth / 2) return true;
   }

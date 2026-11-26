@@ -3,6 +3,7 @@ import { STAR_THRESHOLDS, RESULTS, HUD } from '../config.js';
 import { currentLevel } from '../core/state.js';
 import { recordLevelResult, defaultSave } from '../core/save.js';
 import { nextLevelIndex } from './levelManager.js';
+import { startDawn } from './night.js';
 import { hideInteraction } from './interaction.js';
 
 export function countStars(chaos, target) {
@@ -23,7 +24,14 @@ export function updateLevelTimer(ctx, dt) {
   }
 
   ctx.hud.setTimer(s.timeLeft);
-  if (s.timeLeft <= 0) endLevel(ctx, 'timeUp');
+  if (s.timeLeft <= 0) {
+    // Malam: matahari terbit dulu, lalu layar hasil
+    if (ctx.night && !ctx.night.dawnDone) {
+      startDawn(ctx);
+      return;
+    }
+    endLevel(ctx, 'timeUp');
+  }
 }
 
 // reason: 'timeUp' | 'outOfLives'
@@ -54,7 +62,7 @@ export function endLevel(ctx, reason) {
   }
 
   ctx.results.show({
-    reason: timeUp ? RESULTS.TIME_UP_REASON : RESULTS.OUT_OF_LIVES_REASON,
+    reason: timeUp ? level.TIME_UP_REASON || RESULTS.TIME_UP_REASON : RESULTS.OUT_OF_LIVES_REASON,
     won,
     stars,
     maxStars: STAR_THRESHOLDS.length,

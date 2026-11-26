@@ -27,7 +27,7 @@ docs/denah.md           Denah rumah 14 × 10 m (ASCII + koordinat, loop, jalan p
 js/
   main.js               Entry point: membuat objek konteks `ctx`, menjalankan game loop (lobi / main / pause)
   config.js             SEMUA angka penyetelan (lihat aturan di bawah)
-  levels/               Satu file data per level (level0.js Latihan, level1.js Senin Pagi, level2.js Deadline, level3.js Sore Hujan) + index.js (daftar & format)
+  levels/               Satu file data per level (level0.js Latihan, level1.js Senin Pagi, level2.js Deadline, level3.js Sore Hujan, level4.js Malam Hari) + index.js (daftar & format)
   core/
     renderer.js         Scene, kamera, WebGLRenderer, resize
     input.js            Keyboard (keys/pressed) + mouse (mouseDX/DY via pointer lock atau drag, wheel)
@@ -58,6 +58,7 @@ js/
     hideBox.js          Kardus: masuk/keluar, ikut bergerak, terbongkar, dilempar saat tertangkap
     yarn.js             Bola benang: ditendang (E), noise saat berhenti (pengalih)
     catnip.js           Catnip (satu per level) → zoomies
+    flashlight.js       Senter pemilik (Level 4): SpotLight, kerucut cahaya, kilau mata kucing
     footprints.js       Jejak kaki basah (Level 3): InstancedMesh, Chaos di perabot, dilihat pemilik
     owner/              Pemilik rumah
       index.js          Rutinitas, meter curiga, state machine, mengejar, pendengaran
@@ -69,6 +70,7 @@ js/
       index.js          Buat/reset/update semua objek dari MISCHIEF_LAYOUT
       common.js         registerMischief, pose kucing, serpihan berfisika
       glass.js tissue.js scratch.js remote.js pot.js kitchenFish.js toiletPaper.js blanket.js
+      knead.js alarmClock.js   (khusus Level 4, posisinya dari LAYOUT.MISCHIEF_LAYOUT file level)
   systems/
     collision.js        Lingkaran vs AABB, tinggi permukaan, cek posisi bebas
     spawn.js            Cari posisi lantai acak yang aman
@@ -76,6 +78,7 @@ js/
     chaos.js            scoreMischief: Chaos + combo + noise + umpan balik
     level.js            Timer level, akhir level, bintang, tabungan
     shop.js             Toko kustomisasi: harga, beli dengan tabungan, pakai item
+    night.js            Malam (Level 4): meter terbangun, ikon Zzz, matahari terbit, suara malam, aturan bayangan
     weather.js          Cuaca (Level 3): jadwal kilat/guntur, suara tertutup hujan, cahaya kilat, genangan
     tutorial.js         Latihan (Level 0): langkah, syarat selesai, panah penanda, naskah pemilik
     levelManager.js     Muat level (pengubah config + pencahayaan, dipulihkan saat ganti), aturan buka level
@@ -114,6 +117,7 @@ js/
 - **Memory:** objek per level yang dibuang harus lewat `removeAndDispose` (`core/dispose.js`), bukan sekadar `parent.remove`. Uji headless memeriksa tidak ada geometri/material yang bocor setelah 20× ganti level.
 - **Latihan** (`systems/tutorial.js`): Level 0 berada di luar urutan buka (`TUTORIAL_INDEX` = -1, `levelAt`). Pemilik dinaskahkan lewat `ownerGoOffstage` / `ownerStartPatrol` / `ownerStartChase` (owner/index.js). Di level dengan `TUTORIAL: true` timer tidak berjalan dan nyawa tidak berkurang saat tertangkap. `updateTutorial` dipanggil tiap frame di `gameFrame` (juga selama KETAHUAN).
 - **Cuaca** (`systems/weather.js`): aktif hanya di level dengan blok `WEATHER`. `ctx.weather.flashT > 0` = kilat (area gelap tidak berlaku di persepsi & peredupan), `isNoiseMasked` dipakai `ownerHearNoise`. Zona gelap tambahan per level lewat `LAYOUT.EXTRA_DARK_ZONES` (`rebuildDarkOverlays`). Objek transparan di belakang kaca jendela perlu `renderOrder` negatif (kaca menulis depth). Debug: F3 + `L` = kilat.
+- **Malam** (`systems/night.js`): aktif di level dengan blok `NIGHT`. Pemilik `nightMode`: `asleep` (tidak melihat, tidak menghalangi kucing, suara → `wakeFromNoise`), bangun → `flashlightOn` → menyelidiki → `startWork` = kembali tidur (`toBed`). Persepsi saat senter menyala ada di `perception.js` (sorotan, 2 m, `isInLightZone`). Zona terang lewat `LAYOUT.EXTRA_LIGHT_ZONES` (`LIGHT_ZONES`); zona gelap `noOverlay` tanpa lapisan redup. Lampu arah tanpa bayangan menembus dinding, jadi bulan sengaja sangat redup.
 - **Kustomisasi:** tampilan kucing = `{ cat, accessory }` dari `CUSTOMIZATION` (config). Model dibuat `buildCatModel` (dipakai kucing pemain & lobi). Ganti tampilan lewat `setCatLook` (model lama di-dispose), lalu buat ulang `ctx.darkTint.cat`. Efek gameplay hanya dua: `cat.bell` (Chaos ×1,2, langkah berbunyi) dan `cat.darkStealth` (kucing hitam di area gelap); selain itu murni kosmetik.
 - **Lobi:** saat `flow.state` = `lobby`/`select`, loop merender `ctx.lobby.scene` (bukan rumah). Menu/panel di DOM (`#lobby`).
 - **Simpanan** hanya lewat `core/save.js` (`ctx.save`); semua akses localStorage dibungkus try/catch. Saat skema berubah, naikkan `SAVE.VERSION` dan tambahkan migrasi.
@@ -125,11 +129,12 @@ js/
 - **Kolong:** collider dengan `crawlHeight` bisa dilewati kucing yang tingginya (berdiri 0,35 m / mengendap 0,26 m) muat. `cat.underCrawl` menandai kucing di kolong: tidak bisa melompat dan tidak bisa diraih pemilik. Daun perabot berkolong hanya menghalangi pandangan di atas `crawlHeight`. Collider dengan `hideSpot: true` menyembunyikan kucing yang merendah (`hideSpotOf`), kecuali pemilik sedang membungkuk memeriksanya (`owner.checkingSpot`).
 - **Status kucing** (`cat.inBox`, `cat.riding`, `cat.sleeping`, `cat.loaf`, `cat.zoomiesT`) dikelola `catBehavior.js` & `hideBox.js`; `systems/hiding.js` adalah satu-satunya tempat menentukan "tersembunyi". Kardus yang ditempati collider-nya setinggi 0; saat kardus berpindah, `ctx.nav` dibangun ulang.
 - **Interaksi** mendukung `maxDist`, `bias` (prioritas), `inBoxOnly`, dan `hold` (tahan E).
-- **Performa:** hanya matahari yang memakai bayangan; jangan menambah lampu dengan bayangan. Gabung geometri statis baru dengan `mergeStaticGroup`.
+- **Performa:** maksimal satu lampu berbayangan aktif (matahari; di Level 4 senter/bulan sesuai kualitas, diatur `updateNight`); jangan menambah lampu dengan bayangan. Gabung geometri statis baru dengan `mergeStaticGroup`.
 - Benda yang jatuh, memantul, atau berserakan memakai `addBody(ctx, {...})` dari `systems/physics.js`. Semua benda dibersihkan saat level diulang.
 - **Kamera** mengorbit kucing (`ctx.camRig`) dan bisa menghadap ke mana saja, jadi objek dan perubahan tampilan harus terlihat dari semua arah. Dinding luar, dinding dalam, plafon, dan pintu tertutup ditangani spring arm (kamera tidak pernah menembus dinding); perabot yang menghalangi memudar lewat `furnitureRefs.fadeables` (diisi otomatis oleh `finish` di `furniture.js`).
 - Aksi yang berisik memanggil `emitNoise(ctx, { x, z, radius, source })`. Sistem yang perlu "mendengar" mendaftar lewat `onNoise(ctx.noise, fn)`.
 - Objek interaktif didaftarkan lewat `registerInteractable(ctx.interaction, item)` (lihat komentar di `interaction.js`).
+- **Pengembangan:** buka `http://localhost:3000/?debug` agar `window.__meongCtx` tersedia di konsol (untuk pemeriksaan visual/screenshot; tanpa `?debug` tidak ada efek). Dengan F3 terbuka: `L` = kilat (Level 3), `T` = lompat ke 5 detik terakhir.
 - Tekan `F3` di game untuk overlay debug. Pakai overlay ini untuk memeriksa radius noise dan jangkauan interaksi.
 - Urutan `scene.add` di `main.js` mempengaruhi urutan render objek transparan, jadi jangan diacak tanpa alasan.
 

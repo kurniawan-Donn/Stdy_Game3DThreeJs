@@ -29,6 +29,7 @@ export const REAL_SCALE = {
   bed: { HEIGHT: 0.55, WIDTH: 1.6, LENGTH: 2.0, UNDERSIDE: 0.28 },
   wardrobe: { HEIGHT: 2.0, WIDTH: 1.2, DEPTH: 0.6 },
   dresser: { HEIGHT: 0.75, WIDTH: 1.0, DEPTH: 0.45 }, // meja rias
+  nightstand: { HEIGHT: 0.5, WIDTH: 0.45, DEPTH: 0.4 }, // nakas di sisi kepala kasur
   toilet: { SEAT: 0.42, TANK: 0.8 },
   sink: { HEIGHT: 0.85, WIDTH: 0.7, DEPTH: 0.45 },
   coffeeTableUnderside: 0.41,
@@ -58,6 +59,10 @@ export const ROOM_HALF_W = ROOM.WIDTH / 2;
 export const ROOM_HALF_D = ROOM.DEPTH / 2;
 
 // --- Denah rumah (lihat docs/denah.md). Utara = -Z. ---
+// Zona terang yang membatalkan area gelap (mis. berkas cahaya bulan di
+// Level 4). Diisi file level lewat LAYOUT.EXTRA_LIGHT_ZONES.
+export const LIGHT_ZONES = [];
+
 // Dinding dalam: axis 'x' = dinding membentang sepanjang X pada z = at;
 // axis 'z' = membentang sepanjang Z pada x = at. openings: bukaan pintu
 // (center di sepanjang dinding, lebar, tinggi).
@@ -176,7 +181,9 @@ export const DEBUG = {
   DARK_ZONE_BORDER: 0.06, // lebar pita batas (m)
   DARK_ZONE_INSET: 0.1, // jarak pita dari tepi zona (tepi zona = tengah dinding)
   LIGHTNING_KEY: 'KeyL', // (F3 terbuka, level hujan) picu kilat untuk menyetel visual
-  LIGHTNING_HOLD: 1.5 // detik kilat ditahan saat dipicu dari debug
+  LIGHTNING_HOLD: 1.5, // detik kilat ditahan saat dipicu dari debug
+  SKIP_TIME_KEY: 'KeyT', // (F3 terbuka) majukan waktu level ke detik-detik terakhir
+  SKIP_TIME_LEFT: 5
 };
 
 // --- Animasi kucing ---
@@ -608,6 +615,10 @@ export const FURNITURE_LAYOUT = {
     x: -3.3, z: -4.7,
     colliders: [{ x: -3.3, z: -4.7, width: RS.wardrobe.WIDTH, depth: RS.wardrobe.DEPTH, topHeight: RS.wardrobe.HEIGHT, climbable: false }]
   },
+  nightstand: {
+    x: -6.5, z: -4.55, // sisi kepala kasur, antara kasur & dinding barat
+    colliders: [{ x: -6.5, z: -4.55, width: RS.nightstand.WIDTH, depth: RS.nightstand.DEPTH, topHeight: RS.nightstand.HEIGHT, climbable: true }]
+  },
   dresser: {
     x: -5.6, z: -1.8, // menempel dinding lorong, cermin di dinding
     colliders: [{ x: -5.6, z: -1.8, width: RS.dresser.WIDTH, depth: RS.dresser.DEPTH, topHeight: RS.dresser.HEIGHT, climbable: true }]
@@ -713,6 +724,10 @@ export const AUDIO = {
     tutorialStep: [[660, 660, 0.09, 'sine', 0.08, 0], [990, 990, 0.14, 'sine', 0.08, 0.09]], // langkah latihan selesai
     kettle: [[1800, 2100, 0.6, 'sine', 0.03, 0.4], [1900, 2200, 0.8, 'sine', 0.03, 1.0]], // ceret teh (Level 3)
     windowClose: [[220, 160, 0.12, 'square', 0.06, 0], [180, 140, 0.1, 'square', 0.05, 0.1]], // jendela ditutup
+    cricket: [[4300, 4250, 0.04, 'sine', 0.012, 0], [4300, 4250, 0.04, 'sine', 0.012, 0.07], [4300, 4250, 0.04, 'sine', 0.012, 0.14]], // jangkrik samar
+    clockTick: [[2400, 1800, 0.015, 'square', 0.012, 0]], // detak jam
+    alarmRing: [[1500, 1500, 0.08, 'square', 0.05, 0], [1500, 1500, 0.08, 'square', 0.05, 0.15], [1500, 1500, 0.08, 'square', 0.05, 0.3], [1500, 1500, 0.08, 'square', 0.05, 0.45], [1500, 1500, 0.08, 'square', 0.05, 0.6], [1500, 1500, 0.08, 'square', 0.05, 0.75]], // jam beker berdering
+    ownerYawn: [[220, 160, 0.6, 'sawtooth', 0.04, 0]], // pemilik terbangun
     meetingBusted: [[880, 300, 0.35, 'square', 0.07, 0], [600, 200, 0.4, 'square', 0.06, 0.12]], // ketahuan berisik saat rapat
     alarm: [
       [880, 880, 0.08, 'square', 0.08, 0],
@@ -749,6 +764,8 @@ export const AUDIO = {
       { DURATION: 0.4, VOLUME: 0.06, FILTER: 'bandpass', FREQ: 1400, Q: 0.8, DELAY: 0.9 }
     ],
     blanket: [{ DURATION: 0.8, VOLUME: 0.035, FILTER: 'lowpass', FREQ: 700, Q: 0.7, DELAY: 0 }],
+    knead: [{ DURATION: 1.6, VOLUME: 0.03, FILTER: 'lowpass', FREQ: 500, Q: 0.7, DELAY: 0 }],
+    clockDrop: [{ DURATION: 0.12, VOLUME: 0.12, FILTER: 'bandpass', FREQ: 1800, Q: 1.5, DELAY: 0 }],
     door: [{ DURATION: 0.4, VOLUME: 0.05, FILTER: 'bandpass', FREQ: 900, Q: 4, DELAY: 0 }],
     boxIn: [{ DURATION: 0.18, VOLUME: 0.08, FILTER: 'lowpass', FREQ: 700, Q: 0.7, DELAY: 0 }],
     boxOut: [{ DURATION: 0.15, VOLUME: 0.07, FILTER: 'lowpass', FREQ: 900, Q: 0.7, DELAY: 0 }],
@@ -797,6 +814,8 @@ export const MISCHIEF = {
   kitchenFish: { CHAOS: 80, NOISE_RADIUS: 1.2 }, // curi ikan di dapur
   toiletPaper: { CHAOS: 35, NOISE_RADIUS: 1.2 }, // tarik gulungan tisu toilet (gulungan berderak)
   blanket: { CHAOS: 25, NOISE_RADIUS: 0.6 }, // acak-acak selimut (kain, sangat senyap)
+  knead: { CHAOS: 60, NOISE_RADIUS: 0.8 }, // menginjak-injak selimut di atas pemilik tidur (Level 4)
+  alarmClock: { CHAOS: 40, NOISE_RADIUS: 5 }, // jam beker jatuh & berdering (Level 4)
   wetPaws: { CHAOS: 5, NOISE_RADIUS: 0, NO_COMBO: true } // jejak kaki basah di sofa/kasur/meja (Level 3), sekali per perabot, tanpa bonus combo
 };
 export const COMBO = {
@@ -1162,6 +1181,60 @@ export const FOOTPRINTS = {
   CHECK_INTERVAL: 0.2, // detik antar-pemeriksaan "pemilik melihat jejak"
   SIGHT_LIFT: 0.03, // titik pandang sedikit di atas jejak
   TELEPORT_DIST: 0.5 // perpindahan per frame sejauh ini bukan langkah
+};
+
+// --- Malam (Level 4 "Malam Hari"). Aturan main ada di file level (NIGHT). ---
+export const NIGHT_FX = {
+  // Senter: SpotLight + kerucut cahaya semi-transparan
+  FLASHLIGHT: {
+    COLOR: 0xfff1d6,
+    INTENSITY: 2.6,
+    PENUMBRA: 0.35,
+    DECAY: 1.5,
+    HAND_HEIGHT: 1.15, // tinggi senter dari lantai saat berdiri
+    FORWARD: 0.32, // di depan badan
+    PITCH: -0.32, // sorotan sedikit menunduk (rad)
+    BEAM_LENGTH: 6, // panjang kerucut cahaya yang terlihat
+    BEAM_OPACITY: 0.07,
+    SHADOW_MAP: 1024,
+    BODY_COLOR: 0x2f3542,
+    LENS_COLOR: 0xfff6dd
+  },
+  // Kilau mata kucing saat terkena senter
+  EYE_GLINT: { COLOR: 0xd9ff8a, INTENSITY: 2.2 },
+  // Jam digital di nakas (berpendar hijau, tanpa lampu)
+  CLOCK_GLOW: 0x4ade80,
+  // Lampu kulkas saat camilan tengah malam (tanpa bayangan)
+  FRIDGE_LIGHT: { COLOR: 0xe8f4ff, INTENSITY: 1.6, DISTANCE: 3, DECAY: 2, POSITION: [6.4, 1.0, -4.0] },
+  // Matahari terbit di akhir level
+  DAWN: { SUN_COLOR: 0xffb36b, SUN_INTENSITY: 1.25, HEMI_INTENSITY: 0.55, OWNER_WAKE_AT: 0.35 },
+  // Suara malam: detak jam & jangkrik samar
+  CLOCK_TICK_INTERVAL: 1,
+  CRICKET_INTERVAL: [1.2, 3.5],
+  // Ikon HUD Zzz → mata terbuka
+  WAKE_ICON_STEPS: 20,
+  // Berkas cahaya bulan di lantai (tambalan bercahaya lembut, tanpa lampu)
+  MOON_PATCH: { COLOR: 0x9cb8f0, OPACITY: 0.32, SOFT_EDGE: 0.22, TEXTURE_SIZE: 64, LIFT: 0.014, MULLION_SHADOW: 0.08 }
+};
+
+// --- Kenakalan malam ---
+export const KNEAD = { ACTION_DURATION: 2.2, KNEAD_FREQ: 6, MARKER_HEIGHT: 0.12, NEAR_OWNER: 0.9 };
+export const ALARM_CLOCK = {
+  SIZE: { W: 0.13, H: 0.08, D: 0.07 },
+  FACE_COLOR: 0x0f1d14,
+  BODY_COLOR: 0xd94b4b,
+  BELL_COLOR: 0xd9d9d9,
+  MARKER_OFFSET: 0.1,
+  SWIPE_HIT: 0.25,
+  ACTION_DURATION: 0.6,
+  RELEASE_SPEED: 1.1,
+  TUMBLE_SPIN: 8,
+  RESTITUTION: 0.3,
+  FRICTION: 6,
+  MAX_SLIDE_TIME: 3,
+  RING_TIME: 3, // detik berdering di lantai
+  RING_WOBBLE: 0.12,
+  RING_FREQ: 40
 };
 
 // --- Latihan / tutorial (systems/tutorial.js, levels/level0.js) ---

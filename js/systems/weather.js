@@ -30,8 +30,6 @@ export function resetWeather(ctx) {
   if (ctx.darkFx) setDarkOverlayFade(ctx.darkFx, 0);
   if (ctx.hud.setStorm) ctx.hud.setStorm(null);
   const W = weatherConfig(ctx);
-  // Debu berkilau di berkas matahari hanya saat cerah
-  if (ctx.dust && ctx.dust.points) ctx.dust.points.visible = !W;
   if (!W) {
     ctx.weather = null;
     if (ctx.audio.rain) ctx.audio.rain(0);

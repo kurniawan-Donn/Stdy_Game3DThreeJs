@@ -12,6 +12,7 @@ import { startCapture } from '../../systems/capture.js';
 import { hideSpotOf, recentChaosNear } from '../../systems/hiding.js';
 import { resetMeetings, updateMeeting, endMeeting, dueMeeting, isLoudDuringMeeting } from './meeting.js';
 import { isNoiseMasked, weatherConfig } from '../../systems/weather.js';
+import { nightConfig, wakeFromNoise, isWakeFull, onOwnerWoke, onOwnerSleep } from '../../systems/night.js';
 
 const HEAD_MAX = (OWNER.HEAD_MAX_YAW_DEG * Math.PI) / 180;
 
@@ -65,7 +66,11 @@ export function createOwner(scene) {
     // Rapat video (Level 2, owner/meeting.js)
     meetings: [],
     inMeeting: null,
-    meetingT: 0
+    meetingT: 0,
+    // Malam (Level 4): tidur di kasur, senter saat terjaga
+    nightMode: false,
+    asleep: false,
+    flashlightOn: false
   };
 }
 
@@ -90,6 +95,107 @@ export function resetOwner(ctx) {
   o.pose = 'type';
   o.parts.hips.position.y = R.SIT_HEIGHT;
   resetMeetings(ctx);
+  // Malam: level dimulai dengan pemilik tidur di kasur
+  o.mesh.rotation.x = 0;
+  o.asleep = false;
+  o.flashlightOn = false;
+  o.nightMode = !!nightConfig(ctx);
+  if (o.nightMode) startSleep(ctx, o);
+}
+
+// --- Malam (Level 4) ---------------------------------------------------
+// Berbaring di kasur: tidak melihat; suara mengisi meter terbangun.
+function startSleep(ctx, o) {
+  const N = nightConfig(ctx);
+  o.asleep = true;
+  o.away = false;
+  o.flashlightOn = false;
+  o.seen = false;
+  o.activity = 'sleep';
+  o.phase = 'do';
+  clearPath(o);
+  o.mesh.visible = true;
+  o.mesh.position.set(N.SLEEP_POSE.x, N.SLEEP_POSE.y, N.SLEEP_POSE.z);
+  o.yaw = 0;
+  o.headYaw = 0;
+  o.mesh.rotation.set(-Math.PI / 2, 0, 0); // telentang, kepala ke utara
+  o.pose = 'sleep';
+  if (ctx.night) onOwnerSleep(ctx);
+}
+
+// Bangun: duduk di tepi kasur, lalu (setelah SIT_UP_TIME) menyalakan senter.
+// reason: 'noise' (meter penuh) | 'snack' | 'morning'
+function wakeUp(ctx, o, reason) {
+  const N = nightConfig(ctx);
+  o.asleep = false;
+  o.mesh.rotation.set(0, 0, 0);
+  o.mesh.position.set(N.BED_SPOT.x - 0.45, 0, N.BED_SPOT.z); // tepi kasur
+  o.yaw = Math.PI / 2; // menghadap timur (keluar kasur)
+  o.mesh.rotation.y = o.yaw;
+  o.pose = 'sit';
+  o.activity = 'wakeup';
+  o.phase = 'do';
+  o.wakeReason = reason;
+  o.activityT = reason === 'morning' ? 0 : N.SIT_UP_TIME;
+  if (reason === 'noise') onOwnerWoke(ctx);
+  ctx.audio.play('ownerYawn');
+}
+
+function updateNightRoutine(ctx, o, dt) {
+  const N = nightConfig(ctx);
+  const n = ctx.night;
+  switch (o.activity) {
+    case 'sleep':
+      if (n && n.dawn) wakeUp(ctx, o, 'morning');
+      else if (isWakeFull(ctx)) wakeUp(ctx, o, 'noise');
+      else if (n && !n.snackDone && ctx.time >= N.SNACK_AT) wakeUp(ctx, o, 'snack');
+      return true;
+    case 'wakeup':
+      o.activityT -= dt;
+      if (o.activityT > 0) return true;
+      o.mesh.position.set(N.BED_SPOT.x, 0, N.BED_SPOT.z);
+      o.pose = 'stand';
+      if (o.wakeReason === 'morning') {
+        o.activity = 'morning';
+        return true;
+      }
+      o.flashlightOn = true;
+      if (o.wakeReason === 'snack') {
+        o.activity = 'snack';
+        o.phase = 'goto';
+        o.activityT = N.SNACK_DURATION;
+        clearPath(o);
+      } else {
+        // Menyelidiki sumber suara terakhir dengan senter
+        o.attention = n && n.lastNoise ? { ...n.lastNoise } : { x: N.BED_SPOT.x, z: N.BED_SPOT.z };
+        setState(ctx, o, 'investigate');
+      }
+      return true;
+    case 'snack':
+      if (o.phase === 'goto') {
+        if (walkTo(ctx, o, N.SNACK_SPOT, OWNER.WALK_SPEED, dt)) o.phase = 'do';
+        return true;
+      }
+      turnTowards(o, N.SNACK_SPOT.yaw, dt);
+      o.pose = 'drink';
+      o.activityT -= dt;
+      if (o.activityT <= 0) {
+        if (n) n.snackDone = true;
+        startWork(o); // malam: kembali ke kasur
+      }
+      return true;
+    case 'toBed':
+      o.flashlightOn = true;
+      if (walkTo(ctx, o, N.BED_SPOT, OWNER.WALK_SPEED, dt)) startSleep(ctx, o);
+      return true;
+    case 'morning':
+      // Pagi: berdiri di samping kasur
+      o.flashlightOn = false;
+      o.pose = 'stand';
+      return true;
+    default:
+      return false;
+  }
 }
 
 // --- Naskah (tutorial) ---------------------------------------------------
@@ -224,6 +330,13 @@ function followPath(o, speed, dt) {
 // --- Rutinitas ----------------------------------------------------------
 
 function startWork(o) {
+  if (o.nightMode) {
+    // Malam: "kembali bekerja" = kembali tidur
+    o.activity = 'toBed';
+    o.phase = 'goto';
+    clearPath(o);
+    return;
+  }
   o.activity = 'work';
   o.phase = 'goto';
   o.activityT = rand(R.WORK_MIN, R.WORK_MAX);
@@ -261,6 +374,7 @@ function startActivity(o, act) {
 }
 
 function updateRoutine(ctx, o, dt) {
+  if (o.nightMode && updateNightRoutine(ctx, o, dt)) return;
   const spots = R.SPOTS;
   o.headYaw += (0 - o.headYaw) * Math.min(1, OWNER.HEAD_TURN_SPEED * dt);
 
@@ -487,6 +601,11 @@ function updatePerception(ctx, o, dt) {
       if (cat.riding) gain *= RIDE.SUSPICION_MULT; // kucing santai di atas robot
       o.meter += gain * o.sense.visibility * suspicionGain(ctx, o) * dt;
     }
+  } else if (ctx.flashlight && ctx.flashlight.glint && o.state !== 'chase') {
+    // Mata kucing berkilau di sorotan senter dari jauh: curiga naik sedikit
+    // (tidak bisa memicu "!" sendiri)
+    const G = nightConfig(ctx).GLINT;
+    if (o.meter < G.CAP) o.meter = Math.min(G.CAP, o.meter + G.SUSPICION_PER_SEC * suspicionGain(ctx, o) * dt);
   } else if (o.state !== 'chase') {
     o.meter = Math.max(0, o.meter - S.DECAY * dt);
   }
@@ -496,6 +615,12 @@ function updatePerception(ctx, o, dt) {
 // Dipanggil sistem noise (systems/noise.js → onNoise)
 export function ownerHearNoise(ctx, ev) {
   const o = ctx.owner;
+  // Malam: pemilik tidur tidak langsung bereaksi, suara mengisi meter terbangun
+  if (o && o.asleep) {
+    const N = nightConfig(ctx);
+    wakeFromNoise(ctx, ev, N ? N.EAR : o.mesh.position);
+    return;
+  }
   if (!o || o.away || o.state === 'capture' || o.state === 'chase' || ctx.state.isGameOver) return;
   const pos = o.mesh.position;
   if (Math.hypot(ev.x - pos.x, ev.z - pos.z) > ev.radius) return;
@@ -546,7 +671,14 @@ export function updateOwner(ctx, dt) {
     return;
   }
 
-  if (!o.away) updatePerception(ctx, o, dt);
+  // Malam: matahari terbit → pemilik bangun pagi (kejaran/penyelidikan berhenti)
+  if (o.nightMode && ctx.night && ctx.night.dawn && !o.asleep && o.activity !== 'morning' && o.activity !== 'wakeup') {
+    if (o.state !== 'routine') setState(ctx, o, 'routine');
+    o.activity = 'morning';
+    o.flashlightOn = false;
+  }
+
+  if (!o.away && !o.asleep) updatePerception(ctx, o, dt);
   else o.seen = false;
 
   if (o.state !== 'chase' && o.meter >= S.MAX) setState(ctx, o, 'chase');

@@ -1,5 +1,5 @@
 // Animasi pemilik: pose target per kegiatan, diinterpolasi halus ke sendi.
-// Pose: stand, walk, run, sit, type, stretch, glance, drink, window, lookAround, lift
+// Pose: stand, walk, run, sit, type, stretch, glance, drink, window, lookAround, lift, sleep (berbaring: rotasi badan di owner/index.js)
 import * as THREE from 'three';
 import { OWNER_ANIM as A, OWNER_ROUTINE } from '../../config.js';
 import { HIP_Y } from './model.js';

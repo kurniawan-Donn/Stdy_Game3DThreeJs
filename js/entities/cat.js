@@ -299,7 +299,7 @@ export function updateCat(ctx, dt) {
 
   // Penghalang bergerak: tubuh pemilik dan robot vacuum
   const o = ctx.owner;
-  if (o && o.mesh.visible && !o.away) {
+  if (o && o.mesh.visible && !o.away && !o.asleep) {
     pushOutOfCircle(player.position, playerVel, o.mesh.position.x, o.mesh.position.z, OWNER.RADIUS, OWNER.BLOCK_HEIGHT);
   }
   for (const obs of ctx.obstacles) {
