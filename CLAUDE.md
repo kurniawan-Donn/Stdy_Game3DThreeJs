@@ -103,7 +103,7 @@ js/
 ## Aturan
 
 1. **Angka penyetelan selalu masuk `config.js`.** Ini mencakup kecepatan, gravitasi, tinggi lompat, ukuran ruangan, warna/material, timer, peluang spawn, posisi dan collider perabot, parameter lampu, kamera, partikel, dan suara. Jangan menulis angka seperti ini langsung di modul lain. Pengecualian hanya untuk detail geometri model (ukuran telinga kucing, kaki meja, dsb.) yang tetap di modul pembuatnya, serta gaya tampilan HUD/HTML (warna, ukuran font) yang tetap di `css/style.css`.
-2. **Skala dunia nyata.** Ukuran benda mengikuti tabel `REAL_SCALE` di `config.js` (kucing bahu 0,25 m, pemilik 1,7 m, dst.), dan ruang tamu berukuran 8,8 × 8 m (`WORLD_SCALE` 0,4 terhadap prototipe). Model perabot dibangun dari dimensi collider di `FURNITURE_LAYOUT`, jadi ubah ukuran di config, bukan di model. Benda baru harus diberi ukuran nyata.
+2. **Skala dunia nyata.** Ukuran benda mengikuti tabel `REAL_SCALE` di `config.js` (kucing bahu 0,25 m, pemilik 1,7 m, dst.), dan rumah berukuran 14 × 10 m (denah di `docs/denah.md`). Model perabot dibangun dari dimensi collider di `FURNITURE_LAYOUT`, jadi ubah ukuran di config, bukan di model. Benda baru harus diberi ukuran nyata.
 3. Satu modul, satu tanggung jawab. Entitas baru masuk `js/entities/`, aturan atau logika lintas entitas masuk `js/systems/`.
 4. Versi Three.js di-pin di importmap (`three@0.128.0`). Jangan upgrade tanpa diskusi, karena API seperti `outputEncoding` berubah di versi baru.
 5. Refactor tidak boleh mengubah perilaku. Setelah perubahan, cek console browser dan mainkan sebentar.
