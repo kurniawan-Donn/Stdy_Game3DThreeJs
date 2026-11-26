@@ -1,0 +1,291 @@
+// Perabotan ruang tamu dari bentuk dasar + collider AABB-nya.
+// Posisi & collider diambil dari FURNITURE_LAYOUT (config.js);
+// dimensi detail mesh adalah data model dan tetap di sini.
+import * as THREE from 'three';
+import { FURNITURE_LAYOUT, MATERIALS } from '../config.js';
+import { createRugTexture } from './textures.js';
+
+// Collider AABB: { minX, maxX, minZ, maxZ, topHeight, climbable }
+function addFurnitureCollider(colliders, c) {
+  colliders.push({
+    minX: c.x - c.width / 2,
+    maxX: c.x + c.width / 2,
+    minZ: c.z - c.depth / 2,
+    maxZ: c.z + c.depth / 2,
+    topHeight: c.topHeight,
+    climbable: c.climbable === true
+  });
+}
+
+function addColliders(colliders, list) {
+  for (const c of list) addFurnitureCollider(colliders, c);
+}
+
+// Membangun semua perabot ke dalam scene dan mengembalikan daftar collider.
+export function createFurniture(scene) {
+  const colliders = [];
+  const L = FURNITURE_LAYOUT;
+
+  const woodDark = new THREE.MeshStandardMaterial({ ...MATERIALS.woodDark });
+  const woodWarm = new THREE.MeshStandardMaterial({ ...MATERIALS.woodWarm });
+  const fabricSofa = new THREE.MeshStandardMaterial({ ...MATERIALS.fabricSofa });
+  const cushionMat = new THREE.MeshStandardMaterial({ ...MATERIALS.cushion });
+  const metalDark = new THREE.MeshStandardMaterial({ ...MATERIALS.metalDark });
+  const metalBrass = new THREE.MeshStandardMaterial({ ...MATERIALS.metalBrass });
+
+  // 1. KARPET (datar di lantai, bukan penghalang)
+  const rugMesh = new THREE.Mesh(
+    new THREE.BoxGeometry(L.rug.width, 0.03, L.rug.depth),
+    new THREE.MeshStandardMaterial({ map: createRugTexture(), ...MATERIALS.rug })
+  );
+  rugMesh.position.set(L.rug.x, 0.015, L.rug.z);
+  rugMesh.receiveShadow = true;
+  scene.add(rugMesh);
+
+  // 2. SOFA
+  const sofaGroup = new THREE.Group();
+  sofaGroup.position.set(L.sofa.x, 0, L.sofa.z);
+
+  const sofaBase = new THREE.Mesh(new THREE.BoxGeometry(5.2, 0.55, 1.9), fabricSofa);
+  sofaBase.position.y = 0.42;
+  sofaBase.castShadow = true;
+  sofaBase.receiveShadow = true;
+  sofaGroup.add(sofaBase);
+
+  const sofaBack = new THREE.Mesh(new THREE.BoxGeometry(5.2, 1.05, 0.42), fabricSofa);
+  sofaBack.position.set(0, 1.15, 0.74);
+  sofaBack.castShadow = true;
+  sofaBack.receiveShadow = true;
+  sofaGroup.add(sofaBack);
+
+  const armL = new THREE.Mesh(new THREE.BoxGeometry(0.42, 0.85, 1.9), fabricSofa);
+  armL.position.set(-2.39, 0.72, 0);
+  armL.castShadow = true;
+  sofaGroup.add(armL);
+
+  const armR = armL.clone();
+  armR.position.x = 2.39;
+  sofaGroup.add(armR);
+
+  // Bantal aksen
+  const pil1 = new THREE.Mesh(new THREE.BoxGeometry(0.65, 0.55, 0.25), cushionMat);
+  pil1.position.set(-1.65, 0.95, 0.38);
+  pil1.rotation.set(-0.2, 0.18, 0.08);
+  pil1.castShadow = true;
+  sofaGroup.add(pil1);
+
+  const pil2 = pil1.clone();
+  pil2.position.set(1.65, 0.95, 0.38);
+  pil2.rotation.set(-0.2, -0.18, -0.08);
+  sofaGroup.add(pil2);
+
+  // Kaki sofa
+  for (const lx of [-2.3, 2.3]) {
+    for (const lz of [-0.75, 0.75]) {
+      const leg = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.04, 0.16, 8), woodDark);
+      leg.position.set(lx, 0.08, lz);
+      sofaGroup.add(leg);
+    }
+  }
+  scene.add(sofaGroup);
+  addColliders(colliders, L.sofa.colliders);
+
+  // 3. MEJA KOPI
+  const tableGroup = new THREE.Group();
+  tableGroup.position.set(L.coffeeTable.x, 0, L.coffeeTable.z);
+
+  const tableTop = new THREE.Mesh(new THREE.BoxGeometry(2.8, 0.12, 1.45), woodWarm);
+  tableTop.position.y = 0.62;
+  tableTop.castShadow = true;
+  tableTop.receiveShadow = true;
+  tableGroup.add(tableTop);
+
+  for (const tx of [-1.2, 1.2]) {
+    for (const tz of [-0.55, 0.55]) {
+      const leg = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.56, 0.1), woodDark);
+      leg.position.set(tx, 0.28, tz);
+      leg.castShadow = true;
+      tableGroup.add(leg);
+    }
+  }
+  // Dekorasi kecil di atas meja
+  const mug = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.11, 0.09, 0.18, 12),
+    new THREE.MeshStandardMaterial({ ...MATERIALS.mug })
+  );
+  mug.position.set(0.55, 0.77, 0.15);
+  mug.castShadow = true;
+  tableGroup.add(mug);
+
+  scene.add(tableGroup);
+  addColliders(colliders, L.coffeeTable.colliders);
+
+  // 4. TV DI DINDING + KABINET TV
+  const tvUnit = new THREE.Group();
+  tvUnit.position.set(L.tvUnit.x, 0, L.tvUnit.z);
+
+  const cabinet = new THREE.Mesh(new THREE.BoxGeometry(4.4, 0.72, 1.0), woodDark);
+  cabinet.position.y = 0.36;
+  cabinet.castShadow = true;
+  cabinet.receiveShadow = true;
+  tvUnit.add(cabinet);
+
+  // Layar TV menempel di dinding utara
+  const tvFrame = new THREE.Mesh(new THREE.BoxGeometry(3.8, 2.1, 0.12), metalDark);
+  tvFrame.position.set(0, 2.45, -0.62);
+  tvFrame.castShadow = true;
+  tvUnit.add(tvFrame);
+
+  const tvScreen = new THREE.Mesh(
+    new THREE.PlaneGeometry(3.56, 1.88),
+    new THREE.MeshStandardMaterial({ ...MATERIALS.tvScreen })
+  );
+  tvScreen.position.set(0, 2.45, -0.55);
+  tvUnit.add(tvScreen);
+
+  scene.add(tvUnit);
+  addColliders(colliders, L.tvUnit.colliders);
+
+  // 5. RAK BUKU TINGGI (dinding timur)
+  const shelfGroup = new THREE.Group();
+  shelfGroup.position.set(L.tallShelf.x, 0, L.tallShelf.z);
+
+  const shelfBody = new THREE.Mesh(new THREE.BoxGeometry(1.1, 4.2, 3.4), woodDark);
+  shelfBody.position.set(0.2, 2.1, 0);
+  shelfBody.castShadow = true;
+  shelfBody.receiveShadow = true;
+  shelfGroup.add(shelfBody);
+
+  const bookColors = MATERIALS.bookColors;
+  for (let levelY = 0.75; levelY <= 3.55; levelY += 0.92) {
+    const plank = new THREE.Mesh(new THREE.BoxGeometry(1.18, 0.08, 3.25), woodWarm);
+    plank.position.set(0.14, levelY, 0);
+    shelfGroup.add(plank);
+
+    // Deretan buku
+    for (let bz = -1.2; bz <= 1.2; bz += 0.34) {
+      const bh = 0.45 + ((Math.abs(Math.sin(bz * 5 + levelY)) * 0.25));
+      const bookMat = new THREE.MeshStandardMaterial({
+        color: bookColors[Math.floor(Math.abs(bz * 10 + levelY)) % bookColors.length],
+        ...MATERIALS.book
+      });
+      const book = new THREE.Mesh(new THREE.BoxGeometry(0.65, bh, 0.22), bookMat);
+      book.position.set(-0.08, levelY + 0.04 + bh / 2, bz);
+      book.castShadow = true;
+      shelfGroup.add(book);
+    }
+  }
+  scene.add(shelfGroup);
+  addColliders(colliders, L.tallShelf.colliders);
+
+  // 5b. RAK BUKU RENDAH (bisa dinaiki)
+  const lowShelfGroup = new THREE.Group();
+  lowShelfGroup.position.set(L.lowShelf.x, 0, L.lowShelf.z);
+
+  const lowShelfBody = new THREE.Mesh(new THREE.BoxGeometry(1.3, 0.84, 2.2), woodWarm);
+  lowShelfBody.position.y = 0.42;
+  lowShelfBody.castShadow = true;
+  lowShelfBody.receiveShadow = true;
+  lowShelfGroup.add(lowShelfBody);
+
+  const lowShelfTop = new THREE.Mesh(new THREE.BoxGeometry(1.38, 0.08, 2.28), woodDark);
+  lowShelfTop.position.y = 0.82;
+  lowShelfTop.castShadow = true;
+  lowShelfTop.receiveShadow = true;
+  lowShelfGroup.add(lowShelfTop);
+
+  scene.add(lowShelfGroup);
+  addColliders(colliders, L.lowShelf.colliders);
+
+  // 5c. KURSI (bisa dinaiki)
+  const chairGroup = new THREE.Group();
+  chairGroup.position.set(L.chair.x, 0, L.chair.z);
+
+  const chairSeat = new THREE.Mesh(new THREE.BoxGeometry(1.35, 0.22, 1.35), fabricSofa);
+  chairSeat.position.y = 0.47;
+  chairSeat.castShadow = true;
+  chairSeat.receiveShadow = true;
+  chairGroup.add(chairSeat);
+
+  for (const cx of [-0.52, 0.52]) {
+    for (const cz of [-0.52, 0.52]) {
+      const cLeg = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.04, 0.36, 8), woodDark);
+      cLeg.position.set(cx, 0.18, cz);
+      cLeg.castShadow = true;
+      chairGroup.add(cLeg);
+    }
+  }
+  scene.add(chairGroup);
+  addColliders(colliders, L.chair.colliders);
+
+  // 6. LAMPU BERDIRI
+  const lampGroup = new THREE.Group();
+  lampGroup.position.set(L.floorLamp.x, 0, L.floorLamp.z);
+
+  const lampBase = new THREE.Mesh(new THREE.CylinderGeometry(0.42, 0.46, 0.1, 16), metalBrass);
+  lampBase.position.y = 0.05;
+  lampBase.castShadow = true;
+  lampGroup.add(lampBase);
+
+  const lampPole = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, 3.4, 10), metalBrass);
+  lampPole.position.y = 1.75;
+  lampPole.castShadow = true;
+  lampGroup.add(lampPole);
+
+  const lampShade = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.32, 0.56, 0.65, 16, 1, true),
+    new THREE.MeshStandardMaterial({ ...MATERIALS.lampShade, side: THREE.DoubleSide })
+  );
+  lampShade.position.y = 3.55;
+  lampGroup.add(lampShade);
+
+  scene.add(lampGroup);
+  addColliders(colliders, L.floorLamp.colliders);
+
+  // 7. TANAMAN POT (dua sudut ruangan)
+  for (const p of L.plants.positions) {
+    createPottedPlant(scene, colliders, p.x, p.z);
+  }
+
+  return colliders;
+}
+
+function createPottedPlant(scene, colliders, x, z) {
+  const plantGroup = new THREE.Group();
+  plantGroup.position.set(x, 0, z);
+
+  const pot = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.5, 0.36, 0.78, 14),
+    new THREE.MeshStandardMaterial({ ...MATERIALS.pot })
+  );
+  pot.position.y = 0.39;
+  pot.castShadow = true;
+  pot.receiveShadow = true;
+  plantGroup.add(pot);
+
+  const soil = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.46, 0.46, 0.08, 12),
+    new THREE.MeshStandardMaterial({ ...MATERIALS.soil })
+  );
+  soil.position.y = 0.76;
+  plantGroup.add(soil);
+
+  const leafMat = new THREE.MeshStandardMaterial({ ...MATERIALS.leaf });
+  for (let i = 0; i < 6; i++) {
+    const angle = (i / 6) * Math.PI * 2;
+    const leaf = new THREE.Mesh(new THREE.ConeGeometry(0.24, 1.15, 6), leafMat);
+    leaf.position.set(Math.cos(angle) * 0.24, 1.25, Math.sin(angle) * 0.24);
+    leaf.rotation.z = -Math.cos(angle) * 0.48;
+    leaf.rotation.x = Math.sin(angle) * 0.48;
+    leaf.castShadow = true;
+    plantGroup.add(leaf);
+  }
+
+  const topLeaf = new THREE.Mesh(new THREE.ConeGeometry(0.22, 1.25, 6), leafMat);
+  topLeaf.position.y = 1.4;
+  topLeaf.castShadow = true;
+  plantGroup.add(topLeaf);
+
+  scene.add(plantGroup);
+  addFurnitureCollider(colliders, { x, z, ...FURNITURE_LAYOUT.plants.collider });
+}

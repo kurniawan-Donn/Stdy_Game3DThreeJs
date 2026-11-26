@@ -1,6 +1,6 @@
 # 🐱 Coin Rush 3D
 
-Game 3D ringan berbasis browser: kendalikan seekor kucing low-poly di dalam ruang tamu, kumpulkan kristal, dan hindari robot vacuum. Seluruh game berada dalam **satu file `index.html`**, tanpa instalasi, tanpa build tool, dan tanpa aset eksternal.
+Game 3D ringan berbasis browser: kendalikan seekor kucing low-poly di dalam ruang tamu, kumpulkan kristal, dan hindari robot vacuum. Ditulis dengan JavaScript ES modules biasa, tanpa build tool dan tanpa aset eksternal.
 
 ![Screenshot gameplay](screenshot/Screenshot.png)
 
@@ -36,25 +36,17 @@ Game 3D ringan berbasis browser: kendalikan seekor kucing low-poly di dalam ruan
 
 ## 🚀 Menjalankan Game
 
-**Cara tercepat:** unduh repository ini, lalu buka `index.html` di browser modern (Chrome, Edge, Firefox).
+Kode game memakai ES modules, jadi harus dijalankan lewat server lokal (membuka `index.html` langsung dari file tidak akan berjalan).
 
 ```bash
 git clone https://github.com/USERNAME/coin-rush-3d.git
 cd coin-rush-3d
-# buka index.html di browser
+npm start            # = npx serve .
 ```
 
-**Opsional**, jalankan lewat server lokal:
+Lalu buka `http://localhost:3000`.
 
-```bash
-# Python
-python -m http.server 8000
-
-# atau Node.js
-npx serve .
-```
-
-Lalu buka `http://localhost:8000`.
+Alternatif tanpa Node.js: `python -m http.server 8000`, lalu buka `http://localhost:8000`.
 
 > Three.js dimuat dari CDN, jadi butuh koneksi internet saat pertama kali membuka game.
 
@@ -69,10 +61,22 @@ Lalu buka `http://localhost:8000`.
 
 ```
 coin-rush-3d/
-├── index.html        # Seluruh game (HTML + CSS + JS)
-├── screenshots/      # Gambar untuk README
+├── index.html        # Canvas, UI, importmap Three.js
+├── css/style.css     # Gaya UI
+├── js/
+│   ├── main.js       # Entry point & game loop
+│   ├── config.js     # Semua angka penyetelan
+│   ├── core/         # Renderer, input, state, kamera, audio
+│   ├── world/        # Ruangan, perabotan, lampu, tekstur
+│   ├── entities/     # Kucing, robot vacuum, item, partikel
+│   ├── systems/      # Tabrakan, spawn, skor/nyawa/level
+│   └── ui/           # HUD, layar game over
+├── package.json      # Script "npm start"
+├── screenshot/       # Gambar untuk README
 └── README.md
 ```
+
+Detail arsitektur dan aturan pengembangan ada di [CLAUDE.md](CLAUDE.md).
 
 ## 🗺️ Roadmap
 

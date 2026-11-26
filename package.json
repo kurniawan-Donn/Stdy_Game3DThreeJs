@@ -1,0 +1,9 @@
+{
+  "name": "coin-rush-3d",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Game 3D Three.js: kucing nakal di dalam rumah",
+  "scripts": {
+    "start": "npx serve ."
+  }
+}
