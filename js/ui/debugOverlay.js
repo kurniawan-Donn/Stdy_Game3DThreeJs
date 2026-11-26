@@ -4,13 +4,20 @@
 // merah = terhalang), jalur A* pemilik, dan panel teks status.
 // State & meter pemilik di atas kepalanya ditampilkan oleh ui/ownerIndicator.js.
 import * as THREE from 'three';
-import { DEBUG, INTERACT, NOISE, PLAYER, STAMINA, MEOW, OWNER } from '../config.js';
+import { DEBUG, INTERACT, NOISE, PLAYER, STAMINA, MEOW, OWNER, HOUSE } from '../config.js';
 import { isExhausted } from '../systems/stamina.js';
 import { recentMeowCount, isAnnoying } from '../systems/meow.js';
 import { comboTimeLeft } from '../systems/chaos.js';
 import { remainingMischief } from '../entities/mischief/index.js';
 
 const RING_Y = 0.03;
+
+function roomAt(p) {
+  for (const [name, r] of Object.entries(HOUSE.rooms)) {
+    if (p.x >= r.minX && p.x <= r.maxX && p.z >= r.minZ && p.z <= r.maxZ) return name;
+  }
+  return '-';
+}
 const CONE_SEGMENTS = 16;
 const MAX_PATH_POINTS = 64;
 
@@ -127,7 +134,7 @@ export function updateDebugOverlay(ctx) {
   const speed = Math.hypot(cat.vel.x, cat.vel.z);
   const lastNoise = events.length ? events[events.length - 1] : null;
   overlay.panel.textContent = [
-    'DEBUG (F3)',
+    `DEBUG (F3)   FPS ${ctx.fps.toFixed(0)}   mesh statis ${ctx.mergeStats ? ctx.mergeStats.before + '→' + ctx.mergeStats.after : '-'}`,
     `mode      : ${cat.moveMode}${cat.isGrounded ? '' : ' (udara)'}`,
     `kecepatan : ${speed.toFixed(2)} m/s`,
     `profil    : ${cat.profile.toFixed(2)} (normal ${PLAYER.NORMAL_PROFILE})`,
@@ -138,6 +145,7 @@ export function updateDebugOverlay(ctx) {
     `chaos     : ${ctx.state.chaos}, kenakalan tersisa ${remainingMischief(ctx)}, combo ${comboTimeLeft(ctx).toFixed(1)}s`,
     `aksi      : ${cat.action ? cat.action.type + ' ' + cat.action.t.toFixed(2) + 's' : '-'}`,
     `fisika    : ${ctx.physics.bodies.length} benda, waktu ${ctx.state.timeLeft.toFixed(1)}s`,
+    `ruangan   : ${roomAt(ctx.cat.mesh.position)}${cat.underCrawl ? ' (di kolong)' : ''}`,
     `kamera    : yaw ${(ctx.camRig.yaw * 57.3).toFixed(0)}° pitch ${(ctx.camRig.pitch * 57.3).toFixed(0)}° lengan ${ctx.camRig.arm.toFixed(2)}/${ctx.camRig.zoom.toFixed(2)} m, pudar ${ctx.cameraFading}${ctx.input.pointerLocked ? ', mouse terkunci' : ''}`
   ].join('\n');
 }

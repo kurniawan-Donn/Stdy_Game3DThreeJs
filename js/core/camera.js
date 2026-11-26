@@ -81,8 +81,34 @@ export function resetCamera(ctx) {
   snapCameraBehind(ctx);
 }
 
+// Titik masuk ray (o + t·d) ke kotak blocker (dinding dalam, ambang pintu,
+// pintu tertutup) yang diperbesar sebesar margin; Infinity jika tidak kena.
+function rayEnter(o, d, b, m) {
+  let tmin = 0;
+  let tmax = Infinity;
+  const axes = [
+    [o.x, d.x, b.minX - m, b.maxX + m],
+    [o.y, d.y, (b.minY || 0) - m, b.topHeight + m],
+    [o.z, d.z, b.minZ - m, b.maxZ + m]
+  ];
+  for (const [p, v, lo, hi] of axes) {
+    if (Math.abs(v) < 1e-9) {
+      if (p < lo || p > hi) return Infinity;
+      continue;
+    }
+    let t1 = (lo - p) / v;
+    let t2 = (hi - p) / v;
+    if (t1 > t2) [t1, t2] = [t2, t1];
+    tmin = Math.max(tmin, t1);
+    tmax = Math.min(tmax, t2);
+    if (tmin > tmax) return Infinity;
+  }
+  return tmin;
+}
+
 // Panjang lengan maksimum dari fokus ke arah `d` agar tetap di dalam ruangan
-export function maxArmLength(focus, d, length) {
+// dan tidak menembus dinding dalam / pintu tertutup (blockers).
+export function maxArmLength(focus, d, length, blockers = []) {
   const m = CAMERA.WALL_MARGIN;
   const bounds = [
     [focus.x, d.x, -ROOM_HALF_W + m, ROOM_HALF_W - m],
@@ -93,6 +119,11 @@ export function maxArmLength(focus, d, length) {
   for (const [o, v, lo, hi] of bounds) {
     if (v > 1e-6) t = Math.min(t, (hi - o) / v);
     else if (v < -1e-6) t = Math.min(t, (lo - o) / v);
+  }
+  for (const b of blockers) {
+    if (!(b.topHeight > 0)) continue; // pintu terbuka
+    const enter = rayEnter(focus, d, b, CAMERA.WALL_MARGIN);
+    if (enter > 0 && enter < t) t = enter;
   }
   return Math.max(CAMERA.MIN_ARM, t);
 }
@@ -184,6 +215,20 @@ export function updateCamera(ctx, dt) {
   placeCamera(ctx, dt, false);
 }
 
+// Pengaman keras: kamera yang (karena lengan masih menyusul) berada di dalam
+// dinding dalam didorong ke sisi dinding yang sama dengan kucing.
+function pushOutOfBlockers(p, focus, blockers) {
+  const m = CAMERA.WALL_MARGIN;
+  for (const b of blockers) {
+    if (!(b.topHeight > 0)) continue;
+    if (p.y < (b.minY || 0) - m || p.y > b.topHeight + m) continue;
+    if (p.x <= b.minX - m || p.x >= b.maxX + m || p.z <= b.minZ - m || p.z >= b.maxZ + m) continue;
+    const thinX = b.maxX - b.minX < b.maxZ - b.minZ;
+    if (thinX) p.x = focus.x < (b.minX + b.maxX) / 2 ? b.minX - m : b.maxX + m;
+    else p.z = focus.z < (b.minZ + b.maxZ) / 2 ? b.minZ - m : b.maxZ + m;
+  }
+}
+
 // Posisi kamera dari fokus + yaw/pitch + spring arm
 function placeCamera(ctx, dt, snap) {
   const rig = ctx.camRig;
@@ -191,7 +236,8 @@ function placeCamera(ctx, dt, snap) {
   const cp = Math.cos(rig.pitch);
   dir.set(Math.sin(rig.yaw) * cp, Math.sin(rig.pitch), Math.cos(rig.yaw) * cp);
 
-  const allowed = maxArmLength(rig.focus, dir, rig.zoom);
+  const blockers = ctx.cameraBlockers || [];
+  const allowed = maxArmLength(rig.focus, dir, rig.zoom, blockers);
   if (snap) {
     rig.arm = allowed;
   } else if (allowed < rig.arm) {
@@ -206,6 +252,7 @@ function placeCamera(ctx, dt, snap) {
   camera.position.x = THREE.MathUtils.clamp(camera.position.x, -ROOM_HALF_W + m, ROOM_HALF_W - m);
   camera.position.z = THREE.MathUtils.clamp(camera.position.z, -ROOM_HALF_D + m, ROOM_HALF_D - m);
   camera.position.y = THREE.MathUtils.clamp(camera.position.y, CAMERA.FLOOR_MIN, ROOM.HEIGHT - m);
+  pushOutOfBlockers(camera.position, rig.focus, blockers);
   camera.lookAt(rig.focus);
 
   updateShake(ctx.cameraShake, dt);

@@ -63,7 +63,6 @@ export function createWoodFloorTexture() {
   const tex = new THREE.CanvasTexture(canvas);
   tex.wrapS = THREE.RepeatWrapping;
   tex.wrapT = THREE.RepeatWrapping;
-  tex.repeat.set(cfg.REPEAT, cfg.REPEAT);
   setTextureSRGB(tex);
   return tex;
 }
@@ -95,6 +94,38 @@ export function createRugTexture() {
   }
 
   const tex = new THREE.CanvasTexture(canvas);
+  setTextureSRGB(tex);
+  return tex;
+}
+
+// Ubin keramik (dapur & kamar mandi)
+export function createTileTexture() {
+  const cfg = TEXTURES.tile;
+  const size = cfg.SIZE;
+  const canvas = document.createElement('canvas');
+  canvas.width = size;
+  canvas.height = size;
+  const ctx = canvas.getContext('2d');
+  const cell = size / cfg.COUNT;
+  for (let r = 0; r < cfg.COUNT; r++) {
+    for (let c = 0; c < cfg.COUNT; c++) {
+      ctx.fillStyle = (r + c) % 2 === 0 ? cfg.BASE_COLOR : cfg.ALT_COLOR;
+      ctx.fillRect(c * cell, r * cell, cell, cell);
+    }
+  }
+  ctx.strokeStyle = cfg.GROUT_COLOR;
+  ctx.lineWidth = cfg.GROUT_WIDTH;
+  for (let i = 0; i <= cfg.COUNT; i++) {
+    ctx.beginPath();
+    ctx.moveTo(i * cell, 0);
+    ctx.lineTo(i * cell, size);
+    ctx.moveTo(0, i * cell);
+    ctx.lineTo(size, i * cell);
+    ctx.stroke();
+  }
+  const tex = new THREE.CanvasTexture(canvas);
+  tex.wrapS = THREE.RepeatWrapping;
+  tex.wrapT = THREE.RepeatWrapping;
   setTextureSRGB(tex);
   return tex;
 }

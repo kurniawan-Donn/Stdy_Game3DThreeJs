@@ -1,13 +1,13 @@
 // Pemilik rumah (GDD §8–9): rutinitas waypoint, persepsi, meter curiga,
 // dan state machine RUTINITAS → CURIGA (?) → MENYELIDIKI → MENGEJAR (!).
 // Saat menangkap kucing, kendali diserahkan ke systems/capture.js.
-import { OWNER, OWNER_ROUTINE as R, SUSPICION as S, CHASE, NAV, DOOR, OWNER_ANIM } from '../../config.js';
+import { OWNER, OWNER_ROUTINE as R, SUSPICION as S, CHASE, NAV, OWNER_ANIM } from '../../config.js';
 import { createOwnerMesh } from './model.js';
 import { animateOwner, isSittingPose } from './animation.js';
 import { findPath } from '../../systems/navGrid.js';
 import { senseCat } from '../../systems/perception.js';
 import { isAnnoying } from '../../systems/meow.js';
-import { setDoorOpen, isDoorOpen } from '../../world/house.js';
+import { setDoorOpen, isDoorOpen, isDoorClosed } from '../../world/house.js';
 import { startCapture } from '../../systems/capture.js';
 
 const HEAD_MAX = (OWNER.HEAD_MAX_YAW_DEG * Math.PI) / 180;
@@ -138,22 +138,6 @@ function followPath(o, speed, dt) {
   return o.path.length === 0;
 }
 
-// Jalan lurus tanpa A* (melewati pintu ke luar/masuk ruangan)
-function walkStraight(o, x, z, speed, dt) {
-  const pos = o.mesh.position;
-  const dx = x - pos.x;
-  const dz = z - pos.z;
-  const d = Math.hypot(dx, dz);
-  if (d <= NAV.ARRIVE_DIST) return true;
-  const move = Math.min(speed * dt, d);
-  pos.x += (dx / d) * move;
-  pos.z += (dz / d) * move;
-  o.walkPhase += move * OWNER_ANIM.WALK_STRIDE;
-  turnTowards(o, Math.atan2(dx, dz), dt);
-  o.pose = 'walk';
-  return false;
-}
-
 // --- Rutinitas ----------------------------------------------------------
 
 function startWork(o) {
@@ -180,7 +164,7 @@ function pickNextActivity(o) {
 
 function startActivity(o, act) {
   o.activity = act.id;
-  o.phase = act.id === 'toilet' ? 'gotoDoor' : 'goto';
+  o.phase = 'goto';
   o.activityT = act.duration || 0;
   if (act.id === 'toilet') o.toiletUsed = true;
   clearPath(o);
@@ -219,14 +203,15 @@ function updateRoutine(ctx, o, dt) {
       return;
     }
     case 'drink':
-    case 'window': {
-      const spot = o.activity === 'drink' ? spots.kitchen : spots.window;
+    case 'window':
+    case 'bedroom': {
+      const spot = o.activity === 'drink' ? spots.kitchen : o.activity === 'window' ? spots.window : spots.bedroom;
       if (o.phase === 'goto') {
         if (walkTo(ctx, o, spot, OWNER.WALK_SPEED, dt)) o.phase = 'do';
         return;
       }
       turnTowards(o, spot.yaw, dt);
-      o.pose = o.activity;
+      o.pose = o.activity === 'bedroom' ? 'window' : o.activity;
       o.activityT -= dt;
       if (o.activityT <= 0) startWork(o);
       return;
@@ -239,49 +224,37 @@ function updateRoutine(ctx, o, dt) {
   }
 }
 
-// Toilet: jalan ke pintu → buka → keluar → hilang 20 detik → masuk → tutup
+// Toilet: jalan ke kamar mandi → pintu menutup → di dalam 20 detik (tidak
+// melihat/mendengar) → siraman → pintu membuka → kembali bekerja.
+// Status pintu dihitung tiap frame di updateOwner (bathDoorShouldClose).
 function updateToilet(ctx, o, dt) {
-  const door = R.SPOTS.door;
+  const spot = R.SPOTS.toilet;
   switch (o.phase) {
-    case 'gotoDoor':
-      if (walkTo(ctx, o, door, OWNER.WALK_SPEED, dt)) {
-        o.phase = 'open';
-        setDoorOpen(ctx.door, true);
+    case 'goto':
+      if (walkTo(ctx, o, spot, OWNER.WALK_SPEED, dt)) {
+        o.phase = 'close';
         ctx.audio.play('door');
       }
       break;
-    case 'open':
+    case 'close':
       o.pose = 'stand';
-      turnTowards(o, door.yaw, dt);
-      if (isDoorOpen(ctx.door)) o.phase = 'exit';
-      break;
-    case 'exit':
-      if (walkStraight(o, DOOR.OUTSIDE_X, door.z, OWNER.WALK_SPEED, dt)) {
-        o.mesh.visible = false;
-        o.away = true;
+      turnTowards(o, spot.yaw, dt);
+      if (isDoorClosed(ctx.door)) {
         o.phase = 'away';
+        o.away = true;
         o.activityT = OWNER.TOILET_DURATION;
-        setDoorOpen(ctx.door, false);
       }
       break;
     case 'away':
       o.activityT -= dt;
       if (o.activityT <= 0) {
-        setDoorOpen(ctx.door, true);
-        ctx.audio.play('flush');
-        o.phase = 'return';
-      }
-      break;
-    case 'return':
-      if (isDoorOpen(ctx.door)) {
-        o.mesh.visible = true;
         o.away = false;
-        o.phase = 'enter';
+        o.phase = 'open';
+        ctx.audio.play('flush');
       }
       break;
-    case 'enter':
-      if (walkStraight(o, door.x, door.z, OWNER.WALK_SPEED, dt)) {
-        setDoorOpen(ctx.door, false);
+    case 'open':
+      if (isDoorOpen(ctx.door)) {
         ctx.audio.play('door');
         startWork(o);
       }
@@ -289,6 +262,11 @@ function updateToilet(ctx, o, dt) {
     default:
       startWork(o);
   }
+}
+
+// Pintu kamar mandi tertutup hanya saat pemilik sedang di dalam
+function bathDoorShouldClose(o) {
+  return o.state === 'routine' && o.activity === 'toilet' && (o.phase === 'close' || o.phase === 'away');
 }
 
 // --- State curiga -------------------------------------------------------
@@ -302,7 +280,6 @@ function setState(ctx, o, state) {
   clearPath(o);
   if (state === 'investigate') o.phase = 'goto';
   // Keluar dari rutinitas: pintu toilet ditutup jika sempat terbuka
-  if (prev === 'routine' && state !== 'routine') setDoorOpen(ctx.door, false);
   if (state === 'chase' && prev !== 'chase') ctx.audio.play('alarm');
   if ((state === 'curious' || state === 'investigate') && prev === 'routine') ctx.audio.play('suspicious');
 }
@@ -442,6 +419,8 @@ export function updateOwner(ctx, dt) {
       break;
   }
 
+  setDoorOpen(ctx.door, !bathDoorShouldClose(o));
+
   // Kursi kerja ikut berputar saat pemilik duduk di meja
   const chair = ctx.furnitureRefs.workChair;
   if (chair) {
@@ -465,8 +444,9 @@ function updateChase(ctx, o, dt) {
     return;
   }
 
-  // Kucing di tempat tinggi: tunggu di bawah, lalu menyerah
-  if (cat.y > CHASE.REACH_HEIGHT && hDist <= CHASE.UNDER_HIGH_DIST) {
+  // Kucing di tempat tinggi atau di kolong perabot: tunggu di dekatnya, lalu menyerah
+  const hidden = !!ctx.cat.underCrawl;
+  if ((cat.y > CHASE.REACH_HEIGHT && hDist <= CHASE.UNDER_HIGH_DIST) || (hidden && hDist <= CHASE.HIDDEN_WAIT_DIST)) {
     o.pose = 'stand';
     lookAt(o, { x: cat.x, z: cat.z }, dt, true);
     o.waitHighT += dt;
@@ -479,6 +459,7 @@ function updateChase(ctx, o, dt) {
   if (
     hDist <= CHASE.CATCH_RADIUS &&
     cat.y <= CHASE.REACH_HEIGHT &&
+    !hidden &&
     ctx.state.invulnerableTimer <= 0 &&
     !ctx.capture.active
   ) {

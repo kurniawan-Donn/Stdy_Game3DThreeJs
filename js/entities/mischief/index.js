@@ -8,6 +8,8 @@ import { createScratch } from './scratch.js';
 import { createRemote } from './remote.js';
 import { createPot } from './pot.js';
 import { createKitchenFish } from './kitchenFish.js';
+import { createToiletPaper } from './toiletPaper.js';
+import { createBlanket } from './blanket.js';
 
 const FACTORIES = {
   glass: createGlass,
@@ -15,7 +17,9 @@ const FACTORIES = {
   scratchSofa: createScratch,
   remote: createRemote,
   pot: createPot,
-  kitchenFish: createKitchenFish
+  kitchenFish: createKitchenFish,
+  toiletPaper: createToiletPaper,
+  blanket: createBlanket
 };
 
 export function createMischiefSystem(scene) {

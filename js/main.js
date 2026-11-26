@@ -42,9 +42,12 @@ function init() {
 
   // Urutan pembuatan dipertahankan (mempengaruhi urutan render objek transparan)
   setupLights(scene);
-  createLivingRoom(scene);
-  const { colliders, refs } = createFurniture(scene);
+  const house = createLivingRoom(scene);
+  const furniture = createFurniture(scene);
+  const refs = furniture.refs;
   const door = createDoor(scene);
+  // Semua collider: dinding dalam + perabot + pintu kamar mandi (dinamis)
+  const colliders = [...house.colliders, ...furniture.colliders, door.collider];
   createBasket(scene);
   createDarkZones(scene);
   const dust = createDust(scene);
@@ -66,6 +69,12 @@ function init() {
     furnitureRefs: refs,
     nav: createNavGrid(colliders),
     door,
+    cameraBlockers: [...house.cameraBlockers, door.collider], // kamera tak menembus dinding dalam & pintu tertutup
+    mergeStats: {
+      before: house.mergeStats.before + furniture.mergeStats.before,
+      after: house.mergeStats.after + furniture.mergeStats.after
+    },
+    fps: 0,
     owner,
     capture: createCapture(),
     screenFx: createScreenEffects(canvas),
@@ -115,8 +124,10 @@ function startLoop(ctx) {
   function animate(now) {
     requestAnimationFrame(animate);
 
-    const dt = Math.min((now - lastTime) / 1000, PHYSICS.MAX_DT); // waktu nyata
+    const rawDt = (now - lastTime) / 1000;
+    const dt = Math.min(rawDt, PHYSICS.MAX_DT); // waktu nyata
     lastTime = now;
+    if (rawDt > 0) ctx.fps += (1 / rawDt - ctx.fps) * Math.min(1, rawDt * 2); // FPS dihaluskan (F3)
     const capturing = ctx.capture.active;
     const wdt = dt * ctx.capture.timeScale; // waktu dunia (slow motion saat tertangkap)
 

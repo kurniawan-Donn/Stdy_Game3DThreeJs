@@ -7,9 +7,8 @@
 // =====================================================================
 
 // --- Skala dunia nyata (meter). Acuan semua model & collider. ---
-// Tata letak ruangan memakai faktor WORLD_SCALE terhadap prototipe lama
-// (22 × 20 m) sehingga ruang tamu menjadi 8,8 × 8 m dan waktu tempuh kucing
-// antar-objek terasa sama seperti sebelum skala diperbaiki.
+// Rumah satu lantai 14 × 10 m (denah: docs/denah.md). WORLD_SCALE dipakai
+// sebagai acuan saat skala diperbaiki (prototipe 22 × 20 m × 0,4).
 export const WORLD_SCALE = 0.4;
 export const REAL_SCALE = {
   cat: { SHOULDER: 0.25, EAR_TIP: 0.35, BODY_LENGTH: 0.45, TAIL: 0.3 },
@@ -23,41 +22,85 @@ export const REAL_SCALE = {
   tvRack: { HEIGHT: 0.5, WIDTH: 1.6, DEPTH: 0.4 },
   bookshelf: { HEIGHT: 1.8, WIDTH: 0.8, DEPTH: 0.3 },
   lowShelf: { HEIGHT: 0.9, WIDTH: 0.9, DEPTH: 0.4 }, // batu loncatan ke rak buku
+  island: { HEIGHT: 0.9, WIDTH: 1.2, DEPTH: 0.8 }, // pulau dapur
+  barCounter: { HEIGHT: 0.9, WIDTH: 0.6 }, // konter bar pemisah ruang tamu–makan
+  diningTable: { HEIGHT: 0.75, WIDTH: 1.6, DEPTH: 0.9, UNDERSIDE: 0.7 },
+  diningChair: { SEAT: 0.45, WIDTH: 0.42 },
+  bed: { HEIGHT: 0.55, WIDTH: 1.6, LENGTH: 2.0, UNDERSIDE: 0.28 },
+  wardrobe: { HEIGHT: 2.0, WIDTH: 1.2, DEPTH: 0.6 },
+  dresser: { HEIGHT: 0.75, WIDTH: 1.0, DEPTH: 0.45 }, // meja rias
+  toilet: { SEAT: 0.42, TANK: 0.8 },
+  sink: { HEIGHT: 0.85, WIDTH: 0.7, DEPTH: 0.45 },
+  coffeeTableUnderside: 0.41,
   vacuum: { DIAMETER: 0.34, HEIGHT: 0.09 },
   glass: { HEIGHT: 0.12 },
   pot: { HEIGHT: 0.4 }, // rentang nyata 0,30–0,50
   plant: { HEIGHT: 1.0 },
   box: { HEIGHT_MIN: 0.4, HEIGHT_MAX: 0.5 }, // kardus (Fase 5)
   door: { HEIGHT: 2.0, WIDTH: 0.85 },
+  doorway: { WIDTH: 0.9 }, // bukaan pintu dalam rumah
   ceiling: 2.7
 };
 const RS = REAL_SCALE;
 
 // --- Ruangan ---
 export const ROOM = {
-  WIDTH: 8.8,
-  DEPTH: 8,
+  WIDTH: 14, // batas luar rumah (x -7..7)
+  DEPTH: 10, // (z -5..5)
   HEIGHT: RS.ceiling,
-  WALL_THICKNESS: 0.15,
+  WALL_THICKNESS: 0.15, // dinding luar
+  INNER_WALL_THICKNESS: 0.12,
   BASEBOARD_HEIGHT: 0.09,
   BASEBOARD_DEPTH: 0.02,
-  // Jendela besar di dinding barat (-X)
-  WINDOW: {
-    Z_MIN: -1.68,
-    Z_MAX: 0.88,
-    Y_MIN: 0.8,
-    Y_MAX: 2.2,
-    FRAME_THICKNESS: 0.07,
-    FRAME_DEPTH: 0.19,
-    MULLION_THICKNESS: 0.05,
-    MULLION_DEPTH: 0.04,
-    GLASS_INSET: 0.06,
-    BACKDROP_DISTANCE: 0.5,
-    BACKDROP_PADDING: 1.6
-  }
+  WINDOW_FRAME: { THICKNESS: 0.07, DEPTH: 0.19, MULLION: 0.05, GLASS_INSET: 0.06, BACKDROP_DISTANCE: 0.5, BACKDROP_PADDING: 1.6 }
 };
 export const ROOM_HALF_W = ROOM.WIDTH / 2;
 export const ROOM_HALF_D = ROOM.DEPTH / 2;
+
+// --- Denah rumah (lihat docs/denah.md). Utara = -Z. ---
+// Dinding dalam: axis 'x' = dinding membentang sepanjang X pada z = at;
+// axis 'z' = membentang sepanjang Z pada x = at. openings: bukaan pintu
+// (center di sepanjang dinding, lebar, tinggi).
+const DW = RS.doorway.WIDTH;
+export const HOUSE = {
+  innerWalls: [
+    // Kamar-kamar utara ↔ lorong (pintu kamar tidur, kamar mandi, ruang kerja)
+    { axis: 'x', at: -1.5, from: -7, to: 3.5, openings: [
+      { center: -3.4, width: DW, height: RS.door.HEIGHT }, // kamar tidur
+      { center: -1.5, width: DW, height: RS.door.HEIGHT }, // kamar mandi (berdaun pintu)
+      { center: 0.45, width: DW, height: RS.door.HEIGHT } // ruang kerja
+    ] },
+    // Lorong ↔ ruang tamu (dua bukaan = loop kecil)
+    { axis: 'x', at: -0.3, from: -7, to: 3.5, openings: [
+      { center: -5.2, width: DW, height: RS.door.HEIGHT },
+      { center: 0.6, width: DW, height: RS.door.HEIGHT }
+    ] },
+    { axis: 'z', at: -2.6, from: -5, to: -1.5, openings: [] }, // kamar tidur | kamar mandi
+    { axis: 'z', at: -0.4, from: -5, to: -1.5, openings: [] }, // kamar mandi | ruang kerja
+    { axis: 'z', at: 3.5, from: -5, to: -1.5, openings: [] } // ruang kerja | dapur
+  ],
+  // Jendela di dinding luar. type: 'sun' (cahaya matahari), 'plain', 'curtain' (tirai tertutup)
+  windows: [
+    { wall: 'west', from: 1.0, to: 3.6, yMin: 0.8, yMax: 2.2, type: 'sun' }, // ruang tamu
+    { wall: 'west', from: -4.2, to: -2.6, yMin: 0.9, yMax: 2.1, type: 'curtain' }, // kamar tidur
+    { wall: 'east', from: -3.6, to: -1.8, yMin: 1.0, yMax: 2.1, type: 'plain' } // dapur
+  ],
+  // Lantai keramik (sisanya kayu)
+  tileFloors: [
+    { minX: 3.5, maxX: 7, minZ: -5, maxZ: -0.3 }, // dapur
+    { minX: -2.6, maxX: -0.4, minZ: -5, maxZ: -1.5 } // kamar mandi
+  ],
+  // Nama ruangan (untuk denah, debug, dan uji)
+  rooms: {
+    livingRoom: { minX: -7, maxX: 3.5, minZ: -0.3, maxZ: 5 },
+    dining: { minX: 3.5, maxX: 7, minZ: -0.3, maxZ: 5 },
+    kitchen: { minX: 3.5, maxX: 7, minZ: -5, maxZ: -0.3 },
+    hallway: { minX: -7, maxX: 3.5, minZ: -1.5, maxZ: -0.3 },
+    bedroom: { minX: -7, maxX: -2.6, minZ: -5, maxZ: -1.5 },
+    bathroom: { minX: -2.6, maxX: -0.4, minZ: -5, maxZ: -1.5 },
+    study: { minX: -0.4, maxX: 3.5, minZ: -5, maxZ: -1.5 }
+  }
+};
 
 // --- Fisika umum ---
 export const PHYSICS = {
@@ -70,7 +113,7 @@ export const PHYSICS = {
 export const PLAYER = {
   RADIUS: 0.17,
   CENTER_HEIGHT: 0.18, // tinggi titik tengah badan untuk cek pickup
-  START_POSITION: { x: -0.9, y: 0, z: -0.6 },
+  START_POSITION: { x: -1.5, y: 0, z: 1.5 }, // ruang tamu
   START_YAW: Math.PI, // menghadap -Z saat awal
   // Kecepatan per mode gerak (m/detik). Perbandingan dipertahankan dari
   // Fase 3: kejar pemilik (OWNER.CHASE_SPEED) di antara jalan dan lari.
@@ -82,6 +125,9 @@ export const PLAYER = {
   GROUND_FRICTION: 10,
   AIR_FRICTION: 6, // tanpa input di udara kucing cepat mengerem (mendarat presisi di tepi sempit)
   LEDGE_ASSIST: 0.08, // toleransi mendarat di tepi perabot sempit (sandaran sofa, atas rak)
+  // Kolong perabot: kucing lolos di bawah perabot dengan crawlHeight >= tinggi badannya
+  HEIGHT_STAND: 0.35,
+  HEIGHT_SNEAK: 0.26, // badan merendah saat mengendap
   STOP_SPEED: 0.02,
   TURN_SPEED: 12,
   JUMP_FORCE: 4.17, // lompat biasa (gratis), puncak ±0,58 m: dudukan sofa, meja kopi, kursi, rak TV
@@ -228,7 +274,7 @@ export const SPAWN = {
   FURNITURE_MARGIN_EXTRA: 0.1,
   RANGE_MARGIN: 0.25,
   MAX_ATTEMPTS: 60,
-  FALLBACK_POSITION: { x: -1.0, z: -1.0 }
+  FALLBACK_POSITION: { x: -1.5, z: 1.5 }
 };
 
 // --- Kamera third-person ---
@@ -295,32 +341,24 @@ export const RENDERER = {
 
 // --- Pencahayaan (maksimal 2 shadow caster aktif) ---
 export const LIGHTS = {
-  hemi: { skyColor: 0xfff4e0, groundColor: 0x7d5836, intensity: 0.65 },
+  hemi: { skyColor: 0xfff4e0, groundColor: 0x7d5836, intensity: 0.6 },
+  // Satu-satunya lampu dengan bayangan: matahari lewat jendela ruang tamu (barat)
   sun: {
     color: 0xffe8c2,
     intensity: 1.35,
-    position: [-6.4, 3.0, -0.6], // di luar jendela barat, masuk lewat bukaan jendela
-    target: [0.8, 0, 0.2],
+    position: [-10.5, 3.0, 2.3],
+    target: [-3, 0, 2.3],
     shadowMapSize: 2048,
-    shadowCamera: { near: 0.8, far: 14.4, left: -5.2, right: 5.2, top: 4.8, bottom: -4.8 },
+    shadowCamera: { near: 1, far: 22, left: -6, right: 6, top: 4, bottom: -4 },
     shadowBias: -0.0006
   },
-  lamp: {
-    color: 0xffcb85,
-    intensity: 1.15,
-    distance: 7.2,
-    decay: 2,
-    position: [-1.72, 1.45, 2.08],
-    shadowMapSize: 1024,
-    shadowBias: -0.001
-  },
-  fill: {
-    color: 0xffe6cc,
-    intensity: 0.45,
-    distance: 6.4,
-    decay: 2,
-    position: [1.8, 2.3, -2.2]
-  }
+  // Lampu ruangan tanpa bayangan (murah)
+  points: [
+    { name: 'lamp', color: 0xffcb85, intensity: 1.0, distance: 6, decay: 2, position: [-5.4, 1.45, 3.7] }, // lampu berdiri ruang tamu
+    { name: 'living', color: 0xffe6cc, intensity: 0.45, distance: 7, decay: 2, position: [1.5, 2.4, 2.0] },
+    { name: 'kitchen', color: 0xfff1dc, intensity: 0.7, distance: 6.5, decay: 2, position: [5.2, 2.4, -1.5] },
+    { name: 'study', color: 0xe8f0ff, intensity: 0.45, distance: 4.5, decay: 2, position: [1.6, 2.3, -3.2] }
+  ]
 };
 
 // --- Tekstur prosedural ---
@@ -330,14 +368,23 @@ export const TEXTURES = {
     ROWS: 8,
     COLS: 2,
     ROW_OFFSET: 128,
-    REPEAT: 5,
     BASE_COLOR: '#9c6b43',
     TONES: ['#a47148', '#8f5f39', '#b07b4f', '#97663e', '#845633'],
     GRAIN_COLOR: 'rgba(58, 34, 16, 0.16)',
     GRAIN_WIDTH: 1.2,
     GRAIN_LINES: 9,
     SEAM_COLOR: 'rgba(42, 24, 12, 0.45)',
-    SEAM_WIDTH: 2
+    SEAM_WIDTH: 2,
+    TILE_METERS: 1.76 // satu ulangan tekstur = 1,76 m
+  },
+  tile: {
+    SIZE: 256,
+    COUNT: 4, // ubin per sisi tekstur
+    TILE_METERS: 1.2,
+    BASE_COLOR: '#e7e2d8',
+    ALT_COLOR: '#dcd5c8',
+    GROUT_COLOR: '#b9b0a2',
+    GROUT_WIDTH: 3
   },
   rug: {
     SIZE: 256,
@@ -399,6 +446,20 @@ export const MATERIALS = {
   fluff: { color: 0xd6e2e6, roughness: 1.0 },
   soilSpill: { color: 0x3b281c, roughness: 1.0 },
   tvOn: { color: 0xffffff, emissiveIntensity: 1.0, roughness: 0.3 },
+  // Rumah: dapur, makan, kamar tidur, kamar mandi
+  tileFloor: { roughness: 0.4, metalness: 0.02 },
+  curtain: { color: 0x3f4f6b, roughness: 0.95 },
+  islandBody: { color: 0x6b8f71, roughness: 0.7 },
+  bedFrame: { color: 0x6b4a33, roughness: 0.6 },
+  mattress: { color: 0xf3efe6, roughness: 0.95 },
+  pillow: { color: 0xffffff, roughness: 0.95 },
+  blanket: { color: 0x7c9cc9, roughness: 0.95 },
+  wardrobe: { color: 0xc9a77c, roughness: 0.6 },
+  mirror: { color: 0xdbe7f0, roughness: 0.05, metalness: 0.9 },
+  porcelain: { color: 0xf8fafc, roughness: 0.25, metalness: 0.05 },
+  toiletPaper: { color: 0xfbfaf5, roughness: 0.95 },
+  chrome: { color: 0xcbd5e1, roughness: 0.2, metalness: 0.9 },
+  bathMat: { color: 0x8ec5c2, roughness: 1.0 },
   // Item & rintangan
   // Pemilik rumah
   ownerSkin: { color: 0xe0ac80, roughness: 0.7 },
@@ -429,62 +490,112 @@ export const MATERIALS = {
 // climbable = kucing bisa mendarat/berdiri di atasnya.
 // Urutan collider penting: menentukan urutan resolusi tabrakan.
 export const FURNITURE_LAYOUT = {
-  rug: { x: 0, z: 1.1, width: 2.7, depth: 2.1 },
-  // Sofa: dudukan menghadap utara (-Z), sandaran di sisi selatan (+Z)
+  // ---------------- RUANG TAMU ----------------
+  rug: { x: 2.0, z: 1.2, width: 2.6, depth: 1.9 },
+  // Sofa: dudukan menghadap utara (-Z, ke TV), sandaran di sisi selatan
   sofa: {
-    x: 0, z: 1.92,
+    x: 2.0, z: 1.75,
     colliders: [
-      { x: 0, z: 1.81, width: RS.sofa.WIDTH, depth: 0.68, topHeight: RS.sofa.SEAT, climbable: true }, // dudukan (lompat biasa)
-      { x: 0, z: 2.26, width: RS.sofa.WIDTH, depth: 0.22, topHeight: RS.sofa.BACK, climbable: true } // sandaran (lompat tinggi)
+      { x: 2.0, z: 1.64, width: RS.sofa.WIDTH, depth: 0.68, topHeight: RS.sofa.SEAT, climbable: true }, // dudukan
+      { x: 2.0, z: 2.09, width: RS.sofa.WIDTH, depth: 0.22, topHeight: RS.sofa.BACK, climbable: true } // sandaran
     ]
   },
+  // Meja kopi: kolongnya bisa dilewati kucing (berdiri)
   coffeeTable: {
-    x: 0, z: 0.52,
-    colliders: [{ x: 0, z: 0.52, width: RS.coffeeTable.WIDTH, depth: RS.coffeeTable.DEPTH, topHeight: RS.coffeeTable.HEIGHT, climbable: true }]
+    x: 2.0, z: 0.72,
+    colliders: [{ x: 2.0, z: 0.72, width: RS.coffeeTable.WIDTH, depth: RS.coffeeTable.DEPTH, topHeight: RS.coffeeTable.HEIGHT, climbable: true, crawlHeight: RS.coffeeTableUnderside }]
   },
+  // Rak TV menempel dinding lorong; bagian rute atas sofa → meja kopi → rak TV → konter bar
   tvUnit: {
-    x: 0, z: -3.8,
-    colliders: [{ x: 0, z: -3.8, width: RS.tvRack.WIDTH, depth: RS.tvRack.DEPTH, topHeight: RS.tvRack.HEIGHT, climbable: true }]
+    x: 2.3, z: -0.04,
+    colliders: [{ x: 2.3, z: -0.04, width: RS.tvRack.WIDTH, depth: RS.tvRack.DEPTH, topHeight: RS.tvRack.HEIGHT, climbable: true }]
   },
-  // Rak buku tinggi menempel dinding timur: tempat tinggi, dicapai dari rak rendah
-  tallShelf: {
-    x: 4.25, z: -1.35,
-    colliders: [{ x: 4.25, z: -1.35, width: RS.bookshelf.DEPTH, depth: RS.bookshelf.WIDTH, topHeight: RS.bookshelf.HEIGHT, climbable: true }]
-  },
-  lowShelf: {
-    x: 4.2, z: -0.5,
-    colliders: [{ x: 4.2, z: -0.5, width: RS.lowShelf.DEPTH, depth: RS.lowShelf.WIDTH, topHeight: RS.lowShelf.HEIGHT, climbable: true }]
-  },
-  chair: {
-    x: 1.9, z: 1.0,
-    colliders: [{ x: 1.9, z: 1.0, width: RS.chair.WIDTH, depth: RS.chair.WIDTH, topHeight: RS.chair.SEAT, climbable: true }]
+  chair: { // kursi baca
+    x: -4.6, z: 2.8,
+    colliders: [{ x: -4.6, z: 2.8, width: RS.chair.WIDTH, depth: RS.chair.WIDTH, topHeight: RS.chair.SEAT, climbable: true }]
   },
   floorLamp: {
-    x: -1.72, z: 2.08,
-    colliders: [{ x: -1.72, z: 2.08, width: 0.4, depth: 0.4, topHeight: 1.6, climbable: false, occludes: false }] // tiang tipis: tidak menghalangi pandangan
+    x: -5.4, z: 3.7,
+    colliders: [{ x: -5.4, z: 3.7, width: 0.4, depth: 0.4, topHeight: 1.6, climbable: false, occludes: false }]
+  },
+  // Rak rendah + rak buku di dinding selatan, menghadap utara (rak rendah = batu loncatan)
+  lowShelf: {
+    x: -2.0, z: 4.8,
+    colliders: [{ x: -2.0, z: 4.8, width: RS.lowShelf.WIDTH, depth: RS.lowShelf.DEPTH, topHeight: RS.lowShelf.HEIGHT, climbable: true }]
+  },
+  tallShelf: {
+    x: -1.15, z: 4.85,
+    colliders: [{ x: -1.15, z: 4.85, width: RS.bookshelf.WIDTH, depth: RS.bookshelf.DEPTH, topHeight: RS.bookshelf.HEIGHT, climbable: true }]
   },
   plants: {
-    positions: [{ x: -4.05, z: 1.5 }, { x: 3.6, z: 2.72 }], // barat (selatan jendela) & tenggara
-    collider: { width: 0.45, depth: 0.45, topHeight: RS.plant.HEIGHT, climbable: false, occludes: false } // daun: tidak menghalangi pandangan
+    positions: [{ x: -6.5, z: 4.5 }, { x: 6.55, z: 0.15 }], // ruang tamu (sudut barat daya), ruang makan (sudut timur laut)
+    collider: { width: 0.45, depth: 0.45, topHeight: RS.plant.HEIGHT, climbable: false, occludes: false }
   },
-  // Pojok dapur di sudut barat laut, menghadap kamera
+  // Konter bar: pemisah ruang tamu–ruang makan (pemilik memutar, kucing melompat)
+  barCounter: {
+    x: 3.8, z: 0.2,
+    colliders: [{ x: 3.8, z: 0.2, width: RS.barCounter.WIDTH, depth: 1.0, topHeight: RS.barCounter.HEIGHT, climbable: true }]
+  },
+  // ---------------- DAPUR ----------------
   kitchenCounter: {
-    x: -3.5, z: -3.7,
-    colliders: [{ x: -3.5, z: -3.7, width: RS.counter.WIDTH, depth: RS.counter.DEPTH, topHeight: RS.counter.HEIGHT, climbable: true }] // lompat tinggi
+    x: 4.75, z: -4.7,
+    colliders: [{ x: 4.75, z: -4.7, width: 2.3, depth: RS.counter.DEPTH, topHeight: RS.counter.HEIGHT, climbable: true }]
   },
   fridge: {
-    x: -2.2, z: -3.675,
-    colliders: [{ x: -2.2, z: -3.675, width: RS.fridge.WIDTH, depth: RS.fridge.DEPTH, topHeight: RS.fridge.HEIGHT, climbable: true }] // tempat tinggi: dari konter
+    x: 6.4, z: -4.675,
+    colliders: [{ x: 6.4, z: -4.675, width: RS.fridge.WIDTH, depth: RS.fridge.DEPTH, topHeight: RS.fridge.HEIGHT, climbable: true }] // tempat tinggi: dari konter
   },
-  // Pos kerja pemilik: meja (lompat tinggi), kursi, laptop. Pemilik duduk
-  // menghadap dinding utara (membelakangi ruangan).
+  island: {
+    x: 5.2, z: -2.5,
+    colliders: [{ x: 5.2, z: -2.5, width: RS.island.WIDTH, depth: RS.island.DEPTH, topHeight: RS.island.HEIGHT, climbable: true }]
+  },
+  // ---------------- RUANG MAKAN ----------------
+  diningTable: {
+    x: 5.25, z: 2.8,
+    colliders: [{ x: 5.25, z: 2.8, width: RS.diningTable.WIDTH, depth: RS.diningTable.DEPTH, topHeight: RS.diningTable.HEIGHT, climbable: true, crawlHeight: RS.diningTable.UNDERSIDE }]
+  },
+  diningChairs: {
+    // yaw: arah hadap kursi (ke meja)
+    positions: [
+      { x: 4.85, z: 1.93, yaw: 0 }, { x: 5.65, z: 1.93, yaw: 0 },
+      { x: 4.85, z: 3.67, yaw: Math.PI }, { x: 5.65, z: 3.67, yaw: Math.PI }
+    ],
+    collider: { width: RS.diningChair.WIDTH, depth: RS.diningChair.WIDTH, topHeight: RS.diningChair.SEAT, climbable: true }
+  },
+  // ---------------- RUANG KERJA ----------------
   workDesk: {
-    x: 2.4, z: -3.7,
-    colliders: [{ x: 2.4, z: -3.7, width: RS.workDesk.WIDTH, depth: RS.workDesk.DEPTH, topHeight: RS.workDesk.HEIGHT, climbable: true }]
+    x: 1.6, z: -4.7,
+    colliders: [{ x: 1.6, z: -4.7, width: RS.workDesk.WIDTH, depth: RS.workDesk.DEPTH, topHeight: RS.workDesk.HEIGHT, climbable: true }]
   },
   workChair: {
-    x: 2.4, z: -2.95,
-    colliders: [{ x: 2.4, z: -2.95, width: 0.5, depth: 0.5, topHeight: RS.chair.SEAT, climbable: false, occludes: false, navBlocks: false }]
+    x: 1.6, z: -3.95,
+    colliders: [{ x: 1.6, z: -3.95, width: 0.5, depth: 0.5, topHeight: RS.chair.SEAT, climbable: false, occludes: false, navBlocks: false }]
+  },
+  // ---------------- KAMAR TIDUR ----------------
+  // Kasur: kolong 0,28 m, kucing harus mengendap untuk masuk
+  bed: {
+    x: -5.2, z: -3.9,
+    colliders: [{ x: -5.2, z: -3.9, width: RS.bed.WIDTH, depth: RS.bed.LENGTH, topHeight: RS.bed.HEIGHT, climbable: true, crawlHeight: RS.bed.UNDERSIDE }]
+  },
+  wardrobe: {
+    x: -3.3, z: -4.7,
+    colliders: [{ x: -3.3, z: -4.7, width: RS.wardrobe.WIDTH, depth: RS.wardrobe.DEPTH, topHeight: RS.wardrobe.HEIGHT, climbable: false }]
+  },
+  dresser: {
+    x: -5.6, z: -1.8, // menempel dinding lorong, cermin di dinding
+    colliders: [{ x: -5.6, z: -1.8, width: RS.dresser.WIDTH, depth: RS.dresser.DEPTH, topHeight: RS.dresser.HEIGHT, climbable: true }]
+  },
+  // ---------------- KAMAR MANDI ----------------
+  toilet: {
+    x: -1.9, z: -4.66,
+    colliders: [
+      { x: -1.9, z: -4.57, width: 0.42, depth: 0.5, topHeight: RS.toilet.SEAT, climbable: true }, // dudukan
+      { x: -1.9, z: -4.91, width: 0.42, depth: 0.18, topHeight: RS.toilet.TANK, climbable: true } // tangki
+    ]
+  },
+  sink: {
+    x: -0.85, z: -4.775,
+    colliders: [{ x: -0.85, z: -4.775, width: RS.sink.WIDTH, depth: RS.sink.DEPTH, topHeight: RS.sink.HEIGHT, climbable: true }]
   }
 };
 
@@ -509,16 +620,16 @@ export const DUST = {
   COLOR: 0xfff3c4,
   SIZE: 0.03,
   OPACITY: 0.55,
-  SPAWN: { X_MIN: -4.08, X_RANGE: 2.6, Y_MIN: 0.35, Y_RANGE: 1.9, Z_MIN: -1.68, Z_RANGE: 2.56 },
+  // Berkas cahaya di depan jendela ruang tamu (dinding barat)
+  SPAWN: { X_MIN: -6.85, X_RANGE: 2.6, Y_MIN: 0.35, Y_RANGE: 1.85, Z_MIN: 1.0, Z_RANGE: 2.6 },
   VELOCITY: { X_SCALE: 0.06, X_BIAS: 0.3, Y_SCALE: 0.05, Z_SCALE: 0.06 },
-  // Batas wrap-around: jika lewat batas, pindah ke posisi reset
   WRAP: {
-    X_MAX: -1.4, X_MAX_RESET: -4.08,
-    X_MIN: -4.2, X_MIN_RESET: -1.52,
+    X_MAX: -4.2, X_MAX_RESET: -6.85,
+    X_MIN: -6.95, X_MIN_RESET: -4.3,
     Y_MAX: 2.3, Y_MAX_RESET: 0.35,
     Y_MIN: 0.3, Y_MIN_RESET: 2.2,
-    Z_MAX: 0.96, Z_MAX_RESET: -1.68,
-    Z_MIN: -1.72, Z_MIN_RESET: 0.88
+    Z_MAX: 3.65, Z_MAX_RESET: 1.0,
+    Z_MIN: 0.95, Z_MIN_RESET: 3.6
   }
 };
 
@@ -592,6 +703,12 @@ export const AUDIO = {
     potThud: [{ DURATION: 0.4, VOLUME: 0.2, FILTER: 'lowpass', FREQ: 400, Q: 0.7, DELAY: 0 }],
     tvOn: [{ DURATION: 0.9, VOLUME: 0.07, FILTER: 'bandpass', FREQ: 3000, Q: 0.5, DELAY: 0.08 }],
     caught: [{ DURATION: 0.35, VOLUME: 0.25, FILTER: 'lowpass', FREQ: 300, Q: 0.7, DELAY: 0 }],
+    toiletPaper: [
+      { DURATION: 0.25, VOLUME: 0.07, FILTER: 'bandpass', FREQ: 1800, Q: 0.8, DELAY: 0 },
+      { DURATION: 0.25, VOLUME: 0.07, FILTER: 'bandpass', FREQ: 1600, Q: 0.8, DELAY: 0.45 },
+      { DURATION: 0.4, VOLUME: 0.06, FILTER: 'bandpass', FREQ: 1400, Q: 0.8, DELAY: 0.9 }
+    ],
+    blanket: [{ DURATION: 0.8, VOLUME: 0.035, FILTER: 'lowpass', FREQ: 700, Q: 0.7, DELAY: 0 }],
     door: [{ DURATION: 0.4, VOLUME: 0.05, FILTER: 'bandpass', FREQ: 900, Q: 4, DELAY: 0 }],
     flush: [{ DURATION: 1.2, VOLUME: 0.08, FILTER: 'lowpass', FREQ: 1200, Q: 0.7, DELAY: 0 }]
   },
@@ -626,11 +743,13 @@ export const STAR_THRESHOLDS = [1.0, 1.5, 2.0];
 // --- Kenakalan & Chaos (GDD §5) ---
 export const MISCHIEF = {
   tissue: { CHAOS: 15, NOISE_RADIUS: 0.8 }, // tumpahkan tisu
-  scratchSofa: { CHAOS: 20, NOISE_RADIUS: 1.6 }, // cakar sofa
+  scratchSofa: { CHAOS: 20, NOISE_RADIUS: 1.6 }, // cakar sofa / kursi
   remote: { CHAOS: 30, NOISE_RADIUS: 2.4 }, // injak remote, TV menyala
   glass: { CHAOS: 40, NOISE_RADIUS: 4 }, // jatuhkan gelas sampai pecah
   pot: { CHAOS: 50, NOISE_RADIUS: 3.2 }, // gulingkan pot
-  kitchenFish: { CHAOS: 80, NOISE_RADIUS: 1.2 } // curi ikan di dapur
+  kitchenFish: { CHAOS: 80, NOISE_RADIUS: 1.2 }, // curi ikan di dapur
+  toiletPaper: { CHAOS: 35, NOISE_RADIUS: 1.2 }, // tarik gulungan tisu toilet (gulungan berderak)
+  blanket: { CHAOS: 25, NOISE_RADIUS: 0.6 } // acak-acak selimut (kain, sangat senyap)
 };
 export const COMBO = {
   WINDOW: 10, // detik sejak kenakalan sebelumnya
@@ -701,23 +820,25 @@ export const IDLE = {
 // di atas perabot kucing harus berdiri di permukaan yang sama. ---
 export const MISCHIEF_LAYOUT = {
   glass: [
-    { x: 0.4, y: RS.coffeeTable.HEIGHT, z: 0.72 }, // meja kopi
-    { x: 0.6, y: RS.tvRack.HEIGHT, z: -3.66 }, // rak TV
-    { x: 4.2, y: RS.lowShelf.HEIGHT, z: -0.12 }, // rak rendah
-    { x: -2.8, y: RS.counter.HEIGHT, z: -3.52 } // konter dapur
+    { x: 2.4, y: RS.coffeeTable.HEIGHT, z: 0.88 }, // meja kopi (ruang tamu)
+    { x: 2.9, y: RS.tvRack.HEIGHT, z: 0.06 }, // rak TV (ruang tamu)
+    { x: 5.65, y: RS.island.HEIGHT, z: -2.24 }, // pulau dapur
+    { x: -5.3, y: RS.dresser.HEIGHT, z: -1.7 } // meja rias (kamar tidur)
   ],
   tissue: [
-    { x: -0.35, y: RS.coffeeTable.HEIGHT, z: 0.38 }, // meja kopi
-    { x: 4.2, y: RS.lowShelf.HEIGHT, z: -0.82 } // rak rendah
+    { x: 1.6, y: RS.coffeeTable.HEIGHT, z: 0.55 }, // meja kopi
+    { x: 1.05, y: RS.workDesk.HEIGHT, z: -4.55 } // meja kerja
   ],
   // Cakar: target = nama referensi collider perabot di furniture.js
   scratchSofa: [
     { target: 'sofaSeat', markYMin: 0.1, markYMax: 0.38 },
     { target: 'chair', markYMin: 0.3, markYMax: 0.43 }
   ],
-  remote: [{ x: 0.5, y: RS.sofa.SEAT, z: 1.7 }], // di dudukan sofa; suara dari TV
-  pot: [{ plant: 0 }, { plant: 1 }], // indeks tanaman di FURNITURE_LAYOUT.plants
-  kitchenFish: [{ x: -4.0, y: RS.counter.HEIGHT, z: -3.75 }] // piring di konter dapur
+  remote: [{ x: 1.4, y: RS.sofa.SEAT, z: 1.55 }], // dudukan sofa; suara dari TV
+  pot: [{ plant: 0 }, { plant: 1 }], // tanaman ruang tamu & ruang makan
+  kitchenFish: [{ x: 4.0, y: RS.counter.HEIGHT, z: -4.78 }], // konter dapur
+  toiletPaper: [{ x: -2.47, y: 0.62, z: -4.2 }], // gulungan di dinding samping toilet
+  blanket: [{ x: -5.2, y: RS.bed.HEIGHT, z: -3.55 }] // selimut di kasur
 };
 
 // Toleransi tinggi: kucing dianggap "di permukaan yang sama" dengan objek
@@ -808,7 +929,7 @@ export const SCRATCH = {
 export const REMOTE = {
   ACTION_DURATION: 0.5,
   STOMP_AT: 0.25,
-  TV_NOISE_POSITION: { x: 0, z: -3.9 }, // noise dipancarkan dari TV
+  TV_NOISE_POSITION: { x: 2.3, z: -0.2 }, // noise dipancarkan dari TV (dinding lorong)
   SIZE: { L: 0.16, H: 0.02, W: 0.05 },
   MARKER_HEIGHT: 0.12,
   TV_REFRESH_RATE: 12, // frame/detik gambar statis TV
@@ -828,6 +949,27 @@ export const POT = {
   SPILL_DISTANCE: 0.5,
   MARKER_HEIGHT: 1.1,
   CHAOS_TEXT_HEIGHT: 0.3
+};
+
+// --- Tarik gulungan tisu toilet ---
+export const TOILET_PAPER = {
+  ACTION_DURATION: 1.6, // kucing berdiri & menepuk gulungan berkali-kali
+  ROLL_RADIUS: 0.055,
+  ROLL_LENGTH: 0.1,
+  ROLL_SPIN: 25,
+  STRIP_WIDTH: 0.09,
+  STRIP_FLOOR_LENGTH: 1.1, // kertas terurai di lantai
+  ROLL_RADIUS_AFTER: 0.035,
+  MARKER_HEIGHT: 0.18
+};
+
+// --- Acak-acak selimut ---
+export const BLANKET = {
+  ACTION_DURATION: 1.3, // kucing menguleni selimut
+  KNEAD_FREQ: 9,
+  SIZE: { W: 1.5, H: 0.05, D: 1.3 },
+  CRUMPLE_PIECES: 7,
+  MARKER_HEIGHT: 0.2
 };
 
 // --- Curi ikan di dapur ---
@@ -882,48 +1024,53 @@ export const OWNER_ROUTINE = {
   STRETCH_DURATION: 4,
   // Setelah sesi kerja, pilih satu kegiatan (acak berbobot)
   ACTIVITIES: [
-    { id: 'drink', weight: 40, duration: 8 },
-    { id: 'window', weight: 35, duration: 10 },
-    { id: 'toilet', weight: 25, maxPerLevel: 1 }
+    { id: 'drink', weight: 30, duration: 8 }, // dapur
+    { id: 'window', weight: 25, duration: 10 }, // jendela ruang tamu
+    { id: 'bedroom', weight: 25, duration: 8 }, // merapikan lemari
+    { id: 'toilet', weight: 20, maxPerLevel: 1 } // kamar mandi, pintu tertutup
   ],
   SPOTS: {
-    desk: { x: 2.4, z: -2.95, yaw: Math.PI }, // duduk di kursi kerja
-    kitchen: { x: -3.5, z: -2.9, yaw: Math.PI },
-    window: { x: -3.9, z: -0.4, yaw: -Math.PI / 2 },
-    door: { x: 3.9, z: 1.4, yaw: Math.PI / 2 }
+    desk: { x: 1.6, z: -3.95, yaw: Math.PI }, // duduk di kursi ruang kerja
+    kitchen: { x: 4.75, z: -4.0, yaw: Math.PI }, // depan konter dapur
+    window: { x: -6.4, z: 2.3, yaw: -Math.PI / 2 }, // jendela ruang tamu
+    bedroom: { x: -3.3, z: -3.9, yaw: Math.PI }, // depan lemari
+    toilet: { x: -1.5, z: -3.0, yaw: 0 } // di dalam kamar mandi, menghadap pintu
   },
   SIT_HEIGHT: 0.48 // tinggi pinggul saat duduk
 };
 
 // --- Pintu (keluar ke toilet) di dinding timur ---
 export const DOOR = {
-  Z: 1.4,
-  WIDTH: RS.door.WIDTH,
+  // Pintu kamar mandi (berengsel di sisi barat bukaan, membuka ke dalam)
+  HINGE_X: -1.95,
+  Z: -1.5,
+  WIDTH: RS.doorway.WIDTH,
   HEIGHT: RS.door.HEIGHT,
-  OPEN_ANGLE: 1.6,
+  THICKNESS: 0.04,
+  OPEN_ANGLE: 1.5,
   OPEN_SPEED: 3, // rad/detik
-  OUTSIDE_X: 5.2 // titik di balik pintu tempat pemilik "menghilang"
+  CLOSED_ANGLE: 0.25 // di bawah sudut ini pintu dianggap tertutup (menghalangi)
 };
 
 // --- Keranjang kucing (tempat muncul kembali setelah tertangkap) ---
 export const BASKET = {
-  x: -3.3,
-  z: 3.0,
+  x: -6.4,
+  z: 0.4,
   RADIUS: 0.25,
   HEIGHT: 0.15
 };
 
 // --- Area gelap: jangkauan pandang pemilik ×DARK_RANGE_MULT ---
 export const DARK_ZONES = [
-  { x: 0, z: 3.15, width: 2.4, depth: 1.5 }, // di belakang sofa
-  { x: 3.7, z: -3.0, width: 1.4, depth: 1.8 } // sudut timur laut dekat meja kerja & rak tinggi
+  { x: -1.75, z: -0.9, width: 10.5, depth: 1.2 }, // lorong
+  { x: -4.8, z: -3.25, width: 4.4, depth: 3.5 } // kamar tidur (tirai tertutup)
 ];
 export const DARK_ZONE_VISUAL = { COLOR: 0x000000, OPACITY: 0.32 };
 
 // --- Grid navigasi + A* ---
 export const NAV = {
   CELL_SIZE: 0.1,
-  CLEARANCE: 0.42, // radius pemilik + jarak aman dari perabot/dinding
+  CLEARANCE: 0.36, // radius pemilik + jarak aman dari perabot/dinding (muat lewat bukaan 0,9 m)
   REPLAN_INTERVAL: 0.3, // detik, saat mengejar
   ARRIVE_DIST: 0.05,
   MAX_ITERATIONS: 20000
@@ -968,7 +1115,8 @@ export const CHASE = {
   CATCH_RADIUS: 0.9, // jarak horizontal untuk meraih (radius tubuh 0,32 + lengan ±0,6)
   REACH_HEIGHT: 1.2, // kucing di atas ketinggian ini tidak bisa diraih
   WAIT_UNDER_HIGH: 4, // menunggu di bawah tempat tinggi lalu menyerah
-  UNDER_HIGH_DIST: 1.0 // dianggap 'di bawah' kucing jika sedekat ini (horizontal)
+  UNDER_HIGH_DIST: 1.0, // dianggap 'di bawah' kucing jika sedekat ini (horizontal)
+  HIDDEN_WAIT_DIST: 1.6 // kucing di kolong perabot: pemilik menunggu di sekitar sini
 };
 
 // --- Alur KETAHUAN (GDD §9) ---

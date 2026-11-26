@@ -28,7 +28,18 @@ Semua benda memakai ukuran nyata (tabel `REAL_SCALE` di `config.js`):
 | Gelas / pot / kardus | 0,12 / 0,40 / 0,40–0,50 |
 | Pintu / plafon | 2,0 × 0,85 / 2,7 |
 
-Ruang tamu berukuran **8,8 × 8 m** (tata letak prototipe 22 × 20 m dikali `WORLD_SCALE` 0,4), sehingga waktu tempuh kucing antar-objek terasa sama seperti sebelum skala diperbaiki. Kecepatan dan jarak persepsi ikut disesuaikan dengan perbandingan yang sama.
+Kecepatan dan jarak persepsi disesuaikan dengan skala nyata (lihat bagian 3 dan 8).
+
+## 1b. Rumah
+
+Rumah kecil satu lantai **14 × 10 m** (denah lengkap: [docs/denah.md](denah.md)): ruang tamu, ruang makan + dapur terbuka, lorong, kamar tidur pemilik, kamar mandi, dan ruang kerja.
+
+- **Loop kejar-kejaran:** (L1) ruang tamu ↔ lorong lewat dua bukaan; (L2) ruang tamu → lorong → dapur → ruang makan → ruang tamu; (L3) mengitari meja makan; (L4) mengitari pulau dapur.
+- **Jalan pintas khusus kucing:**
+  - Rute atas: dudukan sofa → meja kopi → rak TV → konter bar → ruang makan/dapur (pemilik harus memutar).
+  - **Kolong perabot:** meja kopi (0,41 m) dan meja makan (0,70 m) bisa dilewati sambil berdiri; kasur (0,28 m) hanya sambil mengendap (di kolong kucing otomatis merunduk dan tidak bisa melompat). Kucing di kolong tertutup dari pandangan dan **tidak bisa diraih**: pemilik menunggu di dekatnya lalu menyerah.
+- **Area gelap:** lorong dan kamar tidur (tirai tertutup). **Area terang:** depan jendela ruang tamu (berkas matahari) dan dekat jendela dapur.
+- Dinding dalam menghalangi gerak, pandangan pemilik, dan kamera. Suara gameplay **tidak** diredam dinding (radius murni).
 
 ## 2. Loop inti
 
@@ -102,6 +113,8 @@ Setiap kenakalan memberi Chaos dan memancarkan suara dengan radius tertentu. Pem
 | Kenakalan | Chaos | Radius suara |
 |---|---|---|
 | Tumpahkan tisu | 15 | 0,8 m |
+| Acak-acak selimut | 25 | 0,6 m |
+| Tarik tisu toilet | 35 | 1,2 m |
 | Cakar sofa | 20 | 1,6 m |
 | Injak remote (TV menyala) | 30 | 2,4 m |
 | Jatuhkan gelas sampai pecah | 40 | 4 m |
@@ -122,15 +135,21 @@ Radius suara berskala 0,4 terhadap nilai awal (2/4/6/10/8/3 m) mengikuti skala r
 
 | Kenakalan | Jumlah | Lokasi | Total Chaos dasar |
 |---|---|---|---|
-| Gelas | 4 | meja kopi, rak TV, rak rendah, konter dapur | 160 |
-| Pot | 2 | tanaman di dinding barat (selatan jendela) dan sudut tenggara | 100 |
+| Gelas | 4 | meja kopi & rak TV (ruang tamu), pulau dapur, meja rias (kamar tidur) | 160 |
+| Pot | 2 | tanaman ruang tamu & ruang makan | 100 |
 | Ikan dapur | 1 | konter dapur | 80 |
-| Cakar | 2 | sofa, kursi | 40 |
-| Tisu | 2 | meja kopi, rak rendah | 30 |
+| Cakar | 2 | sofa, kursi baca | 40 |
+| **Tarik tisu toilet** | 1 | kamar mandi | 35 |
+| Tisu | 2 | meja kopi, meja kerja | 30 |
 | Remote | 1 | dudukan sofa | 30 |
-| **Total** | **12** | | **440** (maks. ±660 dengan combo) |
+| **Acak-acak selimut** | 1 | kasur (kamar tidur) | 25 |
+| **Total** | **14** | | **500** (maks. ±750 dengan combo) |
 
-**Pojok dapur:** konter dapur (bisa dinaiki dengan lompat tinggi) dan kulkas (tempat tinggi, dari konter) di sudut barat laut ruangan, menghadap kamera. Tempat ini juga menjadi waypoint "ambil minum" pemilik di Fase 3.
+Target level tetap 300 Chaos / 4 menit; disetel ulang lewat playtest karena rumah lebih luas.
+
+**Kenakalan baru:**
+- **Tarik tisu toilet** (35 Chaos, suara 1,2 m): dari lantai, kucing berdiri dan menepuk gulungan berkali-kali; gulungan berputar berderak, kertas menjuntai lalu terurai ±1 m di lantai.
+- **Acak-acak selimut** (25 Chaos, suara 0,6 m — kain, sangat senyap): di atas kasur, kucing menguleni selimut; selimut rapi berubah jadi gumpalan kusut.
 
 ### Animasi khas
 - **Gelas:** kucing mendorong gelas pelan dengan kaki depan, menoleh ke kamera sebentar, lalu gelas meluncur jatuh dan pecah. Pecahan berhamburan, mulai memudar setelah 3 detik, dan kamera bergetar kecil.
@@ -171,10 +190,11 @@ Pemilik menjalankan **rutinitas waypoint** (jalan santai 1,1 m/s):
 
 | Kegiatan | Catatan |
 |---|---|
-| Kerja di laptop | Kegiatan paling lama: 35–55 detik di meja kerja (dinding utara), duduk membelakangi ruangan. Setiap 12–20 detik **menoleh ke belakang** 2,5 detik; kadang meregang 4 detik |
-| Ambil minum di dapur | 8 detik (peluang 40%) |
-| Lihat ke luar jendela | 10 detik (peluang 35%) |
-| Ke toilet | Peluang 25%, **maksimal sekali per level**. Jalan ke pintu di dinding timur, pintu terbuka, **keluar ruangan selama 20 detik**, lalu kembali (bunyi siraman) |
+| Kerja di laptop | Kegiatan paling lama: 35–55 detik di **ruang kerja**, duduk membelakangi pintu. Setiap 12–20 detik **menoleh ke belakang** 2,5 detik; kadang meregang 4 detik |
+| Ambil minum di dapur | 8 detik (peluang 30%) |
+| Lihat ke luar jendela ruang tamu | 10 detik (peluang 25%) |
+| Merapikan lemari di kamar tidur | 8 detik (peluang 25%) |
+| Ke toilet | Peluang 20%, **maksimal sekali per level**. Masuk kamar mandi, **pintu tertutup selama 20 detik** (kucing tidak bisa masuk, pandangan terhalang), bunyi siraman, pintu membuka, lalu kembali bekerja |
 
 Setelah sesi kerja, pemilik memilih satu kegiatan secara acak berbobot, lalu kembali bekerja. Selama di toilet, pemilik tidak melihat dan tidak mendengar apa pun.
 
@@ -185,7 +205,7 @@ Pemilik berjalan memakai grid navigasi (A* + penghalusan jalur) dan tidak menemb
 - Kucing hanya terlihat jika ada **line-of-sight** ke titik tubuhnya (kepala 0,28 m, punggung 0,23 m, pantat 0,20 m). Kucing kecil mudah tertutup meja kopi, sofa, dan perabot lain. Perabot menghalangi pandangan; lampu berdiri dan tanaman tidak. Perabot yang sedang dipijak kucing tidak menutupi kucing itu sendiri.
 - Pengubah jangkauan: **mengendap ×0,5**, **area gelap ×0,7**.
 - **Jarak < 0,6 m:** selalu terlihat, kecuali line-of-sight terhalang total.
-- **Area gelap** (sementara; visual lengkap di Fase 5): di belakang sofa dan di sudut timur laut dekat rak tinggi, ditandai bayangan gelap di lantai.
+- **Area gelap:** lorong dan kamar tidur, ditandai bayangan gelap di lantai (visual lengkap di Fase 5).
 
 ### Pendengaran
 - Pemilik mendengar suara (`emitNoise`) jika berada di dalam radiusnya.
@@ -220,7 +240,7 @@ Urutan saat kucing terlihat pemilik:
    - vignette gelap
    - teks **"KETAHUAN!"**
    - fade ke hitam
-4. **Setelah fade** → kucing berada di **keranjang** (sudut barat daya), **nyawa −1**, pemilik kembali ke rutinitas dengan meter 0, dan kucing **kebal 3 detik** (berkedip).
+4. **Setelah fade** → kucing berada di **keranjang** (pojok barat laut ruang tamu), **nyawa −1**, pemilik kembali ke rutinitas dengan meter 0, dan kucing **kebal 3 detik** (berkedip).
 
 Detail: slow motion **0,3×** selama 1,6 detik nyata, desaturasi bertahap 1 detik, teks dengan efek dentum, bunyi dentum, getaran kamera, pemilik mengangkat kucing. Fade keluar 0,6 detik, hitam 0,5 detik, fade masuk 0,6 detik. Efek layar memakai CSS (filter + overlay), bukan post-processing.
 
@@ -295,6 +315,7 @@ Fitur dari prototipe *Coin Rush 3D* diubah sebagai berikut. Perubahan ini dikerj
 - **Tanpa aset eksternal.** Semua model, tekstur, dan suara dibuat secara prosedural (bentuk dasar Three.js, Canvas, Web Audio).
 - **Ringan** dan lancar di laptop biasa.
 - **Semua angka penyetelan ada di `js/config.js`.**
+- **Performa:** hanya matahari (directional) yang memakai bayangan; lampu ruangan tanpa bayangan. Geometri statis digabung per material (rumah dan tiap perabot). Target 60 FPS di laptop biasa; FPS tampil di overlay `F3`.
 
 ## 17. Pertanyaan terbuka
 
@@ -346,7 +367,8 @@ Belum ada. Tambahkan di sini jika muncul keputusan desain yang belum ditentukan.
 
 ### Fase 5 — Sembunyi & camilan
 - [ ] Kardus (ketahuan jika bergerak saat dilihat)
-- [ ] Area gelap: visual & pencahayaan yang lebih jelas (efek jangkauan ×0,7 sudah ada sejak Fase 3)
+- [ ] Area gelap: visual & pencahayaan yang lebih jelas (efek jangkauan ×0,7 sudah ada sejak Fase 3; lorong & kamar tidur)
+- [x] Kolong perabot untuk sembunyi (meja kopi, meja makan, kasur) — dikerjakan saat perbaikan peta
 - [ ] Catnip (zoomies 6 detik) menggantikan magnet (kode magnet sudah dihapus di Fase 3)
 - [ ] Tidur di sinar matahari untuk memulihkan stamina
 
@@ -355,6 +377,13 @@ Belum ada. Tambahkan di sini jika muncul keputusan desain yang belum ditentukan.
 - [x] Animasi mendorong gelas sambil menatap kamera — dikerjakan di Fase 2
 - [ ] Loaf pose setelah diam 5 detik
 - [ ] Bola benang yang bisa ditendang sebagai pengalih
+
+### Perbaikan peta (di luar fase)
+- [x] Rumah 14 × 10 m: ruang tamu, ruang makan + dapur, lorong, kamar tidur, kamar mandi, ruang kerja
+- [x] 4 loop kejar-kejaran, rute atas & kolong khusus kucing
+- [x] Kenakalan dipindah ke ruangan yang cocok + 2 baru (tisu toilet, selimut)
+- [x] Rutinitas pemilik di seluruh rumah, toilet dengan pintu tertutup
+- [x] Denah di `docs/denah.md`
 
 ### Fase 7 — Level & tutorial
 - [ ] Sistem level (layout ruangan, target, durasi) yang didefinisikan sebagai data
@@ -371,5 +400,5 @@ Belum ada. Tambahkan di sini jika muncul keputusan desain yang belum ditentukan.
 ### Fase 9 — Polish & performa
 - [ ] Efek suara prosedural untuk semua aksi baru
 - [ ] Preset kualitas grafis, volume, dan sensitivitas yang benar-benar diterapkan
-- [ ] Uji performa di laptop biasa dan optimasi
+- [ ] Uji performa di laptop biasa dan optimasi (sudah: bayangan hanya dari matahari, geometri statis digabung, FPS di F3)
 - [ ] Penyeimbangan angka di `config.js` dan uji main menyeluruh

@@ -25,13 +25,23 @@ export function isPositionFree(colliders, x, z, radius) {
 }
 
 // Dorong kucing keluar dari dinding & perabot (mengubah position dan vel).
-export function resolveRoomCollisions(position, vel, colliders) {
-  resolveCircleCollisions(position, vel, colliders, PLAYER.RADIUS, position.y);
+// bodyHeight: tinggi badan kucing saat ini (untuk lewat kolong perabot)
+export function resolveRoomCollisions(position, vel, colliders, bodyHeight = 0) {
+  resolveCircleCollisions(position, vel, colliders, PLAYER.RADIUS, position.y, bodyHeight);
+}
+
+// Collider berkolong (crawlHeight) tempat titik (x, z) berada di bawahnya, atau null.
+export function crawlBoxAt(colliders, x, z, footY) {
+  if (footY > PHYSICS.CLIMB_TOLERANCE) return null;
+  for (const box of colliders) {
+    if (box.crawlHeight > 0 && x >= box.minX && x <= box.maxX && z >= box.minZ && z <= box.maxZ) return box;
+  }
+  return null;
 }
 
 // Versi umum: lingkaran berradius R dengan titik bawah di footY
 // (dipakai kucing dan benda fisika).
-export function resolveCircleCollisions(position, vel, colliders, R, footY) {
+export function resolveCircleCollisions(position, vel, colliders, R, footY, bodyHeight = 0) {
 
   // Batas 4 dinding ruangan
   const minX = -ROOM_HALF_W + R;
@@ -47,6 +57,8 @@ export function resolveCircleCollisions(position, vel, colliders, R, footY) {
   // AABB perabot: hanya blokir horizontal jika kaki lebih rendah dari topHeight - toleransi
   for (const box of colliders) {
     if (footY >= box.topHeight - PHYSICS.CLIMB_TOLERANCE) continue;
+    // Kolong perabot: badan yang cukup pendek & di lantai lewat di bawahnya
+    if (box.crawlHeight > 0 && bodyHeight > 0 && footY <= PHYSICS.CLIMB_TOLERANCE && bodyHeight <= box.crawlHeight) continue;
 
     const closestX = Math.max(box.minX, Math.min(position.x, box.maxX));
     const closestZ = Math.max(box.minZ, Math.min(position.z, box.maxZ));

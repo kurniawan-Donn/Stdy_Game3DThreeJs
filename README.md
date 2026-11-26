@@ -12,9 +12,9 @@ Ditulis dengan JavaScript ES modules biasa, tanpa build tool dan tanpa aset ekst
 
 ## ✨ Fitur
 
-- 🏠 **Ruang tamu 3D** dengan lantai kayu prosedural, jendela bercahaya matahari, dan pojok dapur
+- 🏠 **Rumah satu lantai 14 × 10 m** ([denah](docs/denah.md)): ruang tamu, dapur + ruang makan, lorong gelap, kamar tidur, kamar mandi, ruang kerja — dengan loop kejar-kejaran, rute atas perabot, dan kolong untuk sembunyi
 - 🐈 **Kucing low-poly** yang bisa jalan, lari, mengendap, lompat ke atas perabot, dan mengeong
-- 😼 **12 objek kenakalan:** dorong gelas sampai pecah (sambil menatap kamera), tumpahkan tisu, cakar sofa, injak remote sampai TV menyala, gulingkan pot, curi ikan di dapur
+- 😼 **14 objek kenakalan:** dorong gelas sampai pecah (sambil menatap kamera), tumpahkan tisu, cakar sofa, injak remote sampai TV menyala, gulingkan pot, curi ikan di dapur, tarik tisu toilet, acak-acak selimut
 - 🧱 **Fisika benda buatan sendiri:** benda jatuh dari meja, memantul kecil, pecahan kaca berhamburan
 - 🔥 **Chaos & combo:** kenakalan beruntun dalam 10 detik mendapat bonus ×1,5
 - ⏱️ **Level berwaktu** dengan target Chaos dan rating bintang ★★★

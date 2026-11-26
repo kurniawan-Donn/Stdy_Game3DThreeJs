@@ -1,7 +1,7 @@
 // Kucing pemain: model low-poly, gerakan relatif kamera, lompat, dan animasi.
 import * as THREE from 'three';
 import { PLAYER, PHYSICS, CAT_ANIM, MATERIALS, NOISE, OWNER, VACUUM, REAL_SCALE } from '../config.js';
-import { resolveRoomCollisions, getGroundHeight, pushOutOfCircle } from '../systems/collision.js';
+import { resolveRoomCollisions, getGroundHeight, pushOutOfCircle, crawlBoxAt } from '../systems/collision.js';
 import { canRun, trySpendHighJump, updateStamina, isExhausted } from '../systems/stamina.js';
 import { emitNoise } from '../systems/noise.js';
 
@@ -150,7 +150,8 @@ export function createCat(scene) {
     isPanting: false,
     meowTimer: 0,
     camYaw: 0, // sudut ke kamera relatif terhadap badan (untuk menoleh)
-    action: null // aksi kenakalan yang sedang berjalan (lihat startCatAction)
+    action: null, // aksi kenakalan yang sedang berjalan (lihat startCatAction)
+    underCrawl: null // collider berkolong tempat kucing bersembunyi (atau null)
   };
 }
 
@@ -272,7 +273,10 @@ export function updateCat(ctx, dt) {
 
   // Mode gerak: mengendap menang atas lari; mengendap hanya di tanah
   // (lompat membatalkan mengendap); lari butuh stamina dan tidak terengah.
-  const sneaking = wantsSneak && cat.isGrounded;
+  // Di kolong yang lebih rendah dari tinggi berdiri: kucing otomatis merunduk
+  cat.underCrawl = crawlBoxAt(colliders, player.position.x, player.position.z, player.position.y);
+  const forcedCrouch = !!cat.underCrawl && cat.underCrawl.crawlHeight < PLAYER.HEIGHT_STAND;
+  const sneaking = (wantsSneak || forcedCrouch) && cat.isGrounded;
   const running = !wantsSneak && wantsRun && moveLen > 0 && canRun(stamina);
   cat.moveMode = sneaking ? 'sneak' : running ? 'run' : 'walk';
   cat.profile = sneaking ? PLAYER.SNEAK_PROFILE : PLAYER.NORMAL_PROFILE;
@@ -325,7 +329,7 @@ export function updateCat(ctx, dt) {
   }
 
   // Lompat: Spasi = lompat biasa (gratis); Shift + Spasi = lompat tinggi (pakai stamina)
-  if (!locked && keys['Space'] && cat.isGrounded) {
+  if (!locked && keys['Space'] && cat.isGrounded && !cat.underCrawl) {
     const highJump = wantsRun && trySpendHighJump(stamina);
     playerVel.y = highJump ? PLAYER.HIGH_JUMP_FORCE : PLAYER.JUMP_FORCE;
     cat.isGrounded = false;
@@ -339,7 +343,8 @@ export function updateCat(ctx, dt) {
   player.position.z += playerVel.z * dt;
   player.position.y += playerVel.y * dt;
 
-  resolveRoomCollisions(player.position, playerVel, colliders);
+  const bodyHeight = cat.moveMode === 'sneak' ? PLAYER.HEIGHT_SNEAK : PLAYER.HEIGHT_STAND;
+  resolveRoomCollisions(player.position, playerVel, colliders, bodyHeight);
 
   // Penghalang bergerak: tubuh pemilik dan robot vacuum
   const o = ctx.owner;

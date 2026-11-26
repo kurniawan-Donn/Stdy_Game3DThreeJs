@@ -23,6 +23,7 @@ index.html              Canvas, elemen UI (HUD, layar hasil, teks melayang), imp
 css/style.css           Semua gaya UI
 package.json            Script "start" (npx serve)
 docs/GDD.md             Game Design Document + peta pengembangan (Fase 0–9)
+docs/denah.md           Denah rumah 14 × 10 m (ASCII + koordinat, loop, jalan pintas)
 js/
   main.js               Entry point: membuat objek konteks `ctx`, menjalankan game loop
   config.js             SEMUA angka penyetelan (lihat aturan di bawah)
@@ -33,13 +34,14 @@ js/
     camera.js           Kamera orbit third-person (camRig): yaw/pitch/zoom, auto-recenter, spring arm, mode KETAHUAN, getaran
     audio.js            Efek suara Web Audio: audio.play(nama) dari AUDIO.SFX / AUDIO.NOISE_SFX
     save.js             Tabungan Chaos & rekor level di localStorage
+    mergeStatic.js      Gabung mesh statis per material (mengurangi draw call)
   world/
     textures.js         Tekstur prosedural (lantai kayu, karpet)
-    lighting.js         Lampu hemi, matahari, lampu berdiri, fill
-    room.js             Lantai, dinding, plafon, jendela, baseboard
-    furniture.js        Perabotan + pojok dapur + collider AABB; mengembalikan { colliders, refs }
+    lighting.js         Hemi + matahari (satu-satunya bayangan) + lampu ruangan tanpa bayangan
+    room.js             Rumah dari HOUSE: lantai kayu/keramik, dinding luar+jendela, dinding dalam+bukaan, plafon
+    furniture.js        Perabot seluruh rumah + collider AABB (crawlHeight = kolong); { colliders, refs, mergeStats }
     dust.js             Partikel debu di berkas cahaya jendela
-    house.js            Pintu ke toilet, keranjang kucing, area gelap (isInDarkZone)
+    house.js            Pintu kamar mandi (collider dinamis), keranjang kucing, area gelap (isInDarkZone)
   entities/
     cat.js              Kucing pemain: model, gerak, lompat, animasi, aksi (startCatAction)
     fish.js             Ikan camilan (isi stamina), menggantikan kristal
@@ -53,7 +55,7 @@ js/
     mischief/           Objek kenakalan, satu file per jenis
       index.js          Buat/reset/update semua objek dari MISCHIEF_LAYOUT
       common.js         registerMischief, pose kucing, serpihan berfisika
-      glass.js tissue.js scratch.js remote.js pot.js kitchenFish.js
+      glass.js tissue.js scratch.js remote.js pot.js kitchenFish.js toiletPaper.js blanket.js
   systems/
     collision.js        Lingkaran vs AABB, tinggi permukaan, cek posisi bebas
     spawn.js            Cari posisi lantai acak yang aman
@@ -88,8 +90,11 @@ js/
 - **Waktu nyata vs waktu dunia:** saat tertangkap, `ctx.capture.timeScale` = 0,3 (slow motion). Pemilik, kenakalan, robot, fisika, partikel, dan debu memakai waktu dunia (`dt × timeScale`); alur KETAHUAN, kamera, dan UI memakai waktu nyata. Input kucing dikunci selama alur KETAHUAN.
 - Pemilik mendengar lewat `onNoise` (didaftarkan di `main.js` → `ownerHearNoise`). Penglihatan dihitung di `systems/perception.js`. Collider perabot dengan `occludes: false` tidak menghalangi pandangan, dan `navBlocks: false` tidak menghalangi jalur pemilik.
 - **Kenakalan baru:** buat file di `js/entities/mischief/`, daftarkan di `FACTORIES` (`index.js`), tambahkan posisinya di `MISCHIEF_LAYOUT` dan nilainya di `MISCHIEF` (config). Selesaikan kenakalan lewat `scoreMischief(ctx, type, posisi)`, yang otomatis memanggil `emitNoise` dengan radius dari GDD. Animasi kucing dijalankan lewat `startCatAction(cat, { duration, faceYaw, pose, events })`, dan semua perubahan tampilan harus dikembalikan di `inst.dispose()` karena objek dibuat ulang setiap level diulang.
+- **Rumah:** semua collider = dinding dalam (`wall: true`) + perabot + pintu kamar mandi (`door: true`, `topHeight` 0 saat terbuka). Kamera ditahan dinding dalam & pintu tertutup lewat `ctx.cameraBlockers`. Perabot baru dibangun di `furniture.js` lalu ditutup dengan `finish(ctx, group, colliders)` (gabung geometri + collider + fadeable). Tata letak ada di `HOUSE` & `FURNITURE_LAYOUT`; perbarui `docs/denah.md` bila denah berubah dan pastikan loop/rute pemilik tetap lolos uji A*.
+- **Kolong:** collider dengan `crawlHeight` bisa dilewati kucing yang tingginya (berdiri 0,35 m / mengendap 0,26 m) muat. `cat.underCrawl` menandai kucing di kolong: tidak bisa melompat, tak terlihat (LOS), dan tidak bisa diraih pemilik.
+- **Performa:** hanya matahari yang memakai bayangan; jangan menambah lampu dengan bayangan. Gabung geometri statis baru dengan `mergeStaticGroup`.
 - Benda yang jatuh, memantul, atau berserakan memakai `addBody(ctx, {...})` dari `systems/physics.js`. Semua benda dibersihkan saat level diulang.
-- **Kamera** mengorbit kucing (`ctx.camRig`) dan bisa menghadap ke mana saja, jadi objek dan perubahan tampilan harus terlihat dari semua arah. Dinding & plafon ditangani spring arm (kamera tidak pernah keluar ruangan); perabot yang menghalangi memudar lewat `furnitureRefs.fadeables`. Perabot baru di `furniture.js` didaftarkan dengan `registerFadeable(refs, [group], colliders)`.
+- **Kamera** mengorbit kucing (`ctx.camRig`) dan bisa menghadap ke mana saja, jadi objek dan perubahan tampilan harus terlihat dari semua arah. Dinding luar, dinding dalam, plafon, dan pintu tertutup ditangani spring arm (kamera tidak pernah menembus dinding); perabot yang menghalangi memudar lewat `furnitureRefs.fadeables` (diisi otomatis oleh `finish` di `furniture.js`).
 - Aksi yang berisik memanggil `emitNoise(ctx, { x, z, radius, source })`. Sistem yang perlu "mendengar" mendaftar lewat `onNoise(ctx.noise, fn)`.
 - Objek interaktif didaftarkan lewat `registerInteractable(ctx.interaction, item)` (lihat komentar di `interaction.js`).
 - Tekan `F3` di game untuk overlay debug. Pakai overlay ini untuk memeriksa radius noise dan jangkauan interaksi.
