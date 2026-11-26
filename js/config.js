@@ -707,6 +707,7 @@ export const AUDIO = {
     star: [[880, 1320, 0.25, 'triangle', 0.12, 0]],
     timerTick: [[1000, 1000, 0.05, 'square', 0.04, 0]],
     suspicious: [[520, 700, 0.15, 'sine', 0.08, 0]], // "?"
+    bellStep: [[2600, 2450, 0.12, 'sine', 0.025, 0], [3300, 3150, 0.1, 'sine', 0.018, 0.03]], // kalung lonceng
     meetingBusted: [[880, 300, 0.35, 'square', 0.07, 0], [600, 200, 0.4, 'square', 0.06, 0.12]], // ketahuan berisik saat rapat
     alarm: [
       [880, 880, 0.08, 'square', 0.08, 0],
@@ -776,9 +777,7 @@ export const AUDIO = {
 export const LEVEL_UNLOCK_MIN_STARS = 1;
 // Alur game & lobi
 export const GAME_FLOW = {
-  PAUSE_KEY: 'KeyP',
-  // Kamera latar menu (sementara, sebelum lobi 3D): mengorbit ruang tamu
-  MENU_CAMERA: { CENTER: [-1.5, 0.5, 2.0], RADIUS: 2.6, HEIGHT: 1.7, SPEED: 0.06 }
+  PAUSE_KEY: 'KeyP'
 };
 // Rating bintang: kelipatan target Chaos untuk 1, 2, 3 bintang
 export const STAR_THRESHOLDS = [1.0, 1.5, 2.0];
@@ -1111,6 +1110,34 @@ export const CUSTOMIZATION = {
   BLACK_CAT_DARK_RANGE_MULT: 0.5,
   // Chonky: badan lebih bulat, jalan bergoyang, loaf lebih bulat (kemampuan sama)
   CHONKY: { BODY_WIDTH: 1.35, BODY_HEIGHT: 1.15, BELLY_DROP: 0.012, WADDLE_ROLL: 0.12, WADDLE_SWAY: 0.012, LOAF_WIDEN: 1.12 }
+};
+
+// --- Lobi 3D: sudut rumah yang nyaman (world/lobby.js) ---
+export const LOBBY = {
+  BACKGROUND: 0x1c140e,
+  FLOOR_SIZE: 6,
+  WALL_HEIGHT: 2.6,
+  BACK_WALL_Z: -1.5,
+  SIDE_WALL_X: -1.9,
+  WINDOW: { x: 0.2, y: 1.45, width: 1.3, height: 1.1, SKY: 0xffd9a0 },
+  CUSHION: { x: 0.55, z: 0, RADIUS: 0.3, HEIGHT: 0.09, COLOR: 0x2f7d7a, TOP_COLOR: 0x3a9591 },
+  RUG: { x: 0.45, z: 0.1, RADIUS: 1.05, COLOR: 0x9a3f3f, RING_COLOR: 0xd9b26f },
+  // Lampu (hanya matahari jendela yang berbayangan)
+  HEMI: { sky: 0xfff1dc, ground: 0x6b4a2e, intensity: 0.55 },
+  SUN: { color: 0xffc98a, intensity: 1.2, position: [0.6, 3.2, -3.2], target: [0.5, 0, 0.4], shadowMapSize: 1024 },
+  LAMP: { color: 0xffb870, intensity: 1.1, distance: 4, decay: 2, position: [1.75, 1.35, -0.9] },
+  COLORS: { SHADE: 0xf5deb3, SHADE_GLOW: 0xffb870, POT: 0xb4532a, LEAF: 0x4d8a3c, BOOKS: [0x3b5b92, 0xa63d40, 0xe9b44c] },
+  // Kamera: kucing tampil di kanan layar (menu di kiri)
+  CAMERA: { FOV: 40, position: [-0.05, 0.85, 1.85], target: [0.22, 0.26, 0], WIDE_SHIFT: 0.22 },
+  SPIN_SPEED: 0.35, // rad/detik, kucing berputar pelan di bantal
+  // Siklus animasi idle: loaf → duduk → berdiri sambil menjilat kaki
+  CYCLE: [
+    { pose: 'loaf', duration: 6 },
+    { pose: 'sit', duration: 4 },
+    { pose: 'lick', duration: 2.4 }
+  ],
+  BREATH_FREQ: 2.2,
+  BREATH_AMP: 0.004
 };
 
 // --- Rapat video (Level 2). Jadwal & aturan ada di file level (MEETINGS). ---

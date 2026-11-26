@@ -937,3 +937,212 @@ body.mode-lobby #debug-panel {
     opacity: 0.2;
   }
 }
+
+/* ---------- Kustomisasi & Pengaturan ---------- */
+.lobby-panel.side {
+  width: min(360px, 90vw);
+  max-height: 90vh;
+  overflow-y: auto;
+  padding: 18px 18px 16px;
+  background: rgba(15, 23, 42, 0.88);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 14px;
+}
+
+.panel-bank {
+  font-size: 13px;
+  color: #cbd5e1;
+}
+
+.panel-bank b {
+  color: #facc15;
+}
+
+.tabs {
+  display: flex;
+  gap: 6px;
+}
+
+.tab,
+.seg-btn {
+  flex: 1;
+  padding: 7px 10px;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  color: #cbd5e1;
+  background: rgba(51, 65, 85, 0.7);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.tab.active,
+.seg-btn.active {
+  color: #0f172a;
+  background: #facc15;
+  border-color: #facc15;
+}
+
+.item-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+}
+
+.item-card {
+  display: grid;
+  grid-template-columns: 26px 1fr;
+  grid-template-rows: auto auto;
+  column-gap: 8px;
+  align-items: center;
+  padding: 8px;
+  text-align: left;
+  font: inherit;
+  color: #f8fafc;
+  background: rgba(51, 65, 85, 0.85);
+  border: 2px solid transparent;
+  border-radius: 9px;
+  cursor: pointer;
+}
+
+.item-card.focus {
+  border-color: #facc15;
+}
+
+.item-card.locked .item-label {
+  color: #cbd5e1;
+}
+
+.item-card .swatch {
+  grid-row: 1 / 3;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, 0.35);
+}
+
+.item-card .swatch.tabby {
+  background-image: repeating-linear-gradient(90deg, transparent 0 4px, var(--pat) 4px 7px) !important;
+}
+
+.item-card .swatch.calico {
+  background-image: radial-gradient(circle at 30% 35%, var(--pat) 0 6px, transparent 7px),
+    radial-gradient(circle at 70% 70%, var(--pat2) 0 6px, transparent 7px) !important;
+}
+
+.item-label {
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.item-price {
+  font-size: 11px;
+  color: #facc15;
+}
+
+.item-card.locked .item-price {
+  color: #fca5a5;
+}
+
+.item-detail {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-height: 38px;
+  font-size: 13px;
+  color: #cbd5e1;
+}
+
+.item-detail b {
+  font-size: 15px;
+  color: #f8fafc;
+}
+
+.setting {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 14px;
+  color: #e2e8f0;
+}
+
+.setting b {
+  color: #facc15;
+  margin-left: 4px;
+}
+
+.setting.check {
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+}
+
+.setting input[type='range'] {
+  width: 100%;
+  accent-color: #facc15;
+}
+
+.setting input[type='checkbox'] {
+  width: 16px;
+  height: 16px;
+  accent-color: #facc15;
+}
+
+.seg {
+  display: flex;
+  gap: 6px;
+}
+
+.btn.danger {
+  color: #fff;
+  background: #b91c1c;
+  border-color: #b91c1c;
+}
+
+.btn.danger:hover:not(:disabled) {
+  background: #dc2626;
+}
+
+.confirm {
+  display: none;
+  padding: 12px;
+  font-size: 13px;
+  color: #fecaca;
+  background: rgba(127, 29, 29, 0.55);
+  border: 1px solid #ef4444;
+  border-radius: 10px;
+}
+
+.confirm.active {
+  display: block;
+}
+
+.confirm .btn-row {
+  margin-top: 10px;
+}
+
+/* Penghitung FPS (Pengaturan → Tampilkan FPS) */
+#fps-counter {
+  position: fixed;
+  top: 8px;
+  right: 10px;
+  display: none;
+  padding: 3px 8px;
+  font-size: 12px;
+  font-weight: 700;
+  color: #86efac;
+  background: rgba(15, 23, 42, 0.7);
+  border-radius: 6px;
+  pointer-events: none;
+  z-index: 20;
+}
+
+body.show-fps #fps-counter {
+  display: block;
+}
+
+body.show-fps.mode-lobby #fps-counter {
+  top: 54px;
+}

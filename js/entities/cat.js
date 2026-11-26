@@ -1,6 +1,7 @@
 // Kucing pemain: model low-poly, gerakan relatif kamera, lompat, dan animasi.
 import * as THREE from 'three';
-import { PLAYER, PHYSICS, CAT_ANIM, MATERIALS, NOISE, OWNER, VACUUM, REAL_SCALE, HIDE_BOX, CATNIP } from '../config.js';
+import { PLAYER, PHYSICS, CAT_ANIM, NOISE, OWNER, VACUUM, HIDE_BOX, CATNIP, CUSTOMIZATION } from '../config.js';
+import { buildCatModel, disposeCatModel } from './catModel.js';
 import { resolveRoomCollisions, getGroundHeight, pushOutOfCircle, crawlBoxAt } from '../systems/collision.js';
 import { canRun, trySpendHighJump, updateStamina, isExhausted } from '../systems/stamina.js';
 import { emitNoise } from '../systems/noise.js';
@@ -24,119 +25,19 @@ const camRight = new THREE.Vector3();
 const worldUp = new THREE.Vector3(0, 1, 0);
 
 // Membuat model kucing dalam satu THREE.Group dan objek state kucing.
-export function createCat(scene) {
+export function createCat(scene, look = { cat: CUSTOMIZATION.DEFAULT_CAT, accessory: null }) {
   const mesh = new THREE.Group();
-
-  const furMain = new THREE.MeshStandardMaterial({ ...MATERIALS.catFurMain });
-  const furLight = new THREE.MeshStandardMaterial({ ...MATERIALS.catFurLight });
-  const pinkMat = new THREE.MeshStandardMaterial({ ...MATERIALS.catPink });
-  const eyeMat = new THREE.MeshStandardMaterial({ ...MATERIALS.catEye });
-
-  // Proporsi nyata (REAL_SCALE.cat): bahu 0,25 m, ujung telinga 0,35 m,
-  // badan hidung→pantat 0,45 m, ekor 0,30 m. Kucing menghadap +Z lokal.
-  const LEG_TOP = 0.14; // tinggi sendi bahu/pinggul
-
-  // Pivot badan agar bisa bernapas & condong saat bergerak
-  const bodyPivot = new THREE.Group();
-  mesh.add(bodyPivot);
-
-  // Badan (punggung = tinggi bahu)
-  const torso = new THREE.Mesh(new THREE.BoxGeometry(0.13, 0.12, 0.32), furMain);
-  torso.position.set(0, REAL_SCALE.cat.SHOULDER - 0.06, -0.01);
-  torso.castShadow = true;
-  torso.receiveShadow = true;
-  bodyPivot.add(torso);
-
-  // Perut terang
-  const belly = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.04, 0.27), furLight);
-  belly.position.set(0, 0.145, -0.01);
-  bodyPivot.add(belly);
-
-  // Kepala (menghadap +Z lokal)
-  const headGroup = new THREE.Group();
-  headGroup.position.set(0, 0.27, 0.19);
-
-  const head = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.1, 0.11), furMain);
-  head.castShadow = true;
-  headGroup.add(head);
-
-  const muzzle = new THREE.Mesh(new THREE.BoxGeometry(0.065, 0.04, 0.035), furLight);
-  muzzle.position.set(0, -0.018, 0.065);
-  headGroup.add(muzzle);
-
-  const nose = new THREE.Mesh(new THREE.BoxGeometry(0.022, 0.016, 0.012), pinkMat);
-  nose.position.set(0, -0.006, 0.084);
-  headGroup.add(nose);
-
-  // Mata
-  const eyeL = new THREE.Mesh(new THREE.BoxGeometry(0.018, 0.024, 0.012), eyeMat);
-  eyeL.position.set(-0.03, 0.012, 0.055);
-  headGroup.add(eyeL);
-
-  const eyeR = eyeL.clone();
-  eyeR.position.x = 0.03;
-  headGroup.add(eyeR);
-
-  // 2 Telinga (ujung di REAL_SCALE.cat.EAR_TIP)
-  const earH = 0.055;
-  const earY = REAL_SCALE.cat.EAR_TIP - headGroup.position.y - earH / 2;
-  for (const side of [-1, 1]) {
-    const ear = new THREE.Mesh(new THREE.ConeGeometry(0.028, earH, 4), furMain);
-    ear.position.set(side * 0.037, earY, 0.005);
-    ear.rotation.y = Math.PI / 4;
-    ear.rotation.z = -side * 0.14;
-    ear.castShadow = true;
-    headGroup.add(ear);
-  }
-
-  bodyPivot.add(headGroup);
-
-  // 4 Kaki dengan pivot di bahu/pinggul
-  function makeLeg(x, z) {
-    const pivot = new THREE.Group();
-    pivot.position.set(x, LEG_TOP, z);
-
-    const legMesh = new THREE.Mesh(new THREE.BoxGeometry(0.035, LEG_TOP - 0.015, 0.035), furMain);
-    legMesh.position.y = -(LEG_TOP - 0.015) / 2;
-    legMesh.castShadow = true;
-    pivot.add(legMesh);
-
-    const paw = new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.018, 0.045), furLight);
-    paw.position.set(0, -LEG_TOP + 0.009, 0.006);
-    pivot.add(paw);
-
-    bodyPivot.add(pivot);
-    return pivot;
-  }
-
-  const legFL = makeLeg(-0.04, 0.1);
-  const legFR = makeLeg(0.04, 0.1);
-  const legBL = makeLeg(-0.04, -0.12);
-  const legBR = makeLeg(0.04, -0.12);
-
-  // Ekor dengan pivot di pangkal (panjang REAL_SCALE.cat.TAIL)
-  const tailLen = REAL_SCALE.cat.TAIL;
-  const tailPivot = new THREE.Group();
-  tailPivot.position.set(0, 0.22, -0.17);
-
-  const tailMesh = new THREE.Mesh(new THREE.BoxGeometry(0.028, tailLen * 0.85, 0.028), furMain);
-  tailMesh.position.set(0, tailLen * 0.39, -tailLen * 0.17);
-  tailMesh.rotation.x = -0.45;
-  tailMesh.castShadow = true;
-  tailPivot.add(tailMesh);
-
-  const tailTip = new THREE.Mesh(new THREE.BoxGeometry(0.032, tailLen * 0.15, 0.032), furLight);
-  tailTip.position.set(0, tailLen * 0.8, -tailLen * 0.36);
-  tailTip.rotation.x = -0.45;
-  tailPivot.add(tailTip);
-
-  bodyPivot.add(tailPivot);
-
+  const model = buildCatModel(look);
+  mesh.add(model.bodyPivot);
   scene.add(mesh);
 
   return {
     mesh,
-    parts: { bodyPivot, headGroup, legFL, legFR, legBL, legBR, tailPivot },
+    parts: model.parts,
+    look: model.look, // tampilan (kustomisasi): { cat, accessory }
+    bell: model.look.accessory === 'bell', // kalung lonceng: langkah berbunyi, Chaos ×1,2
+    darkStealth: !!model.variant.darkStealth, // kucing hitam: sulit terlihat di area gelap
+    chonky: !!model.variant.chonky,
     vel: new THREE.Vector3(),
     isGrounded: true,
     groundHeight: 0,
@@ -166,6 +67,19 @@ export function createCat(scene) {
     zoomiesT: 0,
     remountBlockT: 0
   };
+}
+
+// Ganti tampilan kucing (kustomisasi): model lama dilepas, model baru
+// dipasang di grup yang sama. Pose & state gerak tetap.
+export function setCatLook(cat, look) {
+  disposeCatModel(cat.parts.bodyPivot);
+  const model = buildCatModel(look);
+  cat.mesh.add(model.bodyPivot);
+  cat.parts = model.parts;
+  cat.look = model.look;
+  cat.bell = model.look.accessory === 'bell';
+  cat.darkStealth = !!model.variant.darkStealth;
+  cat.chonky = !!model.variant.chonky;
 }
 
 // Menjalankan aksi kenakalan: kontrol dikunci selama `duration` detik,
@@ -443,9 +357,10 @@ function finishCatFrame(ctx, dt, footsteps = false) {
       emitNoise(ctx, {
         x: player.position.x,
         z: player.position.z,
-        radius: MODE_STEP_RADIUS[cat.moveMode],
+        radius: cat.bell ? CUSTOMIZATION.BELL.STEP_RADIUS[cat.moveMode] : MODE_STEP_RADIUS[cat.moveMode],
         source: 'step-' + cat.moveMode
       });
+      if (cat.bell) ctx.audio.play('bellStep'); // lonceng berdenting tiap langkah
     }
   }
 
@@ -468,6 +383,8 @@ function animateCat(cat, dt) {
   const lerp = THREE.MathUtils.lerp;
 
   cat.animClock += dt;
+  p.bodyPivot.rotation.z = 0;
+  p.bodyPivot.position.x = 0;
   const horizSpeed = Math.hypot(cat.vel.x, cat.vel.z);
   const speedRatio = Math.min(horizSpeed / PLAYER.RUN_SPEED, 1);
 
@@ -496,6 +413,12 @@ function animateCat(cat, dt) {
     p.bodyPivot.position.y = Math.abs(Math.sin(cat.walkCycle)) * A.WALK_BOB * speedRatio;
     p.bodyPivot.rotation.x = lerp(p.bodyPivot.rotation.x, A.WALK_LEAN * speedRatio, A.LEAN_LERP * dt);
     p.tailPivot.rotation.z = Math.sin(cat.walkCycle * A.WALK_TAIL_FREQ) * A.WALK_TAIL_AMP;
+    if (cat.chonky) {
+      // Chonky: jalan bergoyang ke kiri-kanan
+      const CH = CUSTOMIZATION.CHONKY;
+      p.bodyPivot.rotation.z = Math.sin(cat.walkCycle) * CH.WADDLE_ROLL * speedRatio;
+      p.bodyPivot.position.x = Math.sin(cat.walkCycle) * CH.WADDLE_SWAY * speedRatio;
+    }
   } else {
     // Diam: kaki netral, efek bernapas tipis, ekor bergoyang pelan
     const k = Math.min(1, A.IDLE_LERP * dt);

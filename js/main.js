@@ -1,6 +1,6 @@
 // Entry point: merangkai semua modul ke satu objek konteks (ctx) lalu
 // menjalankan game loop. Tidak ada state global; semua lewat ctx.
-import { PHYSICS, STAMINA, COMBO, GAME_FLOW } from './config.js';
+import { PHYSICS, STAMINA, COMBO } from './config.js';
 import { createRenderer, bindResize } from './core/renderer.js';
 import { createInput, endFrame } from './core/input.js';
 import { createState } from './core/state.js';
@@ -11,7 +11,7 @@ import { setupLights } from './world/lighting.js';
 import { createLivingRoom } from './world/room.js';
 import { createFurniture } from './world/furniture.js';
 import { createDust, updateDust } from './world/dust.js';
-import { createCat, updateCat } from './entities/cat.js';
+import { createCat, updateCat, setCatLook } from './entities/cat.js';
 import { createFishPickup, updateFish } from './entities/fish.js';
 import { updateObstacles } from './entities/vacuum.js';
 import { createParticleSystem, updateParticles } from './entities/particles.js';
@@ -42,7 +42,12 @@ import { createOwnerIndicator } from './ui/ownerIndicator.js';
 import { createHelp } from './ui/help.js';
 import { createMenus } from './ui/menus.js';
 import { createPauseScreen } from './ui/pause.js';
-import { loadSave } from './core/save.js';
+import { loadSave, resetSave, writeSave } from './core/save.js';
+import { applySettings } from './core/settings.js';
+import { selectedLook } from './systems/shop.js';
+import { createLobby, updateLobby, setLobbyLook } from './world/lobby.js';
+import { createCustomizeMenu } from './ui/customizeMenu.js';
+import { createSettingsMenu } from './ui/settingsMenu.js';
 import { createFlow, enterLobby, openLevelSelect, playLevel, playContinue, retryLevel, playNextLevel,
   pauseGame, resumeGame, updateFlowInput, onPointerLockChange } from './core/gameFlow.js';
 import { loadLevel } from './systems/levelManager.js';
@@ -62,7 +67,8 @@ function init() {
   createBasket(scene);
   createDarkZones(scene, house.cameraBlockers);
   const dust = createDust(scene);
-  const cat = createCat(scene);
+  const save = loadSave();
+  const cat = createCat(scene, selectedLook(save));
   const fish = createFishPickup(scene);
   const owner = createOwner(scene);
   const particles = createParticleSystem();
@@ -118,7 +124,8 @@ function init() {
     floatText: createFloatingText(document.getElementById('float-layer')),
     lights,
     levelOverrides: [], // nilai config yang ditimpa level aktif (systems/levelManager.js)
-    save: loadSave(),
+    save,
+    lobby: createLobby(selectedLook(save)),
     flow: createFlow(),
     menus: null,
     pause: null,
@@ -146,6 +153,29 @@ function init() {
     restart: click(() => retryLevel(ctx)),
     lobby: click(() => enterLobby(ctx))
   });
+  // Tampilan kucing dipilih/dibeli: terapkan ke kucing pemain & lobi
+  const applyLook = () => {
+    const look = selectedLook(ctx.save);
+    setCatLook(ctx.cat, look);
+    ctx.darkTint.cat = createDarkTint(ctx.cat.mesh);
+    setLobbyLook(ctx.lobby, look);
+    ctx.menus.setBank(ctx.save.chaosBank);
+  };
+  const customize = createCustomizeMenu({
+    getSave: () => ctx.save,
+    preview: (look) => setLobbyLook(ctx.lobby, look),
+    onChange: applyLook
+  });
+  const settingsMenu = createSettingsMenu({
+    getSave: () => ctx.save,
+    apply: () => applySettings(ctx),
+    resetProgress: () => {
+      ctx.save = resetSave();
+      writeSave(ctx.save);
+      applySettings(ctx);
+      applyLook();
+    }
+  });
   ctx.menus = createMenus({
     play: click(() => playContinue(ctx)),
     levels: click(() => openLevelSelect(ctx)),
@@ -153,7 +183,20 @@ function init() {
       ctx.flow.state = 'lobby';
       ctx.menus.showHowto();
     }),
-    back: click(() => enterLobby(ctx)),
+    custom: click(() => {
+      ctx.flow.state = 'lobby';
+      ctx.menus.showPanel('custom');
+      customize.open();
+    }),
+    settings: click(() => {
+      ctx.flow.state = 'lobby';
+      ctx.menus.showPanel('settings');
+      settingsMenu.open();
+    }),
+    back: click(() => {
+      customize.close();
+      enterLobby(ctx);
+    }),
     onLevel: (i) => click(() => playLevel(ctx, i))()
   });
   // Jendela kehilangan fokus saat bermain → pause
@@ -164,7 +207,8 @@ function init() {
   onNoise(ctx.noise, (ev, c) => ownerHearNoise(c, ev));
   registerCatInteractions(ctx);
 
-  // Dunia disiapkan dengan level 1 sebagai latar menu, lalu mulai dari lobi
+  applySettings(ctx);
+  // Dunia disiapkan dengan level 1, lalu mulai dari lobi
   loadLevel(ctx, 0);
   enterLobby(ctx);
   startLoop(ctx);
@@ -236,14 +280,13 @@ function gameFrame(ctx, dt) {
   ctx.ownerIndicator.update(ctx);
 }
 
-// Latar menu: kamera pelan mengorbit ruang tamu (dunia diam)
-function menuFrame(ctx, dt) {
-  const M = GAME_FLOW.MENU_CAMERA;
-  ctx.menuCamT = (ctx.menuCamT || 0) + dt * M.SPEED;
-  const a = ctx.menuCamT;
-  ctx.camera.position.set(M.CENTER[0] + Math.sin(a) * M.RADIUS, M.HEIGHT, M.CENTER[2] + Math.cos(a) * M.RADIUS);
-  ctx.camera.lookAt(M.CENTER[0], M.CENTER[1], M.CENTER[2]);
-  updateDust(ctx.dust, dt);
+// Pengaturan "Tampilkan FPS": angka di pojok kanan atas (diperbarui 2×/detik)
+function updateFpsCounter(ctx, dt) {
+  if (!ctx.save.settings.showFps) return;
+  ctx.fpsT = (ctx.fpsT || 0) - dt;
+  if (ctx.fpsT > 0) return;
+  ctx.fpsT = 0.5;
+  document.getElementById('fps-counter').textContent = `${Math.round(ctx.fps)} FPS`;
 }
 
 function startLoop(ctx) {
@@ -264,10 +307,16 @@ function startLoop(ctx) {
     } else if (st === 'paused') {
       // Dunia membeku; hanya layar bantuan yang tetap bisa dibuka/tutup
       ctx.help.update(ctx.input, dt);
-    } else {
-      menuFrame(ctx, dt);
     }
-    ctx.renderer.render(ctx.scene, ctx.camera);
+    const inMenu = st === 'lobby' || st === 'select';
+    if (inMenu) {
+      // Lobi 3D: kucing di bantal (dunia rumah diam)
+      updateLobby(ctx.lobby, dt);
+      ctx.renderer.render(ctx.lobby.scene, ctx.lobby.camera);
+    } else {
+      ctx.renderer.render(ctx.scene, ctx.camera);
+    }
+    updateFpsCounter(ctx, dt);
 
     endFrame(ctx.input);
   }

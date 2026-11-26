@@ -68,6 +68,7 @@
   <div id="fade-overlay"></div>
   <div id="interact-prompt"></div>
   <div id="debug-panel"></div>
+  <div id="fps-counter"></div>
 
   <div id="results">
     <div class="modal">
@@ -107,13 +108,42 @@
       <p class="game-tagline">Kucing nakal, pemilik sibuk.</p>
       <button class="btn primary big" data-action="play">Main<small id="play-sub">Level 1</small></button>
       <button class="btn" data-action="levels">Pilih Level</button>
-      <button class="btn" data-action="custom" id="btn-custom" disabled>Kustomisasi</button>
-      <button class="btn" data-action="settings" id="btn-settings" disabled>Pengaturan</button>
+      <button class="btn" data-action="custom" id="btn-custom">Kustomisasi</button>
+      <button class="btn" data-action="settings" id="btn-settings">Pengaturan</button>
       <button class="btn" data-action="howto">Cara Bermain</button>
     </div>
     <div class="lobby-panel wide" id="level-select">
       <h2>Pilih Level</h2>
       <div class="level-cards" id="level-cards"></div>
+      <button class="btn" data-action="back">Kembali</button>
+    </div>
+    <div class="lobby-panel side" id="customize-panel">
+      <h2>Kustomisasi</h2>
+      <p class="panel-bank">Tabungan: <b id="custom-bank">0</b> Chaos</p>
+      <div class="tabs">
+        <button class="tab active" data-tab="cat">Kucing</button>
+        <button class="tab" data-tab="accessory">Aksesoris</button>
+      </div>
+      <div class="item-grid" id="item-grid"></div>
+      <div class="item-detail"><b id="item-name"></b><span id="item-note"></span></div>
+      <button class="btn primary" id="item-action">Pakai</button>
+      <button class="btn" data-action="back">Kembali</button>
+    </div>
+    <div class="lobby-panel side" id="settings-panel">
+      <h2>Pengaturan</h2>
+      <div class="setting"><span>Kualitas grafis</span><div class="seg" id="set-quality"></div></div>
+      <label class="setting"><span>Volume <b id="set-volume-val"></b></span><input type="range" id="set-volume" /></label>
+      <label class="setting"><span>Sensitivitas mouse <b id="set-sens-val"></b></span><input type="range" id="set-sens" /></label>
+      <label class="setting check"><input type="checkbox" id="set-invert" /> Balik sumbu Y</label>
+      <label class="setting check"><input type="checkbox" id="set-fps" /> Tampilkan FPS</label>
+      <button class="btn danger" id="reset-progress">Hapus Progres</button>
+      <div class="confirm" id="reset-confirm">
+        <p>Hapus semua progres? Tabungan, bintang, item, dan pengaturan akan hilang dan <b>tidak bisa dikembalikan</b>.</p>
+        <div class="btn-row">
+          <button class="btn" data-confirm="no">Batal</button>
+          <button class="btn danger" data-confirm="yes">Ya, hapus</button>
+        </div>
+      </div>
       <button class="btn" data-action="back">Kembali</button>
     </div>
     <div class="lobby-panel wide" id="howto-panel">

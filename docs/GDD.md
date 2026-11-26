@@ -489,11 +489,11 @@ Belum ada. Tambahkan di sini jika muncul keputusan desain yang belum ditentukan.
 - [ ] Tutorial bertahap yang otomatis dimulai saat pertama main, bisa dilewati dan diulang
 
 ### Fase 8 — Lobi & kustomisasi
-- [ ] Lobi 3D: sudut rumah nyaman, kucing di bantal berputar pelan dengan animasi idle, tabungan di pojok atas
-- [ ] Menu: Main, Pilih Level, Kustomisasi, Pengaturan, Cara Bermain
-- [ ] Varian kucing prosedural (oranye, putih, abu-abu, hitam, tabby, calico, chonky) dengan harga
-- [ ] Aksesoris satu slot (dasi kupu-kupu, syal, topi kecil, kalung lonceng), termasuk efek lonceng dan kucing hitam
-- [ ] Pengaturan: kualitas grafis, volume, sensitivitas mouse, balik sumbu Y, tampilkan FPS, hapus progres
+- [x] Lobi 3D: sudut rumah nyaman, kucing di bantal berputar pelan dengan animasi idle (loaf, duduk, menjilat kaki), tabungan di pojok atas
+- [x] Menu: Main, Pilih Level, Kustomisasi, Pengaturan, Cara Bermain
+- [x] Varian kucing prosedural (oranye, putih, abu-abu, hitam, tabby, calico, chonky) dengan harga & preview langsung
+- [x] Aksesoris satu slot (dasi kupu-kupu, syal, topi kecil, kalung lonceng), termasuk efek lonceng dan kucing hitam
+- [x] Pengaturan: kualitas grafis, volume, sensitivitas mouse, balik sumbu Y, tampilkan FPS, hapus progres dengan konfirmasi
 - [x] Simpanan berversi skema (dikerjakan di Fase 7)
 
 ### Fase 9 — Polish & performa

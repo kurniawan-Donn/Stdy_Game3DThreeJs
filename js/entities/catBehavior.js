@@ -4,7 +4,7 @@
 // - loaf (diam LOAF_DELAY detik) dengan ikon hati, animasi kecil acak saat diam
 // - zoomies setelah makan catnip (sangat cepat & senyap)
 // Fungsi pose dipanggil di akhir animateCat (entities/cat.js).
-import { IDLE, RIDE, SUN_NAP, SUN_ZONES, VACUUM, CATNIP } from '../config.js';
+import { IDLE, RIDE, SUN_NAP, SUN_ZONES, VACUUM, CATNIP, CUSTOMIZATION } from '../config.js';
 import { registerInteractable } from '../systems/interaction.js';
 import { crawlBoxAt } from '../systems/collision.js';
 
@@ -197,6 +197,11 @@ export function applyBehaviorPose(cat, dt) {
     p.legBL.rotation.x = lerp(p.legBL.rotation.x, 1.45);
     p.legBR.rotation.x = lerp(p.legBR.rotation.x, 1.45);
     p.bodyPivot.scale.y *= 1 - IDLE.LOAF_SQUASH;
+    if (cat.chonky) {
+      // Loaf chonky lebih bulat
+      p.bodyPivot.scale.x *= CUSTOMIZATION.CHONKY.LOAF_WIDEN;
+      p.bodyPivot.scale.z *= CUSTOMIZATION.CHONKY.LOAF_WIDEN;
+    }
     p.bodyPivot.rotation.x = 0;
     p.tailPivot.rotation.z = 1.2;
     if (cat.sleeping) p.headGroup.rotation.x = SUN_NAP.HEAD_DIP;

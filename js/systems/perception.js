@@ -4,7 +4,7 @@
 //   jika ada line-of-sight ke titik-titik tubuhnya (ray vs kotak perabot).
 // - Jarak sangat dekat: selalu terlihat kecuali line-of-sight terhalang total.
 import * as THREE from 'three';
-import { OWNER, PERCEPTION, HIDE_BOX } from '../config.js';
+import { OWNER, PERCEPTION, HIDE_BOX, CUSTOMIZATION } from '../config.js';
 import { isInDarkZone } from '../world/house.js';
 import { hideSpotOf, isBoxMoving } from './hiding.js';
 
@@ -81,7 +81,8 @@ export function senseCat(ctx, eye, lookYaw) {
   let range = OWNER.VISION_RANGE;
   // Mengendap memperpendek jarak pandang (kecuali di dalam kardus: yang dilihat kardusnya)
   if (cat.moveMode === 'sneak' && !cat.inBox) range *= PERCEPTION.SNEAK_RANGE_MULT;
-  if (isInDarkZone(p.x, p.z)) range *= PERCEPTION.DARK_RANGE_MULT;
+  // Area gelap; kucing hitam lebih sulit terlihat di sana (GDD §14)
+  if (isInDarkZone(p.x, p.z)) range *= cat.darkStealth ? CUSTOMIZATION.BLACK_CAT_DARK_RANGE_MULT : PERCEPTION.DARK_RANGE_MULT;
 
   // Sudut terhadap arah pandang
   let angle = Math.atan2(dx, dz) - lookYaw;

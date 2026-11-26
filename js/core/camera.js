@@ -133,9 +133,12 @@ function handleInput(ctx, dt) {
   const input = ctx.input;
   const moved = input.mouseDX !== 0 || input.mouseDY !== 0;
   if (moved) {
-    rig.yaw = wrapAngle(rig.yaw - input.mouseDX * CAMERA.MOUSE_SENSITIVITY);
-    const sign = CAMERA.INVERT_Y ? -1 : 1;
-    rig.pitch += input.mouseDY * CAMERA.MOUSE_SENSITIVITY * sign;
+    // Pengaturan pemain: pengali sensitivitas & balik sumbu Y
+    const st = ctx.save && ctx.save.settings;
+    const sens = CAMERA.MOUSE_SENSITIVITY * (st ? st.sensitivity : 1);
+    rig.yaw = wrapAngle(rig.yaw - input.mouseDX * sens);
+    const sign = (CAMERA.INVERT_Y ? -1 : 1) * (st && st.invertY ? -1 : 1);
+    rig.pitch += input.mouseDY * sens * sign;
     rig.mouseIdle = 0;
   } else {
     rig.mouseIdle += dt;

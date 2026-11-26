@@ -35,6 +35,7 @@ js/
     camera.js           Kamera orbit third-person (camRig): yaw/pitch/zoom, auto-recenter, spring arm, mode KETAHUAN, getaran
     audio.js            Efek suara Web Audio: audio.play(nama) dari AUDIO.SFX / AUDIO.NOISE_SFX
     save.js             Simpanan localStorage berversi skema (v2, migrasi save lama): tabungan, rekor level, item, pilihan, pengaturan
+    settings.js         Terapkan pengaturan: kualitas (bayangan, pixel ratio), volume; sensitivitas/balik Y dibaca camera.js
     gameFlow.js         Alur LOBI → PILIH LEVEL → MAIN → PAUSE → HASIL (flow.state), pause P & saat kunci mouse lepas
     dispose.js          disposeObject3D / removeAndDispose: lepas geometri, material, tekstur objek level
     mergeStatic.js      Gabung mesh statis per material (mengurangi draw call)
@@ -44,9 +45,11 @@ js/
     room.js             Rumah dari HOUSE: lantai kayu/keramik, dinding luar+jendela, dinding dalam+bukaan, plafon
     furniture.js        Perabot seluruh rumah + collider AABB (crawlHeight = kolong); { colliders, refs, mergeStats }
     dust.js             Partikel debu di berkas cahaya jendela
+    lobby.js            Lobi 3D (scene terpisah): sudut rumah, kucing di bantal berputar, siklus pose idle
     house.js            Pintu kamar mandi (collider dinamis), keranjang kucing, area gelap (isInDarkZone, lapisan redup, lampu malam, createDarkTint/updateDarkTint)
   entities/
-    cat.js              Kucing pemain: model, gerak, lompat, animasi, aksi (startCatAction)
+    cat.js              Kucing pemain: gerak, lompat, animasi, aksi (startCatAction), ganti tampilan (setCatLook)
+    catModel.js         Model kucing prosedural berparameter (warna, tabby, calico, chonky) + aksesoris
     fish.js             Ikan camilan (isi stamina), menggantikan kristal
     fishModel.js        Model ikan prosedural
     vacuum.js           Robot vacuum berkeliaran (lurus, belok acak); tidak melukai, bisa ditumpangi, menyingkir saat pemilik mengejar
@@ -70,6 +73,7 @@ js/
     physics.js          Fisika benda sederhana (addBody, updatePhysics)
     chaos.js            scoreMischief: Chaos + combo + noise + umpan balik
     level.js            Timer level, akhir level, bintang, tabungan
+    shop.js             Toko kustomisasi: harga, beli dengan tabungan, pakai item
     levelManager.js     Muat level (pengubah config + pencahayaan, dipulihkan saat ganti), aturan buka level
     progression.js      Makan ikan, reset level
     navGrid.js          Grid navigasi pemilik + A* + penghalusan jalur
@@ -86,6 +90,8 @@ js/
     results.js          Layar hasil: bintang, Chaos, tabungan + Ulangi / Level Berikutnya / Lobi
     menus.js            Menu lobi: Main, Pilih Level (kartu), Cara Bermain
     pause.js            Layar pause: Lanjutkan / Ulangi / Lobi
+    customizeMenu.js    Panel Kustomisasi: tab Kucing/Aksesoris, preview langsung, Beli/Pakai
+    settingsMenu.js     Panel Pengaturan + Hapus Progres (konfirmasi di halaman, bukan dialog browser)
     floatingText.js     Teks melayang (+40, COMBO x1.5) yang mengikuti posisi 3D
     screenEffects.js    Efek layar CSS: desaturasi, vignette, teks KETAHUAN!, fade hitam
     ownerIndicator.js   Ikon ?/! + meter curiga di atas kepala pemilik (+ label debug)
@@ -101,6 +107,8 @@ js/
 - **Alur game** (`core/gameFlow.js`): `ctx.flow.state` = `lobby` | `select` | `playing` | `paused` | `results`. Dunia hanya di-update saat `playing` dan `results`; saat `paused` dunia membeku. Mulai/ganti level selalu lewat `playLevel` → `loadLevel` (jangan panggil `resetGame` langsung dari UI).
 - **Level** (`js/levels/`, `systems/levelManager.js`): file level hanya berisi data. Pengubah (`OWNER`, `LAYOUT`) menimpa objek di `config.js` selama level berjalan dan dicatat di `ctx.levelOverrides`; `loadLevel` selalu memulihkannya dulu sebelum menerapkan level berikutnya. Modul yang membaca nilai config saat dipakai (bukan disalin di level modul) otomatis ikut. Level baru = file baru + satu baris di `levels/index.js`.
 - **Memory:** objek per level yang dibuang harus lewat `removeAndDispose` (`core/dispose.js`), bukan sekadar `parent.remove`. Uji headless memeriksa tidak ada geometri/material yang bocor setelah 20× ganti level.
+- **Kustomisasi:** tampilan kucing = `{ cat, accessory }` dari `CUSTOMIZATION` (config). Model dibuat `buildCatModel` (dipakai kucing pemain & lobi). Ganti tampilan lewat `setCatLook` (model lama di-dispose), lalu buat ulang `ctx.darkTint.cat`. Efek gameplay hanya dua: `cat.bell` (Chaos ×1,2, langkah berbunyi) dan `cat.darkStealth` (kucing hitam di area gelap); selain itu murni kosmetik.
+- **Lobi:** saat `flow.state` = `lobby`/`select`, loop merender `ctx.lobby.scene` (bukan rumah). Menu/panel di DOM (`#lobby`).
 - **Simpanan** hanya lewat `core/save.js` (`ctx.save`); semua akses localStorage dibungkus try/catch. Saat skema berubah, naikkan `SAVE.VERSION` dan tambahkan migrasi.
 - Urutan update per frame (saat bermain): kucing → meong → interaksi → kenakalan → ikan → robot vacuum → pemilik → noise → HUD → timer level → pintu, lalu (juga setelah level berakhir) fisika → partikel → debu → overlay debug → kamera → teks melayang → indikator pemilik → render → `endFrame(input)`.
 - **Waktu nyata vs waktu dunia:** saat tertangkap, `ctx.capture.timeScale` = 0,3 (slow motion). Pemilik, kenakalan, robot, fisika, partikel, dan debu memakai waktu dunia (`dt × timeScale`); alur KETAHUAN, kamera, dan UI memakai waktu nyata. Input kucing dikunci selama alur KETAHUAN.

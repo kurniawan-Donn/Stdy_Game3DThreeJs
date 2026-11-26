@@ -1,7 +1,7 @@
 // Chaos & combo (GDD §5). Semua kenakalan selesai lewat scoreMischief():
 // menambah Chaos (dengan bonus combo), memancarkan noise sesuai radius GDD,
 // dan memunculkan umpan balik (+angka melayang, COMBO, bunyi, bintang).
-import { MISCHIEF, COMBO } from '../config.js';
+import { MISCHIEF, COMBO, CUSTOMIZATION } from '../config.js';
 import { currentLevel } from '../core/state.js';
 import { emitNoise } from './noise.js';
 import { countStars } from './level.js';
@@ -24,7 +24,9 @@ export function scoreMischief(ctx, type, position, noisePosition = position) {
   const def = MISCHIEF[type];
   const s = ctx.state;
   const combo = isComboActive(ctx);
-  const amount = Math.round(def.CHAOS * (combo ? COMBO.MULTIPLIER : 1));
+  // Kalung lonceng: Chaos ×1,2 (GDD §14)
+  const bell = ctx.cat && ctx.cat.bell ? CUSTOMIZATION.BELL.CHAOS_MULT : 1;
+  const amount = Math.round(def.CHAOS * (combo ? COMBO.MULTIPLIER : 1) * bell);
 
   s.chaos += amount;
   s.mischiefCount += 1;

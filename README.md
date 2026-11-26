@@ -17,10 +17,12 @@ Ditulis dengan JavaScript ES modules biasa, tanpa build tool dan tanpa aset ekst
 - 😼 **14 objek kenakalan:** dorong gelas sampai pecah (sambil menatap kamera), tumpahkan tisu, cakar sofa, injak remote sampai TV menyala, gulingkan pot, curi ikan di dapur, tarik tisu toilet, acak-acak selimut
 - 🧱 **Fisika benda buatan sendiri:** benda jatuh dari meja, memantul kecil, pecahan kaca berhamburan
 - 🔥 **Chaos & combo:** kenakalan beruntun dalam 10 detik mendapat bonus ×1,5
-- ⏱️ **Level berwaktu** dengan target Chaos dan rating bintang ★★★
+- ⏱️ **Level berwaktu** dengan target Chaos dan rating bintang ★★★: **Senin Pagi** dan **Deadline** (pemilik sering menoleh dan dua kali rapat video: jangan berisik!). Level berikutnya terbuka dengan minimal 1 bintang
 - 🔊 **Sistem suara gameplay:** setiap aksi menimbulkan suara dengan radius tertentu (dasar untuk pemilik rumah yang mendengar)
 - 🐟 **Ikan camilan** untuk mengisi stamina
-- 💾 **Tabungan Chaos** tersimpan di browser (untuk lobi & kustomisasi nanti)
+- 🛋️ **Lobi 3D** dengan kucingmu di bantal, menu Pilih Level, Cara Bermain, dan Pengaturan (kualitas grafis, volume, sensitivitas, balik sumbu Y, FPS)
+- 🎨 **Kustomisasi:** 7 kucing (oranye, putih, abu-abu, hitam, tabby, calico, chonky) dan 4 aksesoris, dibeli dengan tabungan Chaos. Kalung lonceng: Chaos ×1,2 tapi langkah berbunyi; kucing hitam lebih sulit terlihat di area gelap
+- 💾 **Progres tersimpan** di browser (tabungan, bintang, item, pengaturan)
 - 🎵 **Efek suara prosedural** dengan Web Audio API
 - ⚡ **Ringan**: tanpa model eksternal, tanpa post-processing berat
 
@@ -48,7 +50,7 @@ Ditulis dengan JavaScript ES modules biasa, tanpa build tool dan tanpa aset ekst
 1. Dekati objek sampai muncul prompt **E**, lalu tekan `E` untuk berbuat nakal. Beberapa objek (gelas, tisu, remote, ikan dapur) hanya bisa dijangkau dari atas perabot.
 2. Setiap objek hanya bisa dipakai **sekali per level**.
 3. Lakukan kenakalan beruntun dalam **10 detik** untuk bonus **COMBO ×1,5**.
-4. Capai **300 Chaos** dalam **4 menit** untuk menang. ★ = 100%, ★★ = 150%, ★★★ = 200% target.
+4. Capai target Chaos (**300** di Senin Pagi, **400** di Deadline) dalam **4 menit** untuk menang. ★ = 100%, ★★ = 150%, ★★★ = 200% target.
 5. Jangan sampai dipergoki **pemilik rumah**. Ikon **?** berarti curiga, **!** berarti mengejar. Tertangkap = **KETAHUAN!**, kucing dikembalikan ke keranjang dan **nyawa −1** (total 3). Nyawa habis = level gagal, dan hanya 50% Chaos yang masuk tabungan.
 6. Makan ikan untuk mengisi stamina.
 
@@ -90,11 +92,12 @@ Alternatif tanpa Node.js: `python -m http.server 8000`, lalu buka `http://localh
 ├── js/
 │   ├── main.js       # Entry point & game loop
 │   ├── config.js     # Semua angka penyetelan
+│   ├── levels/       # Satu file data per level
 │   ├── core/         # Renderer, input, state, kamera, audio, simpanan
-│   ├── world/        # Ruangan, perabotan, lampu, tekstur
+│   ├── world/        # Ruangan, perabotan, lampu, tekstur, lobi 3D
 │   ├── entities/     # Kucing, ikan, robot vacuum, objek kenakalan
 │   ├── systems/      # Tabrakan, fisika, Chaos, level, stamina, suara, interaksi
-│   └── ui/           # HUD, layar hasil, teks melayang, overlay debug
+│   └── ui/           # HUD, menu lobi, kustomisasi, pengaturan, pause, layar hasil, overlay debug
 ├── package.json      # Script "npm start"
 ├── screenshot/       # Gambar untuk README
 └── README.md
@@ -114,7 +117,7 @@ Ringkasan dari peta pengembangan di [docs/GDD.md](docs/GDD.md):
 - [x] Fase 5: Sembunyi (kardus, kolong, area gelap) & camilan (catnip, tidur di sinar matahari)
 - [x] Fase 6: Hal lucu (tunggangi robot vacuum, loaf pose, bola benang)
 - [ ] Fase 7: Level & tutorial (sistem level, Level 1–2, alur lobi/pause/hasil selesai; tutorial menyusul)
-- [ ] Fase 8: Lobi & kustomisasi kucing
+- [x] Fase 8: Lobi 3D, kustomisasi kucing & aksesoris, pengaturan
 - [ ] Fase 9: Polish & performa
 
 ## 🤖 Catatan Pengembangan
