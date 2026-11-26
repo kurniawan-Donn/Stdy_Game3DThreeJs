@@ -2,6 +2,8 @@
 
 > Dokumen ini adalah acuan desain gameplay. Baca sebelum mengerjakan fitur gameplay.
 > Jika implementasi perlu menyimpang dari dokumen ini, tanyakan dulu.
+>
+> Semua angka di dokumen ini adalah **nilai awal** dan akan disetel ulang lewat playtest. Sumber kebenaran angkanya adalah `js/config.js`. Satuan jarak: 1 unit dunia = 1 meter.
 
 ## 1. Konsep
 
@@ -27,12 +29,76 @@ pilih misi kenakalan → menyelinap → lakukan kenakalan → kabur & sembunyi �
 |---|---|---|
 | `W` `A` `S` `D` | Gerak | Relatif terhadap kamera |
 | `Spasi` | Lompat | |
-| `Shift` | Lari | Cepat tapi **berisik** |
+| `Shift` | Lari | Cepat tapi **berisik**, menguras stamina |
 | `C` | Mengendap | **Senyap**, profil rendah (lebih sulit terlihat) |
 | `E` | Interaksi | Dorong/jatuhkan barang, masuk kardus, dll. |
 | `Q` | Mengeong | Memancing pemilik datang (pengalih) |
 
-## 4. Ketahuan
+## 4. Level & penilaian
+
+| Level | Durasi | Target Chaos |
+|---|---|---|
+| 1 | 4 menit | 300 |
+
+**Rating bintang** (dihitung dari target Chaos):
+
+| Bintang | Syarat |
+|---|---|
+| ★ | Chaos ≥ 100% target |
+| ★★ | Chaos ≥ 150% target |
+| ★★★ | Chaos ≥ 200% target |
+
+## 5. Kenakalan & Chaos
+
+Setiap kenakalan memberi Chaos dan memancarkan suara dengan radius tertentu. Pemilik yang berada di dalam radius suara akan mendengarnya.
+
+| Kenakalan | Chaos | Radius suara |
+|---|---|---|
+| Tumpahkan tisu | 15 | 2 m |
+| Cakar sofa | 20 | 4 m |
+| Injak remote (TV menyala) | 30 | 6 m |
+| Jatuhkan gelas sampai pecah | 40 | 10 m |
+| Gulingkan pot | 50 | 8 m |
+| Curi ikan di dapur | 80 | 3 m |
+
+**Combo:** kenakalan yang dilakukan beruntun, masing-masing dalam jarak **10 detik** dari kenakalan sebelumnya, mendapat bonus **×1,5**.
+
+## 6. Stamina
+
+| Parameter | Nilai |
+|---|---|
+| Stamina maksimal | 100 |
+| Lari | −20 per detik |
+| Lompat tinggi | −15 per lompatan |
+| Pulih saat jalan/diam | +10 per detik |
+| Pulih saat tidur di sinar matahari | +25 per detik |
+| Makan ikan | +40 |
+
+**Stamina habis:** kucing terengah selama **2 detik**. Selama terengah, kucing hanya bisa berjalan (tidak bisa lari) dan tidak bisa lompat tinggi.
+
+## 7. Mengeong
+
+- Cooldown **8 detik**, radius suara **12 m**.
+- Pemilik yang mendengar akan **mendatangi titik suara**, dan rasa curiganya naik sedikit. Mengeong tidak langsung memicu "!".
+- Jika kucing mengeong **3 kali dalam 30 detik**, pemilik menjadi **jengkel**: rasa curiganya naik lebih cepat.
+
+## 8. Pemilik rumah
+
+### Saat tidak curiga
+Pemilik menjalankan **rutinitas waypoint**:
+
+| Kegiatan | Catatan |
+|---|---|
+| Kerja di laptop | Kegiatan paling lama |
+| Ambil minum di dapur | |
+| Lihat ke luar jendela | |
+| Ke toilet | **Keluar ruangan selama 20 detik** |
+
+### Penglihatan
+- Kerucut pandang **70°**, jangkauan **8 m**.
+- Jangkauan berkurang jika kucing **mengendap** atau berada di **area gelap**.
+
+## 9. Ketahuan
 
 Urutan saat kucing terlihat pemilik:
 
@@ -48,23 +114,43 @@ Urutan saat kucing terlihat pemilik:
 
 Total **3 nyawa**.
 
-## 5. Camilan
+## 10. Akhir level
+
+- **Waktu habis:** pemilik selesai bekerja, lalu muncul **layar hasil**.
+  - Chaos ≥ target → **menang**, beserta rating bintang.
+  - Chaos < target → **kalah**, dengan pesan lucu *"Rumah masih terlalu rapi..."*
+  - Dalam kedua kasus, **seluruh Chaos masuk tabungan** untuk lobi.
+- **Nyawa habis sebelum waktu habis:** level gagal, dan hanya **50% Chaos** yang masuk tabungan.
+
+## 11. Camilan
 
 | Camilan | Efek |
 |---|---|
-| **Ikan** | Mengisi stamina |
+| **Ikan** | Mengisi stamina +40. Muncul acak di lantai dan di atas perabot. |
 | **Catnip** (langka) | Mode **zoomies** selama 6 detik: kucing sangat cepat dan senyap |
 
-## 6. Hal lucu (fitur karakter)
+## 12. Hal lucu (fitur karakter)
 
-- **Menunggangi robot vacuum:** senyap, tapi arahnya tidak bisa dikontrol.
+- **Menunggangi robot vacuum:** senyap, tapi arahnya tidak bisa dikontrol. Robot vacuum **tidak melukai** kucing.
 - **Kardus untuk sembunyi:** kucing aman di dalamnya, tapi **ketahuan jika bergerak saat sedang dilihat**.
 - **Mendorong gelas pelan sambil menatap kamera:** animasi khusus saat menjatuhkan gelas.
 - **Loaf pose:** otomatis saat kucing diam selama 5 detik.
-- **Tidur di sinar matahari:** memulihkan stamina.
+- **Tidur di sinar matahari:** memulihkan stamina (lihat bagian 6).
 - **Bola benang:** bisa ditendang sebagai pengalih perhatian pemilik.
 
-## 7. Lobi (dikerjakan nanti)
+## 13. Transisi dari prototipe
+
+Fitur dari prototipe *Coin Rush 3D* diubah sebagai berikut. Perubahan ini dikerjakan di fase yang relevan, tidak sekaligus.
+
+| Fitur prototipe | Nasib | Fase |
+|---|---|---|
+| Kristal/koin | Diganti **ikan**, yang muncul acak di lantai dan di atas perabot | 5 |
+| Power-up magnet | **Dihapus**, digantikan catnip | 5 |
+| Robot vacuum melukai kucing | **Tidak melukai lagi**, menjadi kendaraan | 6 |
+| Naik level karena mengumpulkan koin | **Dihapus** | 2 |
+| Skor | Diganti **Chaos** | 2 |
+
+## 14. Lobi (dikerjakan nanti)
 
 - Ruangan nyaman dengan **preview kucing yang berputar**.
 - **Pilih kucing:** oranye, hitam, putih, abu-abu, calico, tabby. Semua dibuat secara prosedural.
@@ -75,12 +161,12 @@ Total **3 nyawa**.
   - Kustomisasi
   - Pengaturan: kualitas grafis, volume, sensitivitas
   - Cara Bermain
-- **Unlock** kucing dan aksesoris dengan poin Chaos. Progres disimpan di `localStorage`.
+- **Unlock** kucing dan aksesoris memakai tabungan Chaos (lihat bagian 10). Progres disimpan di `localStorage`.
 - Semua item bersifat **kosmetik**, dengan dua pengecualian:
   - **Lonceng:** Chaos yang didapat lebih besar, tapi langkah kucing berbunyi.
   - **Kucing hitam:** lebih sulit terlihat di area gelap.
 
-## 8. Tutorial
+## 15. Tutorial
 
 - **Level latihan** yang otomatis dimulai saat pertama kali main.
 - Langkah bertahap:
@@ -92,25 +178,17 @@ Total **3 nyawa**.
   6. Ditangkap sekali **tanpa kehilangan nyawa**
 - Tutorial **bisa dilewati** dan **bisa diulang** (dari menu).
 
-## 9. Prinsip teknis
+## 16. Prinsip teknis
 
 - **Tanpa aset eksternal.** Semua model, tekstur, dan suara dibuat secara prosedural (bentuk dasar Three.js, Canvas, Web Audio).
 - **Ringan** dan lancar di laptop biasa.
 - **Semua angka penyetelan ada di `js/config.js`.**
 
-## 10. Pertanyaan terbuka
+## 17. Pertanyaan terbuka
 
-Hal-hal berikut belum ditentukan oleh desain ini. Putuskan bersama sebelum diimplementasikan:
+Belum ada. Tambahkan di sini jika muncul keputusan desain yang belum ditentukan.
 
-- Durasi tiap level dan besar target Chaos per level.
-- Nilai Chaos untuk tiap jenis kenakalan, serta seberapa keras suara yang ditimbulkan.
-- Mekanik stamina: apa saja yang menguranginya (lari? lompat?) dan apa akibatnya jika habis.
-- Cooldown mengeong (`Q`) dan seberapa jauh suaranya terdengar.
-- Perilaku pemilik saat tidak curiga: diam bekerja di meja, berpatroli, atau keduanya.
-- Fitur prototipe yang sudah ada (kristal, power-up magnet, robot vacuum sebagai rintangan yang melukai): dihapus, dipertahankan, atau diubah fungsinya.
-- Apa yang terjadi saat nyawa habis atau waktu habis sebelum target tercapai.
-
-## 11. Peta pengembangan
+## 18. Peta pengembangan
 
 ### Fase 0 — Fondasi
 - [x] Pecah kode menjadi ES modules (`core`, `world`, `entities`, `systems`, `ui`)
@@ -119,36 +197,38 @@ Hal-hal berikut belum ditentukan oleh desain ini. Putuskan bersama sebelum diimp
 
 ### Fase 1 — Kontrol kucing lengkap
 - [ ] Lari (`Shift`) dan mengendap (`C`) dengan kecepatan serta tinggi profil berbeda
-- [ ] Sistem stamina
+- [ ] Sistem stamina (bagian 6)
 - [ ] Tombol interaksi (`E`) dengan penanda objek terdekat
-- [ ] Mengeong (`Q`)
+- [ ] Mengeong (`Q`) dengan cooldown (bagian 7)
 - [ ] Sistem suara: setiap aksi memancarkan "noise" dengan radius tertentu
 
 ### Fase 2 — Kenakalan & Chaos
-- [ ] Objek yang bisa diganggu (gelas, barang di rak, dll.) beserta fisika jatuh sederhana
-- [ ] Meter Chaos, timer level, dan target Chaos
-- [ ] Kondisi menang dan kalah level
+- [ ] Objek kenakalan (tisu, sofa, remote/TV, gelas, pot, ikan dapur) beserta fisika jatuh sederhana
+- [ ] Meter Chaos dan combo (bagian 5)
+- [ ] Timer level, target Chaos, dan rating bintang (bagian 4)
+- [ ] Layar hasil dan tabungan Chaos (bagian 10)
 - [ ] HUD baru: Chaos, waktu, nyawa, stamina
+- [ ] Hapus skor dan kenaikan level berbasis koin (bagian 13)
 
 ### Fase 3 — Pemilik rumah (AI)
-- [ ] Model pemilik prosedural dan perilaku dasar (bekerja/patroli)
-- [ ] Penglihatan: jarak, kerucut pandang, line of sight, pengaruh profil rendah
-- [ ] Pendengaran: memeriksa sumber suara
+- [ ] Model pemilik prosedural dan rutinitas waypoint (bagian 8)
+- [ ] Penglihatan: kerucut pandang, jangkauan, line of sight, pengaruh mengendap
+- [ ] Pendengaran: mendatangi sumber suara dan meongan, status jengkel
 - [ ] Meter curiga dengan ikon "?" dan "!", serta perilaku mengejar
 
 ### Fase 4 — Ketahuan & nyawa
 - [ ] Sekuens tertangkap: slow motion, desaturasi, vignette, teks "KETAHUAN!", fade hitam
 - [ ] Respawn di keranjang, nyawa −1, total 3 nyawa
-- [ ] Layar game over
+- [ ] Level gagal saat nyawa habis (50% Chaos ke tabungan)
 
 ### Fase 5 — Sembunyi & camilan
 - [ ] Kardus (ketahuan jika bergerak saat dilihat)
-- [ ] Area gelap yang mengurangi jarak pandang pemilik
-- [ ] Ikan (isi stamina) dan catnip (zoomies 6 detik)
+- [ ] Area gelap yang mengurangi jangkauan pandang pemilik
+- [ ] Ikan menggantikan kristal; catnip (zoomies 6 detik) menggantikan magnet
 - [ ] Tidur di sinar matahari untuk memulihkan stamina
 
 ### Fase 6 — Hal lucu
-- [ ] Menunggangi robot vacuum
+- [ ] Robot vacuum tidak melukai dan bisa ditunggangi
 - [ ] Animasi mendorong gelas sambil menatap kamera
 - [ ] Loaf pose setelah diam 5 detik
 - [ ] Bola benang yang bisa ditendang sebagai pengalih
@@ -163,7 +243,7 @@ Hal-hal berikut belum ditentukan oleh desain ini. Putuskan bersama sebelum diimp
 - [ ] Varian kucing prosedural (oranye, hitam, putih, abu-abu, calico, tabby)
 - [ ] Aksesoris (lonceng, dasi kupu-kupu, topi, syal), termasuk efek lonceng dan kucing hitam
 - [ ] Menu: Main, Pilih Level, Kustomisasi, Pengaturan, Cara Bermain
-- [ ] Unlock dengan poin Chaos dan penyimpanan di `localStorage`
+- [ ] Unlock dengan tabungan Chaos dan penyimpanan di `localStorage`
 
 ### Fase 9 — Polish & performa
 - [ ] Efek suara prosedural untuk semua aksi baru

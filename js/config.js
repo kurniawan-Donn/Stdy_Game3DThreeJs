@@ -371,3 +371,72 @@ export const AUDIO = {
     ]
   }
 };
+
+// =====================================================================
+// MEONG MAYHEM — nilai awal dari docs/GDD.md (disetel ulang lewat playtest).
+// Satuan jarak: 1 unit dunia = 1 meter. Waktu dalam detik.
+// Sebagian besar nilai di bawah belum dipakai; akan dipakai sesuai fase
+// di peta pengembangan GDD.
+// =====================================================================
+
+// --- Level & penilaian (GDD §4) ---
+export const LEVELS = [
+  { id: 1, DURATION: 240, TARGET_CHAOS: 300 }
+];
+// Rating bintang: kelipatan target Chaos untuk 1, 2, 3 bintang
+export const STAR_THRESHOLDS = [1.0, 1.5, 2.0];
+
+// --- Kenakalan & Chaos (GDD §5) ---
+export const MISCHIEF = {
+  tissue: { CHAOS: 15, NOISE_RADIUS: 2 }, // tumpahkan tisu
+  scratchSofa: { CHAOS: 20, NOISE_RADIUS: 4 }, // cakar sofa
+  remote: { CHAOS: 30, NOISE_RADIUS: 6 }, // injak remote, TV menyala
+  glass: { CHAOS: 40, NOISE_RADIUS: 10 }, // jatuhkan gelas sampai pecah
+  pot: { CHAOS: 50, NOISE_RADIUS: 8 }, // gulingkan pot
+  kitchenFish: { CHAOS: 80, NOISE_RADIUS: 3 } // curi ikan di dapur
+};
+export const COMBO = {
+  WINDOW: 10, // detik sejak kenakalan sebelumnya
+  MULTIPLIER: 1.5
+};
+
+// --- Stamina (GDD §6) ---
+export const STAMINA = {
+  MAX: 100,
+  RUN_DRAIN_PER_SEC: 20,
+  HIGH_JUMP_COST: 15,
+  REGEN_PER_SEC: 10, // saat jalan/diam
+  SUN_NAP_REGEN_PER_SEC: 25, // saat tidur di sinar matahari
+  FISH_RESTORE: 40,
+  EXHAUSTED_DURATION: 2 // terengah: hanya bisa jalan, tidak bisa lompat tinggi
+};
+
+// --- Mengeong (GDD §7) ---
+export const MEOW = {
+  COOLDOWN: 8,
+  NOISE_RADIUS: 12,
+  ANNOY_COUNT: 3, // jumlah meongan ...
+  ANNOY_WINDOW: 30 // ... dalam jendela waktu ini membuat pemilik jengkel
+};
+
+// --- Pemilik rumah (GDD §8) ---
+export const OWNER = {
+  VISION_ANGLE_DEG: 70,
+  VISION_RANGE: 8,
+  TOILET_DURATION: 20 // keluar ruangan
+};
+
+// --- Akhir level & tabungan Chaos (GDD §10) ---
+export const RESULTS = {
+  BANK_FRACTION_TIME_UP: 1.0, // waktu habis: semua Chaos masuk tabungan
+  BANK_FRACTION_OUT_OF_LIVES: 0.5, // nyawa habis: hanya 50%
+  LOSE_MESSAGE: 'Rumah masih terlalu rapi...'
+};
+
+// --- Camilan & fitur lucu (GDD §11–12) ---
+export const CATNIP = {
+  ZOOMIES_DURATION: 6
+};
+export const IDLE = {
+  LOAF_DELAY: 5 // detik diam sebelum loaf pose
+};
