@@ -53,6 +53,15 @@ pilih misi kenakalan → menyelinap → lakukan kenakalan → kabur & sembunyi �
 | `C` (tahan) | Mengendap | **Senyap**, profil rendah (lebih sulit terlihat) |
 | `E` | Interaksi | Dorong/jatuhkan barang, masuk kardus, dll. |
 | `Q` | Mengeong | Memancing pemilik datang (pengalih) |
+| Mouse | Putar kamera | Klik layar mengunci mouse (`Esc` melepas); tanpa kunci: tahan klik kiri + geser |
+| Roda mouse | Zoom kamera | 1,0–4,0 m |
+| `H` | Bantuan | Daftar kontrol; muncul otomatis 10 detik saat game pertama dibuka |
+
+### Kamera
+- Orbit third-person mengelilingi kucing: yaw bebas 360°, pitch 5°–65°. Gerak `WASD` selalu relatif terhadap arah kamera.
+- Jika mouse diam 3 detik saat kucing berjalan, kamera pelan-pelan kembali ke belakang kucing (kecuali kucing berjalan ke arah kamera).
+- Kamera tidak pernah menembus dinding atau plafon: lengannya memendek, lalu memanjang lagi pelan. Perabot yang menghalangi pandangan ke kucing menjadi semi-transparan sementara.
+- Saat **KETAHUAN**, kamera berputar ke samping agar pemilik dan kucing terlihat bersama, lalu kembali ke belakang kucing setelah respawn.
 
 ### Gerak, lompat, dan suara langkah
 

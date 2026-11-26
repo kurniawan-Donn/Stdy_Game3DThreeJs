@@ -28,9 +28,9 @@ js/
   config.js             SEMUA angka penyetelan (lihat aturan di bawah)
   core/
     renderer.js         Scene, kamera, WebGLRenderer, resize
-    input.js            Keyboard: input.keys (ditahan), input.pressed (baru ditekan frame ini)
+    input.js            Keyboard (keys/pressed) + mouse (mouseDX/DY via pointer lock atau drag, wheel)
     state.js            State bersama: Chaos, combo, waktu, nyawa (createState/resetRunState)
-    camera.js           Kamera third-person + getaran kamera (triggerShake)
+    camera.js           Kamera orbit third-person (camRig): yaw/pitch/zoom, auto-recenter, spring arm, mode KETAHUAN, getaran
     audio.js            Efek suara Web Audio: audio.play(nama) dari AUDIO.SFX / AUDIO.NOISE_SFX
     save.js             Tabungan Chaos & rekor level di localStorage
   world/
@@ -64,6 +64,7 @@ js/
     navGrid.js          Grid navigasi pemilik + A* + penghalusan jalur
     perception.js       Penglihatan pemilik: kerucut, jangkauan, line-of-sight
     capture.js          Alur KETAHUAN: slow motion, efek layar, keranjang, nyawa −1
+    cameraOcclusion.js  Perabot yang menghalangi kamera ke kucing memudar (fadeables)
     noise.js            Event suara gameplay (emitNoise / onNoise) untuk didengar pemilik
     stamina.js          Stamina, lompat tinggi, status terengah
     meow.js             Mengeong (Q): cooldown, noise, riwayat untuk status jengkel
@@ -74,20 +75,21 @@ js/
     floatingText.js     Teks melayang (+40, COMBO x1.5) yang mengikuti posisi 3D
     screenEffects.js    Efek layar CSS: desaturasi, vignette, teks KETAHUAN!, fade hitam
     ownerIndicator.js   Ikon ?/! + meter curiga di atas kepala pemilik (+ label debug)
-    debugOverlay.js     Overlay developer (F3): ring noise, interaksi, kerucut pandang, LOS, jalur A*
+    help.js             Layar bantuan kontrol (H), muncul otomatis 10 detik saat game dibuka
+    debugOverlay.js     Overlay developer (F3): ring noise, interaksi, kerucut pandang, LOS, jalur A*, status kamera
 ```
 
 ## Arsitektur
 
 - `main.js` membuat satu objek konteks **`ctx`** (lihat isinya di `main.js`): scene/kamera/renderer, `colliders` & `furnitureRefs`, entitas (`cat`, `fish`, `obstacles`, `owner`), dunia (`nav`, `door`), sistem (`state`, `stamina`, `noise`, `meow`, `physics`, `mischief`, `interaction`, `capture`), dan UI (`hud`, `results`, `floatText`, `screenFx`, `ownerIndicator`, `debug`). Fungsi update menerima `(ctx, dt)`.
-- **Tidak ada variabel global yang bisa diubah.** Dependensi dikirim lewat parameter atau `ctx`. Satu-satunya pengecualian yang diperbolehkan: vektor kerja privat di level modul (misalnya `camTargetPos` di `camera.js`) untuk menghindari alokasi setiap frame.
+- **Tidak ada variabel global yang bisa diubah.** Dependensi dikirim lewat parameter atau `ctx`. Satu-satunya pengecualian yang diperbolehkan: vektor kerja privat di level modul (misalnya `focusTarget` di `camera.js`) untuk menghindari alokasi setiap frame.
 - Entitas tidak memanggil `systems/progression.js` secara langsung. Mereka mengembalikan sinyal, misalnya `updateFish()` mengembalikan `true` saat ikan dimakan, lalu `main.js` memanggil `onFishEaten(ctx)`. Pola ini mencegah import melingkar.
 - Urutan update per frame: kucing → meong → interaksi → kenakalan → ikan → robot vacuum → pemilik → noise → HUD → timer level → pintu, lalu (juga setelah level berakhir) fisika → partikel → debu → overlay debug → kamera → teks melayang → indikator pemilik → render → `endFrame(input)`.
 - **Waktu nyata vs waktu dunia:** saat tertangkap, `ctx.capture.timeScale` = 0,3 (slow motion). Pemilik, kenakalan, robot, fisika, partikel, dan debu memakai waktu dunia (`dt × timeScale`); alur KETAHUAN, kamera, dan UI memakai waktu nyata. Input kucing dikunci selama alur KETAHUAN.
 - Pemilik mendengar lewat `onNoise` (didaftarkan di `main.js` → `ownerHearNoise`). Penglihatan dihitung di `systems/perception.js`. Collider perabot dengan `occludes: false` tidak menghalangi pandangan, dan `navBlocks: false` tidak menghalangi jalur pemilik.
 - **Kenakalan baru:** buat file di `js/entities/mischief/`, daftarkan di `FACTORIES` (`index.js`), tambahkan posisinya di `MISCHIEF_LAYOUT` dan nilainya di `MISCHIEF` (config). Selesaikan kenakalan lewat `scoreMischief(ctx, type, posisi)`, yang otomatis memanggil `emitNoise` dengan radius dari GDD. Animasi kucing dijalankan lewat `startCatAction(cat, { duration, faceYaw, pose, events })`, dan semua perubahan tampilan harus dikembalikan di `inst.dispose()` karena objek dibuat ulang setiap level diulang.
 - Benda yang jatuh, memantul, atau berserakan memakai `addBody(ctx, {...})` dari `systems/physics.js`. Semua benda dibersihkan saat level diulang.
-- Kamera selalu berada di selatan (+Z) kucing. Objek atau perubahan tampilan yang perlu terlihat pemain sebaiknya menghadap +Z atau terlihat dari atas.
+- **Kamera** mengorbit kucing (`ctx.camRig`) dan bisa menghadap ke mana saja, jadi objek dan perubahan tampilan harus terlihat dari semua arah. Dinding & plafon ditangani spring arm (kamera tidak pernah keluar ruangan); perabot yang menghalangi memudar lewat `furnitureRefs.fadeables`. Perabot baru di `furniture.js` didaftarkan dengan `registerFadeable(refs, [group], colliders)`.
 - Aksi yang berisik memanggil `emitNoise(ctx, { x, z, radius, source })`. Sistem yang perlu "mendengar" mendaftar lewat `onNoise(ctx.noise, fn)`.
 - Objek interaktif didaftarkan lewat `registerInteractable(ctx.interaction, item)` (lihat komentar di `interaction.js`).
 - Tekan `F3` di game untuk overlay debug. Pakai overlay ini untuk memeriksa radius noise dan jangkauan interaksi.

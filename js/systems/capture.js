@@ -5,7 +5,7 @@
 import { CAPTURE, BASKET } from '../config.js';
 import { finishCatAction, resetCatPose } from '../entities/cat.js';
 import { ownerAfterCapture } from '../entities/owner/index.js';
-import { triggerShake } from '../core/camera.js';
+import { triggerShake, snapCameraBehind } from '../core/camera.js';
 import { clearNoise } from './noise.js';
 import { hideInteraction } from './interaction.js';
 import { endLevel } from './level.js';
@@ -78,12 +78,13 @@ function respawnInBasket(ctx) {
   cat.mesh.position.set(BASKET.x, 0, BASKET.z);
   cat.vel.set(0, 0, 0);
   cat.isGrounded = true;
-  cat.yaw = 0;
-  cat.mesh.rotation.y = 0;
+  cat.yaw = Math.PI; // menghadap ke dalam ruangan
+  cat.mesh.rotation.y = cat.yaw;
   cat.mesh.visible = true;
   state.invulnerableTimer = CAPTURE.INVULNERABLE;
   clearNoise(ctx.noise);
   ownerAfterCapture(ctx);
+  snapCameraBehind(ctx); // di balik layar hitam: kamera kembali normal
 }
 
 // dt = waktu nyata

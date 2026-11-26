@@ -1,5 +1,6 @@
-// HUD pojok kiri atas: level & waktu, Chaos Meter (garis target + bintang),
-// combo, nyawa, stamina, cooldown meong; plus prompt interaksi (E).
+// HUD ringkas pojok kiri atas: level & waktu, Chaos Meter (garis target +
+// bintang), combo (hanya saat aktif), nyawa, stamina, status meong; plus
+// prompt interaksi (E). Daftar kontrol ada di layar bantuan (ui/help.js).
 import { GAME, STAR_THRESHOLDS, HUD } from '../config.js';
 
 // Bar Chaos mencakup 0 .. (ambang bintang tertinggi × target)
@@ -76,7 +77,7 @@ export function createHud() {
     },
     // remaining > 0: kenakalan berikutnya dalam waktu ini dapat bonus combo
     setCombo(remaining, multiplier) {
-      const text = remaining > 0 ? `COMBO x${multiplier} siap: ${remaining.toFixed(1)}s` : '';
+      const text = remaining > 0 ? `COMBO x${multiplier} · ${remaining.toFixed(1)}s` : '';
       if (text !== lastComboText) {
         comboEl.textContent = text;
         comboEl.classList.toggle('active', remaining > 0);
@@ -95,7 +96,7 @@ export function createHud() {
       }
     },
     setMeowCooldown(remaining) {
-      const text = remaining > 0 ? `Q Meong: ${remaining.toFixed(1)}s` : 'Q Meong: siap';
+      const text = remaining > 0 ? `${Math.ceil(remaining)}s` : 'Q ✓';
       if (text !== lastMeowText) {
         meowStatusEl.textContent = text;
         meowStatusEl.classList.toggle('cooldown', remaining > 0);

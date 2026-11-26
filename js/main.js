@@ -5,7 +5,8 @@ import { createRenderer, bindResize } from './core/renderer.js';
 import { createInput, endFrame } from './core/input.js';
 import { createState } from './core/state.js';
 import { createAudio } from './core/audio.js';
-import { updateCamera, createCameraShake } from './core/camera.js';
+import { updateCamera, createCameraShake, createCameraRig } from './core/camera.js';
+import { updateCameraOcclusion } from './systems/cameraOcclusion.js';
 import { setupLights } from './world/lighting.js';
 import { createLivingRoom } from './world/room.js';
 import { createFurniture } from './world/furniture.js';
@@ -33,6 +34,7 @@ import { createFloatingText } from './ui/floatingText.js';
 import { createDebugOverlay, updateDebugOverlay } from './ui/debugOverlay.js';
 import { createScreenEffects } from './ui/screenEffects.js';
 import { createOwnerIndicator } from './ui/ownerIndicator.js';
+import { createHelp } from './ui/help.js';
 
 function init() {
   const canvas = document.getElementById('game-canvas');
@@ -84,13 +86,17 @@ function init() {
     debug,
     audio,
     cameraShake: createCameraShake(),
+    camRig: createCameraRig(),
+    cameraFading: 0, // jumlah perabot yang sedang memudar (debug)
+    help: createHelp(),
     hud: createHud(),
     floatText: createFloatingText(document.getElementById('float-layer')),
     input: null,
     results: null
   };
 
-  ctx.input = createInput(() => audio.ensure());
+  ctx.input = createInput(() => audio.ensure(), canvas);
+  ctx.input.allowPointerLock = () => !ctx.state.isGameOver;
   ctx.results = createResultsScreen(() => {
     audio.ensure();
     resetGame(ctx);
@@ -99,6 +105,7 @@ function init() {
   onNoise(ctx.noise, (ev, c) => ownerHearNoise(c, ev));
 
   resetGame(ctx);
+  ctx.help.showAuto();
   startLoop(ctx);
 }
 
@@ -143,7 +150,9 @@ function startLoop(ctx) {
     updateParticles(ctx.particles, ctx.scene, wdt);
     updateDust(ctx.dust, wdt);
     updateDebugOverlay(ctx);
-    updateCamera(ctx.camera, ctx.cat.mesh.position, dt, ctx.cameraShake);
+    updateCamera(ctx, dt);
+    ctx.cameraFading = updateCameraOcclusion(ctx, dt);
+    ctx.help.update(ctx.input, dt);
     ctx.floatText.update(ctx.camera, dt);
     ctx.ownerIndicator.update(ctx);
     ctx.renderer.render(ctx.scene, ctx.camera);

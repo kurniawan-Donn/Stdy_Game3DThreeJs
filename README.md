@@ -35,6 +35,9 @@ Ditulis dengan JavaScript ES modules biasa, tanpa build tool dan tanpa aset ekst
 | `C` (tahan) | Mengendap: pelan, senyap, profil rendah |
 | `E` | Lakukan kenakalan / interaksi |
 | `Q` | Mengeong (cooldown 8 detik) |
+| Mouse | Putar kamera (klik layar untuk mengunci mouse, `Esc` untuk melepas; atau tahan klik kiri + geser) |
+| Roda mouse | Zoom kamera |
+| `H` | Layar bantuan kontrol |
 
 **Aturan:**
 

@@ -1,4 +1,5 @@
 // Layar hasil akhir level: menang/kalah, bintang, Chaos, tabungan, Main Lagi.
+import { releasePointerLock } from '../core/input.js';
 export function createResultsScreen(onRestart) {
   const rootEl = document.getElementById('results');
   const reasonEl = document.getElementById('results-reason');
@@ -28,6 +29,7 @@ export function createResultsScreen(onRestart) {
       bankedEl.textContent = `+${banked}`;
       bankEl.textContent = String(bank);
       rootEl.classList.add('active');
+      releasePointerLock(); // agar tombol Main Lagi bisa diklik
     },
     hide() {
       rootEl.classList.remove('active');

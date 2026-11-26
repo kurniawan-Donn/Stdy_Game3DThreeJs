@@ -32,6 +32,21 @@ function addColliders(colliders, list) {
   return added;
 }
 
+// Daftarkan objek perabot yang bisa memudar saat menghalangi kamera
+// (systems/cameraOcclusion.js). Material digandakan per perabot agar
+// memudarkan satu perabot tidak ikut memudarkan perabot lain.
+function registerFadeable(refs, objects, colliders) {
+  const materials = [];
+  for (const obj of objects) {
+    obj.traverse((m) => {
+      if (!m.isMesh) return;
+      m.material = m.material.clone();
+      materials.push({ material: m.material, baseOpacity: m.material.opacity, baseTransparent: m.material.transparent });
+    });
+  }
+  refs.fadeables.push({ colliders, materials, fade: 1 });
+}
+
 function shadowed(mesh, receive = true) {
   mesh.castShadow = true;
   mesh.receiveShadow = receive;
@@ -43,7 +58,7 @@ function shadowed(mesh, receive = true) {
 // objek kenakalan (layar TV, collider sofa & kursi, tanaman, kursi kerja).
 export function createFurniture(scene) {
   const colliders = [];
-  const refs = { plants: [] };
+  const refs = { plants: [], fadeables: [] };
   const L = FURNITURE_LAYOUT;
 
   const woodDark = new THREE.MeshStandardMaterial({ ...MATERIALS.woodDark });
@@ -102,7 +117,9 @@ export function createFurniture(scene) {
       }
     }
     scene.add(g);
-    refs.sofaSeat = addColliders(colliders, L.sofa.colliders)[0];
+    const sofaColliders = addColliders(colliders, L.sofa.colliders);
+    refs.sofaSeat = sofaColliders[0];
+    registerFadeable(refs, [g], sofaColliders);
   }
 
   // 3. MEJA KOPI
@@ -129,7 +146,7 @@ export function createFurniture(scene) {
     mug.position.set(-0.3, c.topHeight + 0.045, 0.12);
     g.add(mug);
     scene.add(g);
-    addColliders(colliders, L.coffeeTable.colliders);
+    registerFadeable(refs, [g], addColliders(colliders, L.coffeeTable.colliders));
   }
 
   // 4. RAK TV + TV DI DINDING UTARA
@@ -155,7 +172,7 @@ export function createFurniture(scene) {
     refs.tvScreen = tvScreen;
 
     scene.add(g);
-    addColliders(colliders, L.tvUnit.colliders);
+    registerFadeable(refs, [g], addColliders(colliders, L.tvUnit.colliders));
   }
 
   // 5. RAK BUKU TINGGI (dinding timur; tempat tinggi, atasnya bisa dinaiki)
@@ -188,7 +205,7 @@ export function createFurniture(scene) {
       }
     }
     scene.add(g);
-    addColliders(colliders, L.tallShelf.colliders);
+    registerFadeable(refs, [g], addColliders(colliders, L.tallShelf.colliders));
   }
 
   // 5b. RAK RENDAH (batu loncatan ke rak buku tinggi)
@@ -203,7 +220,7 @@ export function createFurniture(scene) {
     top.position.y = c.topHeight - 0.015;
     g.add(top);
     scene.add(g);
-    addColliders(colliders, L.lowShelf.colliders);
+    registerFadeable(refs, [g], addColliders(colliders, L.lowShelf.colliders));
   }
 
   // 5c. KURSI
@@ -223,6 +240,7 @@ export function createFurniture(scene) {
     }
     scene.add(g);
     refs.chair = addColliders(colliders, L.chair.colliders)[0];
+    registerFadeable(refs, [g], [refs.chair]);
   }
 
   // 6. LAMPU BERDIRI
@@ -244,16 +262,18 @@ export function createFurniture(scene) {
     lampShade.position.y = c.topHeight - 0.12;
     g.add(lampShade);
     scene.add(g);
-    addColliders(colliders, L.floorLamp.colliders);
+    registerFadeable(refs, [g], addColliders(colliders, L.floorLamp.colliders));
   }
 
   // 7. TANAMAN POT (dua sudut ruangan)
   for (const p of L.plants.positions) {
-    refs.plants.push(createPottedPlant(scene, colliders, p.x, p.z));
+    const plant = createPottedPlant(scene, colliders, p.x, p.z);
+    refs.plants.push(plant);
+    registerFadeable(refs, [plant.group], [plant.collider]);
   }
 
   // 8. POJOK DAPUR: konter (lompat tinggi) + kulkas (tempat tinggi)
-  createKitchen(scene, colliders);
+  createKitchen(scene, colliders, refs);
 
   // 9. POS KERJA PEMILIK: meja, kursi, laptop
   createWorkstation(scene, colliders, refs);
@@ -261,7 +281,7 @@ export function createFurniture(scene) {
   return { colliders, refs };
 }
 
-function createKitchen(scene, colliders) {
+function createKitchen(scene, colliders, refs) {
   const L = FURNITURE_LAYOUT;
   const c = L.kitchenCounter.colliders[0];
   // Sisi depan menghadap ke tengah ruangan
@@ -294,7 +314,7 @@ function createKitchen(scene, colliders) {
   }
 
   scene.add(counterGroup);
-  addColliders(colliders, L.kitchenCounter.colliders);
+  registerFadeable(refs, [counterGroup], addColliders(colliders, L.kitchenCounter.colliders));
 
   // Kulkas
   const f = L.fridge.colliders[0];
@@ -312,7 +332,7 @@ function createKitchen(scene, colliders) {
   handle.position.set(L.fridge.x + f.width / 2 - 0.08, f.topHeight * 0.6, L.fridge.z + front * (f.depth / 2 + 0.015));
   scene.add(handle);
 
-  addColliders(colliders, L.fridge.colliders);
+  registerFadeable(refs, [fridge, handle], addColliders(colliders, L.fridge.colliders));
 }
 
 function createPottedPlant(scene, colliders, x, z) {
@@ -400,7 +420,7 @@ function createWorkstation(scene, colliders, refs) {
   desk.add(lid);
 
   scene.add(desk);
-  addColliders(colliders, L.workDesk.colliders);
+  registerFadeable(refs, [desk], addColliders(colliders, L.workDesk.colliders));
 
   // Kursi kerja (berputar mengikuti pemilik)
   const c = L.workChair.colliders[0];
@@ -420,7 +440,7 @@ function createWorkstation(scene, colliders, refs) {
   foot.position.y = 0.02;
   chair.add(foot);
   scene.add(chair);
-  addColliders(colliders, L.workChair.colliders);
+  registerFadeable(refs, [chair], addColliders(colliders, L.workChair.colliders));
 
   refs.workChair = chair;
 }

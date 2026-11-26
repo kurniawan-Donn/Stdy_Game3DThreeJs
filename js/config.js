@@ -236,15 +236,50 @@ export const CAMERA = {
   FOV: 58,
   NEAR: 0.05,
   FAR: 40,
-  OFFSET_Y: 1.5,
-  OFFSET_Z: 2.6,
-  LOOK_HEIGHT: 0.2,
-  WALL_MARGIN: 0.25,
-  MIN_Y: 0.5,
-  CEILING_MARGIN: 0.25,
-  SMOOTHING: 6.5,
-  START_POSITION: { x: -0.9, y: 1.5, z: 2.0 },
-  START_LOOK_HEIGHT: 0.2
+  // Orbit third-person mengelilingi titik fokus di atas kucing
+  FOCUS_HEIGHT: 0.2,
+  FOCUS_SMOOTHING: 12, // laju titik fokus mengejar kucing (lebih besar = lebih kaku)
+  DISTANCE: 2.6, // jarak awal
+  MIN_DISTANCE: 1.0, // zoom terdekat (scroll)
+  MAX_DISTANCE: 4.0, // zoom terjauh
+  ZOOM_STEP: 0.0015, // meter per unit deltaY roda mouse (±0,15 m per klik roda)
+  ZOOM_SMOOTHING: 10,
+  PITCH_DEFAULT_DEG: 28,
+  PITCH_MIN_DEG: 5, // tidak menembus lantai
+  PITCH_MAX_DEG: 65, // tidak terlalu tegak
+  MOUSE_SENSITIVITY: 0.0025, // radian per piksel
+  INVERT_Y: false,
+  // Kembali ke belakang kucing jika mouse diam saat kucing berjalan
+  AUTO_RECENTER: true,
+  RECENTER_DELAY: 3,
+  RECENTER_SPEED: 1.5, // rad/detik
+  RECENTER_MIN_CAT_SPEED: 0.3,
+  RECENTER_MAX_ANGLE_DEG: 135, // jangan recenter jika kamera perlu berputar lebih dari ini (kucing berjalan ke arah kamera)
+  // Spring arm: kamera tidak pernah keluar dari ruangan
+  WALL_MARGIN: 0.2, // jarak minimum kamera ke dinding & plafon
+  FLOOR_MIN: 0.15, // tinggi minimum kamera dari lantai
+  MIN_ARM: 0.3,
+  ARM_IN_RATE: 15, // memendek cepat (eksponensial, per detik)
+  ARM_OUT_SPEED: 1.5, // memanjang lagi pelan (m/detik)
+  // Kamera dramatis saat KETAHUAN: berputar ke samping pemilik & kucing
+  CAPTURE_PITCH_DEG: 18,
+  CAPTURE_FOCUS_HEIGHT: 0.8,
+  CAPTURE_MIN_DISTANCE: 2.2,
+  CAPTURE_SPAN_FACTOR: 1.3, // jarak kamera ≥ jarak pemilik–kucing × ini
+  CAPTURE_BLEND_RATE: 2.5
+};
+
+// --- Perabot yang menghalangi pandangan kamera ke kucing memudar ---
+export const CAMERA_OCCLUSION = {
+  FADE_OPACITY: 0.3,
+  FADE_SPEED: 8,
+  CAMERA_PADDING: 0.1 // kamera dianggap "di dalam" perabot jika sedekat ini
+};
+
+// --- Layar bantuan (daftar kontrol) ---
+export const HELP = {
+  TOGGLE_KEY: 'KeyH',
+  AUTO_SHOW_SECONDS: 10 // muncul otomatis sekali saat game pertama dibuka
 };
 
 // --- Renderer & atmosfer ---

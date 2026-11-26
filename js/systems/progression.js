@@ -14,6 +14,7 @@ import { clearNoise } from './noise.js';
 import { hideInteraction } from './interaction.js';
 import { clearBodies } from './physics.js';
 import { resetCapture } from './capture.js';
+import { resetCameraOcclusion } from './cameraOcclusion.js';
 import { resetOwner } from '../entities/owner/index.js';
 import { resetDoor } from '../world/house.js';
 
@@ -27,7 +28,7 @@ export function onFishEaten(ctx) {
 }
 
 export function resetGame(ctx) {
-  const { state, cat, hud, camera } = ctx;
+  const { state, cat, hud } = ctx;
   resetRunState(state);
   resetCat(cat);
   ctx.time = 0;
@@ -50,7 +51,8 @@ export function resetGame(ctx) {
   }
   spawnFish(ctx);
 
-  resetCamera(camera, cat.mesh.position, ctx.cameraShake);
+  resetCamera(ctx);
+  resetCameraOcclusion(ctx);
 
   const level = currentLevel(state);
   hud.setLevel(level.id);

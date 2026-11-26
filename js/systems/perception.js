@@ -11,7 +11,7 @@ const HALF_ANGLE = THREE.MathUtils.degToRad(OWNER.VISION_ANGLE_DEG / 2);
 
 // Ray (segmen) dari a ke b memotong kotak perabot (0..topHeight)?
 // Mengabaikan potongan di dekat ujung b (titik tubuh kucing itu sendiri).
-function segmentHitsBox(ax, ay, az, bx, by, bz, box) {
+export function segmentHitsBox(ax, ay, az, bx, by, bz, box) {
   let tmin = 0;
   let tmax = 1 - PERCEPTION.LOS_EPSILON / Math.max(1e-6, Math.hypot(bx - ax, by - ay, bz - az));
   const axes = [
