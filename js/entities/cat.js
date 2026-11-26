@@ -1,7 +1,21 @@
 // Kucing pemain: model low-poly, gerakan relatif kamera, lompat, dan animasi.
 import * as THREE from 'three';
-import { PLAYER, PHYSICS, CAT_ANIM, MATERIALS } from '../config.js';
+import { PLAYER, PHYSICS, CAT_ANIM, MATERIALS, NOISE } from '../config.js';
 import { resolveRoomCollisions, getGroundHeight } from '../systems/collision.js';
+import { canRun, trySpendHighJump, updateStamina, isExhausted } from '../systems/stamina.js';
+import { emitNoise } from '../systems/noise.js';
+
+// Parameter per mode gerak
+const MODE_SPEED = {
+  walk: PLAYER.WALK_SPEED,
+  run: PLAYER.RUN_SPEED,
+  sneak: PLAYER.SNEAK_SPEED
+};
+const MODE_STEP_RADIUS = {
+  walk: NOISE.WALK_STEP_RADIUS,
+  run: NOISE.RUN_STEP_RADIUS,
+  sneak: NOISE.SNEAK_STEP_RADIUS
+};
 
 // Vektor kerja privat untuk arah kamera
 const camForward = new THREE.Vector3();
@@ -125,7 +139,13 @@ export function createCat(scene) {
     landingSquashTimer: 0,
     yaw: PLAYER.START_YAW,
     animClock: 0,
-    walkCycle: 0
+    walkCycle: 0,
+    lastStepIndex: 0,
+    moveMode: 'walk', // 'walk' | 'run' | 'sneak'
+    profile: PLAYER.NORMAL_PROFILE, // seberapa mudah terlihat (Fase 3)
+    crouch: 0, // 0..1, animasi merendah saat mengendap
+    isPanting: false,
+    meowTimer: 0
   };
 }
 
@@ -141,14 +161,24 @@ export function resetCat(cat) {
   cat.vel.set(0, 0, 0);
   cat.yaw = PLAYER.START_YAW;
   cat.mesh.rotation.y = cat.yaw;
+
+  cat.moveMode = 'walk';
+  cat.profile = PLAYER.NORMAL_PROFILE;
+  cat.crouch = 0;
+  cat.isPanting = false;
+  cat.meowTimer = 0;
+  cat.lastStepIndex = Math.floor(cat.walkCycle / Math.PI);
 }
 
 // Update gerakan, lompat, tabrakan, animasi, dan kedip kebal.
 export function updateCat(ctx, dt) {
-  const { cat, input, camera, colliders, audio, state } = ctx;
+  const { cat, input, camera, colliders, audio, state, stamina } = ctx;
   const keys = input.keys;
   const player = cat.mesh;
   const playerVel = cat.vel;
+
+  const wantsSneak = !!keys['KeyC'];
+  const wantsRun = !!(keys['ShiftLeft'] || keys['ShiftRight']);
 
   let inputForward = 0;
   let inputRight = 0;
@@ -169,16 +199,28 @@ export function updateCat(ctx, dt) {
   let moveZ = camForward.z * inputForward + camRight.z * inputRight;
   const moveLen = Math.hypot(moveX, moveZ);
 
+  // Mode gerak: mengendap menang atas lari; mengendap hanya di tanah
+  // (lompat membatalkan mengendap); lari butuh stamina dan tidak terengah.
+  const sneaking = wantsSneak && cat.isGrounded;
+  const running = !wantsSneak && wantsRun && moveLen > 0 && canRun(stamina);
+  cat.moveMode = sneaking ? 'sneak' : running ? 'run' : 'walk';
+  cat.profile = sneaking ? PLAYER.SNEAK_PROFILE : PLAYER.NORMAL_PROFILE;
+  const maxSpeed = MODE_SPEED[cat.moveMode];
+
   if (moveLen > 0) {
     moveX /= moveLen;
     moveZ /= moveLen;
 
+    const prevSpeed = Math.hypot(playerVel.x, playerVel.z);
     playerVel.x += moveX * PLAYER.ACCELERATION * dt;
     playerVel.z += moveZ * PLAYER.ACCELERATION * dt;
 
+    // Batas kecepatan: langsung dijepit saat berakselerasi, tapi melambat
+    // halus jika baru pindah ke mode yang lebih lambat (mis. lari → endap).
     const horizSpeed = Math.hypot(playerVel.x, playerVel.z);
-    if (horizSpeed > PLAYER.MAX_MOVE_SPEED) {
-      const scale = PLAYER.MAX_MOVE_SPEED / horizSpeed;
+    const allowed = Math.max(maxSpeed, prevSpeed * Math.exp(-PLAYER.SPEED_CAP_DAMPING * dt));
+    if (horizSpeed > allowed) {
+      const scale = allowed / horizSpeed;
       playerVel.x *= scale;
       playerVel.z *= scale;
     }
@@ -202,9 +244,10 @@ export function updateCat(ctx, dt) {
     }
   }
 
-  // Lompat dengan Spasi
+  // Lompat: Spasi = lompat biasa (gratis); Shift + Spasi = lompat tinggi (pakai stamina)
   if (keys['Space'] && cat.isGrounded) {
-    playerVel.y = PLAYER.JUMP_FORCE;
+    const highJump = wantsRun && trySpendHighJump(stamina);
+    playerVel.y = highJump ? PLAYER.HIGH_JUMP_FORCE : PLAYER.JUMP_FORCE;
     cat.isGrounded = false;
     audio.playJump();
   }
@@ -229,12 +272,34 @@ export function updateCat(ctx, dt) {
     cat.isGrounded = true;
     if (!wasGrounded) {
       cat.landingSquashTimer = CAT_ANIM.SQUASH_DURATION;
+      emitNoise(ctx, { x: player.position.x, z: player.position.z, radius: NOISE.LAND_RADIUS, source: 'land' });
     }
   } else {
     cat.isGrounded = false;
   }
 
+  updateStamina(stamina, dt, { running: cat.moveMode === 'run', grounded: cat.isGrounded });
+  if (stamina.justExhausted) {
+    stamina.justExhausted = false;
+    audio.playPant();
+  }
+  cat.isPanting = isExhausted(stamina);
+
   animateCat(cat, dt);
+
+  // Suara langkah: satu event per setengah siklus jalan
+  const stepIndex = Math.floor(cat.walkCycle / Math.PI);
+  if (stepIndex !== cat.lastStepIndex) {
+    cat.lastStepIndex = stepIndex;
+    if (cat.isGrounded) {
+      emitNoise(ctx, {
+        x: player.position.x,
+        z: player.position.z,
+        radius: MODE_STEP_RADIUS[cat.moveMode],
+        source: 'step-' + cat.moveMode
+      });
+    }
+  }
 
   // Kedip saat kebal sementara
   if (state.invulnerableTimer > 0) {
@@ -254,7 +319,7 @@ function animateCat(cat, dt) {
 
   cat.animClock += dt;
   const horizSpeed = Math.hypot(cat.vel.x, cat.vel.z);
-  const speedRatio = Math.min(horizSpeed / PLAYER.MAX_MOVE_SPEED, 1);
+  const speedRatio = Math.min(horizSpeed / PLAYER.RUN_SPEED, 1);
 
   if (!cat.isGrounded) {
     // Kaki terlipat saat di udara
@@ -289,7 +354,10 @@ function animateCat(cat, dt) {
     p.legBL.rotation.x = lerp(p.legBL.rotation.x, 0, k);
     p.legBR.rotation.x = lerp(p.legBR.rotation.x, 0, k);
 
-    p.bodyPivot.position.y = Math.sin(cat.animClock * A.IDLE_BREATH_FREQ) * A.IDLE_BREATH_AMP;
+    // Napas biasa, atau napas cepat saat terengah
+    p.bodyPivot.position.y = cat.isPanting
+      ? Math.sin(cat.animClock * A.PANT_FREQ) * A.PANT_AMP
+      : Math.sin(cat.animClock * A.IDLE_BREATH_FREQ) * A.IDLE_BREATH_AMP;
     p.bodyPivot.rotation.x = lerp(p.bodyPivot.rotation.x, 0, k);
     p.tailPivot.rotation.z = Math.sin(cat.animClock * A.IDLE_TAIL_FREQ) * A.IDLE_TAIL_AMP;
   }
@@ -301,5 +369,24 @@ function animateCat(cat, dt) {
     p.bodyPivot.scale.set(1 + A.SQUASH_WIDEN * t, 1 - A.SQUASH_FLATTEN * t, 1 + A.SQUASH_WIDEN * t);
   } else {
     p.bodyPivot.scale.set(1, 1, 1);
+  }
+
+  // Mengendap: badan merendah (pivot di kaki, jadi kaki tetap menapak)
+  const crouchTarget = cat.moveMode === 'sneak' ? 1 : 0;
+  cat.crouch = lerp(cat.crouch, crouchTarget, Math.min(1, A.CROUCH_LERP * dt));
+  if (cat.crouch > 0.001) {
+    const c = cat.crouch;
+    p.bodyPivot.scale.x *= 1 + A.SNEAK_WIDEN * c;
+    p.bodyPivot.scale.y *= 1 - A.SNEAK_SQUASH * c;
+    p.bodyPivot.scale.z *= 1 + A.SNEAK_WIDEN * c;
+  }
+
+  // Mengeong: kepala mendongak sebentar
+  if (cat.meowTimer > 0) {
+    cat.meowTimer = Math.max(0, cat.meowTimer - dt);
+    const t = 1 - cat.meowTimer / A.MEOW_DURATION;
+    p.headGroup.rotation.x = -Math.sin(Math.PI * t) * A.MEOW_HEAD_TILT;
+  } else {
+    p.headGroup.rotation.x = 0;
   }
 }

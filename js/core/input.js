@@ -1,14 +1,18 @@
-// Status keyboard. Baca tombol lewat input.keys[e.code].
-const PREVENT_DEFAULT_CODES = ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Space'];
+// Status keyboard.
+// - input.keys[code]    : true selama tombol ditahan
+// - input.pressed[code] : true hanya pada frame tombol mulai ditekan
+//                         (dikosongkan oleh endFrame di akhir setiap frame)
+const PREVENT_DEFAULT_CODES = ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Space', 'F3'];
 
 export function createInput(onKeyDown) {
-  const input = { keys: {} };
+  const input = { keys: {}, pressed: {} };
 
   window.addEventListener('keydown', (e) => {
     if (onKeyDown) onKeyDown(e);
     if (PREVENT_DEFAULT_CODES.includes(e.code)) {
       e.preventDefault();
     }
+    if (!e.repeat) input.pressed[e.code] = true;
     input.keys[e.code] = true;
   });
 
@@ -18,7 +22,12 @@ export function createInput(onKeyDown) {
 
   window.addEventListener('blur', () => {
     input.keys = {};
+    input.pressed = {};
   });
 
   return input;
+}
+
+export function endFrame(input) {
+  input.pressed = {};
 }

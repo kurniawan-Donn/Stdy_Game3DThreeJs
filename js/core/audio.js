@@ -38,12 +38,43 @@ export function createAudio() {
     for (const t of tones) playTone(...t);
   }
 
+  // Meong sintetis: sawtooth → bandpass, nada naik lalu turun
+  function playMeow() {
+    if (!audioCtx) return;
+    const M = AUDIO.MEOW_VOICE;
+    const now = audioCtx.currentTime;
+    const osc = audioCtx.createOscillator();
+    const filter = audioCtx.createBiquadFilter();
+    const gain = audioCtx.createGain();
+
+    osc.type = 'sawtooth';
+    osc.frequency.setValueAtTime(M.START_FREQ, now);
+    osc.frequency.linearRampToValueAtTime(M.PEAK_FREQ, now + M.DURATION * M.PEAK_AT);
+    osc.frequency.exponentialRampToValueAtTime(M.END_FREQ, now + M.DURATION);
+
+    filter.type = 'bandpass';
+    filter.frequency.value = M.FILTER_FREQ;
+    filter.Q.value = M.FILTER_Q;
+
+    gain.gain.setValueAtTime(AUDIO.FADE_TO, now);
+    gain.gain.linearRampToValueAtTime(M.VOLUME, now + M.ATTACK);
+    gain.gain.exponentialRampToValueAtTime(AUDIO.FADE_TO, now + M.DURATION);
+
+    osc.connect(filter);
+    filter.connect(gain);
+    gain.connect(audioCtx.destination);
+    osc.start(now);
+    osc.stop(now + M.DURATION);
+  }
+
   return {
     ensure,
     playCoin: () => playSfx(AUDIO.SFX.coin),
     playJump: () => playSfx(AUDIO.SFX.jump),
     playHit: () => playSfx(AUDIO.SFX.hit),
     playGameOver: () => playSfx(AUDIO.SFX.gameOver),
-    playPowerUp: () => playSfx(AUDIO.SFX.powerUp)
+    playPowerUp: () => playSfx(AUDIO.SFX.powerUp),
+    playPant: () => playSfx(AUDIO.SFX.pant),
+    playMeow
   };
 }

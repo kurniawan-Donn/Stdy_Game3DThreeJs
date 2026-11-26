@@ -45,14 +45,53 @@ export const PLAYER = {
   CENTER_HEIGHT: 0.45, // tinggi titik tengah badan untuk cek pickup
   START_POSITION: { x: -2.2, y: 0, z: -1.5 },
   START_YAW: Math.PI, // menghadap -Z saat awal
-  MAX_MOVE_SPEED: 9.5,
+  // Kecepatan per mode gerak (m/detik)
+  WALK_SPEED: 6,
+  RUN_SPEED: 9.5, // Shift, menguras stamina
+  SNEAK_SPEED: 2.8, // C (tahan), senyap
+  SPEED_CAP_DAMPING: 10, // seberapa cepat melambat saat ganti ke mode yang lebih lambat
   ACCELERATION: 42,
   GROUND_FRICTION: 10,
   AIR_FRICTION: 2.5,
   STOP_SPEED: 0.05,
   TURN_SPEED: 12,
-  JUMP_FORCE: 8.8,
-  HIT_BOUNCE_VELOCITY: 5.5
+  JUMP_FORCE: 7.7, // lompat biasa (gratis), puncak ±1,06 m
+  HIGH_JUMP_FORCE: 8.8, // Shift + Spasi, puncak ±1,38 m, biaya STAMINA.HIGH_JUMP_COST
+  HIT_BOUNCE_VELOCITY: 5.5,
+  // Profil (seberapa mudah terlihat; dipakai penglihatan pemilik di Fase 3)
+  NORMAL_PROFILE: 1.0,
+  SNEAK_PROFILE: 0.5
+};
+
+// --- Suara langkah & gerak (radius noise dalam meter; 0 = senyap) ---
+export const NOISE = {
+  WALK_STEP_RADIUS: 1,
+  RUN_STEP_RADIUS: 5,
+  SNEAK_STEP_RADIUS: 0,
+  LAND_RADIUS: 2,
+  EVENT_LIFETIME: 0.8 // berapa lama event noise disimpan (untuk overlay debug)
+};
+
+// --- Interaksi (tombol E) ---
+export const INTERACT = {
+  RADIUS: 1.4,
+  MAX_HEIGHT_DIFF: 1.0,
+  MARKER_HEIGHT: 0.9, // tinggi penanda di atas objek
+  MARKER_SIZE: 0.12,
+  MARKER_COLOR: 0xfacc15,
+  MARKER_BOB_SPEED: 4,
+  MARKER_BOB_AMP: 0.08,
+  MARKER_SPIN_SPEED: 2
+};
+
+// --- Overlay debug developer (F3) ---
+export const DEBUG = {
+  TOGGLE_KEY: 'F3',
+  ENABLED_AT_START: false,
+  NOISE_RING_COLOR: 0x38bdf8,
+  NOISE_RING_OPACITY: 0.8,
+  INTERACT_RING_COLOR: 0xfacc15,
+  INTERACT_RING_OPACITY: 0.5
 };
 
 // --- Animasi kucing ---
@@ -85,7 +124,17 @@ export const CAT_ANIM = {
   SQUASH_WIDEN: 0.12,
   SQUASH_FLATTEN: 0.16,
   // Kedip saat kebal
-  BLINK_RATE: 12
+  BLINK_RATE: 12,
+  // Mengendap: badan merendah
+  CROUCH_LERP: 10,
+  SNEAK_SQUASH: 0.28,
+  SNEAK_WIDEN: 0.06,
+  // Terengah (stamina habis)
+  PANT_FREQ: 14,
+  PANT_AMP: 0.03,
+  // Mengeong: kepala mendongak
+  MEOW_DURATION: 0.6,
+  MEOW_HEAD_TILT: 0.5
 };
 
 // --- Aturan game ---
@@ -368,7 +417,24 @@ export const AUDIO = {
     powerUp: [
       [440, 660, 0.1, 'sine', 0.14, 0],
       [660, 1046, 0.16, 'triangle', 0.14, 0.08]
+    ],
+    pant: [
+      [320, 220, 0.12, 'triangle', 0.08, 0],
+      [320, 220, 0.12, 'triangle', 0.08, 0.3],
+      [320, 220, 0.12, 'triangle', 0.08, 0.6]
     ]
+  },
+  // Suara meong sintetis: sawtooth melalui filter bandpass dengan nada naik-turun
+  MEOW_VOICE: {
+    START_FREQ: 520,
+    PEAK_FREQ: 880,
+    END_FREQ: 480,
+    PEAK_AT: 0.35, // fraksi durasi saat nada mencapai puncak
+    DURATION: 0.55,
+    ATTACK: 0.05,
+    VOLUME: 0.18,
+    FILTER_FREQ: 1200,
+    FILTER_Q: 2.5
   }
 };
 

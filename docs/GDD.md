@@ -28,11 +28,28 @@ pilih misi kenakalan → menyelinap → lakukan kenakalan → kabur & sembunyi �
 | Tombol | Aksi | Catatan |
 |---|---|---|
 | `W` `A` `S` `D` | Gerak | Relatif terhadap kamera |
-| `Spasi` | Lompat | |
-| `Shift` | Lari | Cepat tapi **berisik**, menguras stamina |
-| `C` | Mengendap | **Senyap**, profil rendah (lebih sulit terlihat) |
+| `Spasi` | Lompat biasa | Gratis |
+| `Shift` + `Spasi` | Lompat tinggi | Memakai stamina |
+| `Shift` (tahan) | Lari | Cepat tapi **berisik**, menguras stamina |
+| `C` (tahan) | Mengendap | **Senyap**, profil rendah (lebih sulit terlihat) |
 | `E` | Interaksi | Dorong/jatuhkan barang, masuk kardus, dll. |
 | `Q` | Mengeong | Memancing pemilik datang (pengalih) |
+
+### Gerak, lompat, dan suara langkah
+
+| Mode | Kecepatan | Radius suara langkah | Profil |
+|---|---|---|---|
+| Jalan | 6 m/s | 1 m | normal (1,0) |
+| Lari (`Shift`) | 9,5 m/s | 5 m | normal (1,0) |
+| Mengendap (`C`) | 2,8 m/s | 0 (senyap) | rendah (0,5) |
+
+- **Lompat biasa:** gratis, puncak sekitar 1 m. Cukup untuk naik ke meja, dudukan sofa, kursi, rak rendah, dan kabinet TV.
+- **Lompat tinggi:** puncak sekitar 1,4 m, biaya stamina (bagian 6).
+- **Mendarat** dari lompatan menimbulkan suara dengan radius 2 m.
+- Aturan mode:
+  - Jika `Shift` dan `C` ditahan bersamaan, mengendap yang berlaku.
+  - Mengendap hanya berlaku di tanah. Melompat membatalkan mengendap.
+  - Lari butuh stamina dan tidak bisa dilakukan saat terengah.
 
 ## 4. Level & penilaian
 
@@ -75,6 +92,9 @@ Setiap kenakalan memberi Chaos dan memancarkan suara dengan radius tertentu. Pem
 | Makan ikan | +40 |
 
 **Stamina habis:** kucing terengah selama **2 detik**. Selama terengah, kucing hanya bisa berjalan (tidak bisa lari) dan tidak bisa lompat tinggi.
+
+- Stamina pulih saat jalan, diam, dan mengendap. Stamina tidak pulih saat lari atau di udara.
+- Lompat tinggi hanya bisa dilakukan jika stamina tersisa minimal sebesar biayanya. Jika kurang, `Shift` + `Spasi` menjadi lompat biasa.
 
 ## 7. Mengeong
 
@@ -196,18 +216,20 @@ Belum ada. Tambahkan di sini jika muncul keputusan desain yang belum ditentukan.
 - [x] Tulis CLAUDE.md dan GDD
 
 ### Fase 1 — Kontrol kucing lengkap
-- [ ] Lari (`Shift`) dan mengendap (`C`) dengan kecepatan serta tinggi profil berbeda
-- [ ] Sistem stamina (bagian 6)
-- [ ] Tombol interaksi (`E`) dengan penanda objek terdekat
-- [ ] Mengeong (`Q`) dengan cooldown (bagian 7)
-- [ ] Sistem suara: setiap aksi memancarkan "noise" dengan radius tertentu
+- [x] Lari (`Shift`) dan mengendap (`C`) dengan kecepatan serta tinggi profil berbeda
+- [x] Lompat biasa dan lompat tinggi (`Shift` + `Spasi`)
+- [x] Sistem stamina (bagian 6), dengan bar stamina sementara di HUD
+- [x] Tombol interaksi (`E`) dengan penanda objek terdekat (kerangka; objek nyata di Fase 2)
+- [x] Mengeong (`Q`) dengan cooldown (bagian 7)
+- [x] Sistem suara: setiap aksi memancarkan "noise" dengan radius tertentu
+- [x] Overlay debug developer (`F3`): radius noise, jangkauan interaksi, status kucing
 
 ### Fase 2 — Kenakalan & Chaos
 - [ ] Objek kenakalan (tisu, sofa, remote/TV, gelas, pot, ikan dapur) beserta fisika jatuh sederhana
 - [ ] Meter Chaos dan combo (bagian 5)
 - [ ] Timer level, target Chaos, dan rating bintang (bagian 4)
 - [ ] Layar hasil dan tabungan Chaos (bagian 10)
-- [ ] HUD baru: Chaos, waktu, nyawa, stamina
+- [ ] HUD baru: Chaos, waktu, nyawa, stamina (rapikan bar stamina sementara dari Fase 1)
 - [ ] Hapus skor dan kenaikan level berbasis koin (bagian 13)
 
 ### Fase 3 — Pemilik rumah (AI)
