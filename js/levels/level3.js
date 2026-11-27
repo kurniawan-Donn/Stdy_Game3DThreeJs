@@ -5,6 +5,7 @@ export default {
   name: 'Sore Hujan',
   description: 'Hujan deras dan petir. Kilat menyingkap, guntur menutupi suara. Awas jejak kaki basah!',
   DURATION: 270, // 4,5 menit
+  MUSIC_CALM: 0.3, // musik latar lebih pelan (hujan)
   TARGET_CHAOS: 450,
   LIGHTING: {
     sun: { intensity: 0.22, color: 0xc98f6a }, // sore kelabu-jingga redup (mendung)

@@ -16,6 +16,13 @@ import { remainingMischief } from '../entities/mischief/index.js';
 
 const RING_Y = 0.03;
 
+function audioDebugText(ctx) {
+  if (!ctx.audio.info) return '-';
+  const a = ctx.audio.info();
+  const tr = Object.entries(a.tracks).map(([k, v]) => `${k} ${v}`).join(', ') || 'diam';
+  return `${a.state}, musik ${tr}${a.loops.length ? ', loop ' + a.loops.join(',') : ''}, ruang ${a.listener || '-'}`;
+}
+
 function roomAt(p) {
   for (const [name, r] of Object.entries(HOUSE.rooms)) {
     if (p.x >= r.minX && p.x <= r.maxX && p.z >= r.minZ && p.z <= r.maxZ) return name;
@@ -190,7 +197,8 @@ export function updateDebugOverlay(ctx) {
     `fisika    : ${ctx.physics.bodies.length} benda, waktu ${ctx.state.timeLeft.toFixed(1)}s`,
     `ruangan   : ${roomAt(ctx.cat.mesh.position)}${cat.underCrawl ? ' (di kolong)' : ''}${isInDarkZone(p.x, p.z) ? ' · AREA GELAP' : ''}`,
     `sembunyi  : ${hideDebugText(ctx)}`,
-    `kamera    : yaw ${(ctx.camRig.yaw * 57.3).toFixed(0)}° pitch ${(ctx.camRig.pitch * 57.3).toFixed(0)}° lengan ${ctx.camRig.arm.toFixed(2)}/${ctx.camRig.zoom.toFixed(2)} m, pudar ${ctx.cameraFading}${ctx.input.pointerLocked ? ', mouse terkunci' : ''}`
+    `kamera    : yaw ${(ctx.camRig.yaw * 57.3).toFixed(0)}° pitch ${(ctx.camRig.pitch * 57.3).toFixed(0)}° lengan ${ctx.camRig.arm.toFixed(2)}/${ctx.camRig.zoom.toFixed(2)} m, pudar ${ctx.cameraFading}${ctx.input.pointerLocked ? ', mouse terkunci' : ''}`,
+    `audio     : ${audioDebugText(ctx)}`
   ].join('\n');
 }
 

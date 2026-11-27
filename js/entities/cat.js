@@ -1,6 +1,6 @@
 // Kucing pemain: model low-poly, gerakan relatif kamera, lompat, dan animasi.
 import * as THREE from 'three';
-import { PLAYER, PHYSICS, CAT_ANIM, NOISE, OWNER, VACUUM, HIDE_BOX, CATNIP, CUSTOMIZATION, DUSTER_PROP } from '../config.js';
+import { PLAYER, PHYSICS, CAT_ANIM, NOISE, OWNER, VACUUM, HIDE_BOX, CATNIP, CUSTOMIZATION, DUSTER_PROP, AUDIO_MIX } from '../config.js';
 import { buildCatModel, disposeCatModel } from './catModel.js';
 import { resolveRoomCollisions, getGroundHeight, pushOutOfCircle, crawlBoxAt } from '../systems/collision.js';
 import { canRun, trySpendHighJump, updateStamina, isExhausted } from '../systems/stamina.js';
@@ -219,7 +219,9 @@ export function updateCat(ctx, dt) {
   // Mode gerak: mengendap menang atas lari; mengendap hanya di tanah
   // (lompat membatalkan mengendap); lari butuh stamina dan tidak terengah.
   // Di kolong yang lebih rendah dari tinggi berdiri: kucing otomatis merunduk
+  const wasUnder = !!cat.underCrawl;
   cat.underCrawl = crawlBoxAt(colliders, player.position.x, player.position.z, player.position.y);
+  if (cat.underCrawl && !wasUnder) audio.play('crawl'); // merunduk masuk kolong
   const forcedCrouch = !!cat.underCrawl && cat.underCrawl.crawlHeight < PLAYER.HEIGHT_STAND;
   const zoomies = cat.zoomiesT > 0;
   // Di dalam kardus: selalu pelan (kecepatan mengendap)
@@ -281,7 +283,8 @@ export function updateCat(ctx, dt) {
     const highJump = wantsRun && trySpendHighJump(stamina);
     playerVel.y = highJump ? PLAYER.HIGH_JUMP_FORCE : PLAYER.JUMP_FORCE;
     cat.isGrounded = false;
-    audio.playJump();
+    if (highJump) audio.play('highJump');
+    else audio.playJump();
   }
 
   playerVel.y += PHYSICS.GRAVITY * dt;
@@ -320,12 +323,14 @@ export function updateCat(ctx, dt) {
   );
 
   if (player.position.y <= cat.groundHeight && playerVel.y <= 0) {
+    const fallSpeed = -playerVel.y;
     player.position.y = cat.groundHeight;
     playerVel.y = 0;
     cat.isGrounded = true;
     if (!wasGrounded) {
       cat.landingSquashTimer = CAT_ANIM.SQUASH_DURATION;
       emitNoise(ctx, { x: player.position.x, z: player.position.z, radius: NOISE.LAND_RADIUS, source: 'land' });
+      audio.play(fallSpeed > AUDIO_MIX.LAND_HARD_SPEED ? 'landHard' : 'land');
     }
   } else {
     cat.isGrounded = false;
@@ -369,6 +374,7 @@ function finishCatFrame(ctx, dt, footsteps = false) {
         source: 'step-' + cat.moveMode
       });
       if (cat.bell) ctx.audio.play('bellStep'); // lonceng berdenting tiap langkah
+      if (cat.moveMode !== 'sneak') ctx.audio.play(cat.moveMode === 'run' ? 'catStepRun' : 'catStep');
     }
   }
 

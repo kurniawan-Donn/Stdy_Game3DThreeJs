@@ -154,19 +154,32 @@
     </div>
     <div class="lobby-panel side" id="settings-panel">
       <h2>Pengaturan</h2>
-      <div class="setting"><span>Kualitas grafis</span><div class="seg" id="set-quality"></div></div>
-      <label class="setting"><span>Volume <b id="set-volume-val"></b></span><input type="range" id="set-volume" /></label>
-      <label class="setting"><span>Sensitivitas mouse <b id="set-sens-val"></b></span><input type="range" id="set-sens" /></label>
-      <label class="setting check"><input type="checkbox" id="set-music" /> Musik (Level Bonus)</label>
-      <label class="setting check"><input type="checkbox" id="set-invert" /> Balik sumbu Y</label>
-      <label class="setting check"><input type="checkbox" id="set-fps" /> Tampilkan FPS</label>
-      <button class="btn danger" id="reset-progress">Hapus Progres</button>
-      <div class="confirm" id="reset-confirm">
-        <p>Hapus semua progres? Tabungan, bintang, item, dan pengaturan akan hilang dan <b>tidak bisa dikembalikan</b>.</p>
-        <div class="btn-row">
-          <button class="btn" data-confirm="no">Batal</button>
-          <button class="btn danger" data-confirm="yes">Ya, hapus</button>
+      <div class="seg tabs" id="set-tabs">
+        <button class="seg-btn active" data-tab="umum">Umum</button>
+        <button class="seg-btn" data-tab="suara">Suara</button>
+        <button class="seg-btn" data-tab="kontrol">Kontrol</button>
+      </div>
+      <div class="set-section active" data-sec="umum">
+        <div class="setting"><span>Kualitas grafis</span><div class="seg" id="set-quality"></div></div>
+        <label class="setting check"><input type="checkbox" data-set="showFps" /> Tampilkan FPS</label>
+        <button class="btn danger" id="reset-progress">Hapus Progres</button>
+        <div class="confirm" id="reset-confirm">
+          <p>Hapus semua progres? Tabungan, bintang, item, dan pengaturan akan hilang dan <b>tidak bisa dikembalikan</b>.</p>
+          <div class="btn-row">
+            <button class="btn" data-confirm="no">Batal</button>
+            <button class="btn danger" data-confirm="yes">Ya, hapus</button>
+          </div>
         </div>
+      </div>
+      <div class="set-section" data-sec="suara">
+        <label class="setting"><span>Master <b data-val="volume"></b></span><input type="range" data-set="volume" /></label>
+        <label class="setting"><span>Efek <b data-val="sfxVolume"></b></span><input type="range" data-set="sfxVolume" /></label>
+        <label class="setting"><span>Suasana <b data-val="ambVolume"></b></span><input type="range" data-set="ambVolume" /></label>
+        <label class="setting"><span>Musik <b data-val="musicVolume"></b></span><input type="range" data-set="musicVolume" /></label>
+      </div>
+      <div class="set-section" data-sec="kontrol">
+        <label class="setting"><span>Sensitivitas kamera <b data-val="sensitivity"></b></span><input type="range" data-set="sensitivity" /></label>
+        <label class="setting check"><input type="checkbox" data-set="invertY" /> Balik sumbu Y</label>
       </div>
       <button class="btn" data-action="back">Kembali</button>
     </div>

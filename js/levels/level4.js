@@ -6,6 +6,7 @@ export default {
   name: 'Malam Hari',
   description: 'Pemilik tidur. Setiap suara bisa membangunkannya, dan ia datang membawa senter. Bertahan sampai pagi!',
   DURATION: 300, // 5 menit
+  MUSIC_CALM: 0.2, // malam: musik latar paling sunyi
   TARGET_CHAOS: 350,
   TIME_UP_REASON: 'Pagi telah tiba!', // alasan di layar hasil saat waktu habis
   // Bulan biru pucat (lampu matahari, sangat redup agar tidak menembus dinding saat

@@ -23,6 +23,7 @@ function setMode(ctx, mode, tutorial = false) {
 function silence(ctx) {
   if (ctx.audio.murmur) ctx.audio.murmur(0);
   if (ctx.audio.rain) ctx.audio.rain(0);
+  if (ctx.audio.loop) ctx.audio.loop('robotHum', 0);
 }
 
 export function enterLobby(ctx) {
@@ -53,6 +54,7 @@ export function playLevel(ctx, index) {
   ctx.results.hide();
   ctx.pause.hide();
   setMode(ctx, 'play', !!level.TUTORIAL);
+  ctx.audio.play('levelStart');
   // Bantuan kontrol muncul otomatis di level pertama yang dimainkan
   // (Latihan punya petunjuk sendiri)
   if (!flow.helpShown && !level.TUTORIAL) {
@@ -112,6 +114,7 @@ export function pauseGame(ctx) {
   releasePointerLock();
   ctx.input.keys = {};
   ctx.pause.show(levelAt(ctx.state.levelIndex));
+  ctx.audio.play('pause');
   return true;
 }
 
@@ -121,6 +124,7 @@ export function resumeGame(ctx) {
   flow.state = 'playing';
   ctx.pause.hide();
   ctx.input.keys = {};
+  ctx.audio.play('resume');
   return true;
 }
 

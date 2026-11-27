@@ -40,5 +40,6 @@ export function applySettings(ctx) {
   const st = ctx.save.settings;
   applyQuality(ctx.renderer, [ctx.lights && ctx.lights.sun, ctx.lobby && ctx.lobby.sun], [ctx.scene, ctx.lobby && ctx.lobby.scene].filter(Boolean), st.quality);
   ctx.audio.setVolume(st.volume);
+  if (ctx.audio.setMix) ctx.audio.setMix({ sfx: st.sfxVolume, amb: st.ambVolume, music: st.musicVolume });
   if (typeof document !== 'undefined' && document.body) document.body.classList.toggle('show-fps', st.showFps);
 }

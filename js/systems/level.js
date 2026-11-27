@@ -21,7 +21,7 @@ export function updateLevelTimer(ctx, dt) {
 
   // Bunyi tik di detik-detik terakhir
   if (s.timeLeft <= HUD.TIMER_TICK_FROM && Math.ceil(s.timeLeft) !== Math.ceil(before) && s.timeLeft > 0) {
-    ctx.audio.play('timerTick');
+    ctx.audio.play(s.timeLeft <= HUD.TIMER_FINAL_FROM ? 'timerTickFinal' : 'timerTick');
   }
 
   ctx.hud.setTimer(s.timeLeft);
@@ -81,4 +81,5 @@ export function endLevel(ctx, reason) {
     hasNext: nextLevelIndex(save, s.levelIndex) >= 0
   });
   ctx.audio.play(won ? 'win' : 'gameOver');
+  if (stars > 0) ctx.audio.play(`stars${Math.min(stars, 3)}`); // bintang muncul satu per satu
 }

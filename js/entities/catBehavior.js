@@ -53,6 +53,7 @@ export function startSleep(ctx) {
   cat.idleAnim = null;
   cat.vel.set(0, 0, 0);
   cat.zzzT = 0;
+  ctx.audio.play('catYawn');
 }
 
 export function wake(ctx) {
@@ -91,6 +92,7 @@ export function dismount(ctx, hop) {
   if (!obs) return;
   obs.rider = null;
   cat.riding = null;
+  ctx.audio.play('robotOff');
   cat.remountBlockT = RIDE.REMOUNT_BLOCK;
   if (hop) {
     cat.vel.set(Math.sin(cat.yaw) * RIDE.DISMOUNT_SPEED, RIDE.DISMOUNT_UP, Math.cos(cat.yaw) * RIDE.DISMOUNT_SPEED);

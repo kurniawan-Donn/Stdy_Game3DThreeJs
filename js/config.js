@@ -751,6 +751,32 @@ export const AUDIO = {
       [180, 60, 0.3, 'triangle', 0.18, 0]
     ], // dentum KETAHUAN!
     flush: [[300, 120, 0.8, 'sine', 0.06, 0.1]],
+    // --- Fase 9: suara yang sebelumnya belum ada ---
+    highJump: [[300, 760, 0.16, 'sine', 0.12, 0]], // lompat tinggi
+    landHard: [[110, 60, 0.12, 'sine', 0.08, 0]], // mendarat dari tempat tinggi
+    robotOff: [[1320, 880, 0.08, 'square', 0.035, 0]], // turun dari robot
+    catYawn: [[600, 380, 0.5, 'triangle', 0.035, 0]], // kucing mulai tidur
+    ownerMumble: [[190, 230, 0.09, 'triangle', 0.05, 0], [230, 170, 0.1, 'triangle', 0.05, 0.12], [200, 220, 0.12, 'triangle', 0.04, 0.25]], // gelembung teks pemilik
+    guestMumble: [[290, 340, 0.08, 'triangle', 0.045, 0], [340, 270, 0.09, 'triangle', 0.045, 0.11], [300, 330, 0.1, 'triangle', 0.04, 0.22]], // gelembung teks tamu
+    ownerHmm: [[210, 160, 0.45, 'triangle', 0.045, 0]], // pemilik menyerah mencari
+    birdChirp: [[3200, 4200, 0.06, 'sine', 0.014, 0], [3600, 4600, 0.05, 'sine', 0.012, 0.09], [3000, 3900, 0.07, 'sine', 0.011, 0.2]], // burung di luar
+    drip: [[1400, 700, 0.05, 'sine', 0.03, 0]], // tetesan ke ember
+    dripPuddle: [[900, 500, 0.06, 'sine', 0.018, 0]], // tetesan ke genangan
+    uiClick: [[900, 700, 0.04, 'triangle', 0.05, 0]],
+    uiHover: [[1500, 1500, 0.02, 'sine', 0.012, 0]],
+    uiOpen: [[500, 750, 0.08, 'triangle', 0.04, 0]],
+    uiBack: [[700, 500, 0.07, 'triangle', 0.04, 0]],
+    buy: [[988, 988, 0.07, 'square', 0.035, 0], [1319, 1319, 0.18, 'square', 0.035, 0.07]], // beli item
+    equip: [[660, 880, 0.08, 'triangle', 0.05, 0]], // pakai item
+    pause: [[600, 400, 0.1, 'sine', 0.06, 0]],
+    resume: [[400, 600, 0.1, 'sine', 0.06, 0]],
+    levelStart: [[523, 523, 0.1, 'triangle', 0.07, 0], [784, 784, 0.16, 'triangle', 0.07, 0.12]],
+    // Bintang di layar hasil muncul satu per satu (setelah jingle menang)
+    stars1: [[880, 1320, 0.25, 'triangle', 0.1, 0.6]],
+    stars2: [[880, 1320, 0.25, 'triangle', 0.1, 0.6], [988, 1480, 0.25, 'triangle', 0.1, 0.95]],
+    stars3: [[880, 1320, 0.25, 'triangle', 0.1, 0.6], [988, 1480, 0.25, 'triangle', 0.1, 0.95], [1175, 1760, 0.35, 'triangle', 0.11, 1.3]],
+    respawn: [[440, 660, 0.15, 'sine', 0.05, 0]], // muncul lagi di keranjang
+    timerTickFinal: [[1400, 1400, 0.07, 'square', 0.05, 0]], // 3 detik terakhir
     win: [
       [523, 523, 0.12, 'triangle', 0.14, 0],
       [659, 659, 0.12, 'triangle', 0.14, 0.12],
@@ -787,7 +813,15 @@ export const AUDIO = {
     laundry: [{ DURATION: 0.9, VOLUME: 0.04, FILTER: 'lowpass', FREQ: 800, Q: 0.7, DELAY: 0 }],
     suck: [{ DURATION: 0.12, VOLUME: 0.03, FILTER: 'highpass', FREQ: 2500, Q: 0.7, DELAY: 0 }],
     sweep: [{ DURATION: 0.25, VOLUME: 0.012, FILTER: 'bandpass', FREQ: 3500, Q: 0.8, DELAY: 0 }],
-    drag: [{ DURATION: 0.3, VOLUME: 0.02, FILTER: 'bandpass', FREQ: 1800, Q: 0.8, DELAY: 0 }]
+    drag: [{ DURATION: 0.3, VOLUME: 0.02, FILTER: 'bandpass', FREQ: 1800, Q: 0.8, DELAY: 0 }],
+    catStep: [{ DURATION: 0.05, VOLUME: 0.012, FILTER: 'lowpass', FREQ: 600, Q: 0.7, DELAY: 0 }],
+    catStepRun: [{ DURATION: 0.05, VOLUME: 0.022, FILTER: 'lowpass', FREQ: 800, Q: 0.7, DELAY: 0 }],
+    land: [{ DURATION: 0.08, VOLUME: 0.035, FILTER: 'lowpass', FREQ: 400, Q: 0.7, DELAY: 0 }],
+    landHard: [{ DURATION: 0.15, VOLUME: 0.07, FILTER: 'lowpass', FREQ: 300, Q: 0.7, DELAY: 0 }],
+    crawl: [{ DURATION: 0.3, VOLUME: 0.02, FILTER: 'lowpass', FREQ: 1200, Q: 0.7, DELAY: 0 }], // masuk kolong
+    ownerStep: [{ DURATION: 0.07, VOLUME: 0.05, FILTER: 'lowpass', FREQ: 350, Q: 0.7, DELAY: 0 }],
+    ownerRun: [{ DURATION: 0.07, VOLUME: 0.08, FILTER: 'lowpass', FREQ: 400, Q: 0.7, DELAY: 0 }],
+    guestStep: [{ DURATION: 0.06, VOLUME: 0.04, FILTER: 'lowpass', FREQ: 450, Q: 0.7, DELAY: 0 }]
   },
   // Suara meong sintetis: sawtooth melalui filter bandpass dengan nada naik-turun
   MEOW_VOICE: {
@@ -800,6 +834,68 @@ export const AUDIO = {
     VOLUME: 0.18,
     FILTER_FREQ: 1200,
     FILTER_Q: 2.5
+  }
+};
+
+// --- Mixer & suara posisional (Fase 9) ---
+export const AUDIO_MIX = {
+  // Efek yang masuk bus Suasana (selain hujan, guntur, gumaman rapat)
+  AMBIENT: ['cricket', 'clockTick', 'birdChirp', 'drip', 'dripPuddle'],
+  SPATIAL: {
+    NEAR: 2, // m: volume penuh sampai jarak ini
+    FAR: 12, // m: volume FAR_GAIN mulai jarak ini
+    FAR_GAIN: 0.25,
+    OTHER_ROOM_GAIN: 0.6, // sumber di ruangan lain
+    MUFFLE_FREQ: 1200, // Hz lowpass sumber di ruangan lain
+    PAN_MAX: 0.6,
+    // Ruangan tanpa dinding pemisah dianggap satu ruang akustik (tidak teredam)
+    OPEN_PLAN: [['livingRoom', 'dining', 'kitchen']]
+  },
+  // Suara terus-menerus (noise terfilter): audio.loop(nama, level, pos)
+  LOOPS: {
+    robotHum: { FILTER: 'bandpass', FREQ: 220, Q: 2, VOLUME: 0.035, BUS: 'amb' }
+  },
+  NPC_STRIDE: { WALK: 0.7, RUN: 1.0 }, // m per langkah pemilik/tamu
+  NPC_RUN_SPEED: 2.2, // m/s: di atas ini langkah = lari
+  LAND_HARD_SPEED: 5, // m/s kecepatan jatuh untuk "mendarat keras" (lompat biasa ±4,2)
+  SLEEP_PURR_EVERY: 2.6, // detik dengkur saat kucing tidur
+  BIRDS: { MIN: 4, MAX: 10 }, // detik antar kicau (level siang tanpa hujan)
+  DRIP_EVERY: 0.9, // detik tetesan atap bocor (Level 3)
+  ROBOT_HUM_RANGE: 7 // m: dengung robot terdengar
+};
+
+// Musik latar prosedural: lobi, saat main (tenang), dan saat dikejar
+export const MUSIC_BG = {
+  LOOKAHEAD: 0.3,
+  STOP_AFTER: 3, // detik trek senyap sebelum dilepas
+  FADE_IN: { lobby: 0.4, calm: 0.8, chase: 0.15, sunday: 0.3 }, // konstanta waktu crossfade
+  FADE_OUT: { lobby: 0.4, calm: 0.6, chase: 0.7, sunday: 0.3 },
+  LOBBY_LEVEL: 0.8,
+  CALM_LEVEL: 0.45, // bawaan; level bisa menimpa lewat MUSIC_CALM di file level
+  CHASE_LEVEL: 0.9,
+  CHASE_HOLD: 2, // detik musik tegang bertahan setelah kejaran selesai
+  CHASE_DUCK: 0.2, // pengali musik tenang saat dikejar
+  PAUSE_MULT: 0.5,
+  RESULTS_MULT: 0.6,
+  TRACKS: {
+    lobby: {
+      STYLE: 'calm', BPM: 70, BAR: 4,
+      // C → Am → F → G
+      CHORDS: [[261.6, 329.6, 392.0, 493.9], [220.0, 261.6, 329.6, 392.0], [174.6, 220.0, 261.6, 329.6], [196.0, 246.9, 293.7, 349.2]],
+      PAD_VOLUME: 0.012, BASS_VOLUME: 0.03, PLUCK_VOLUME: 0.025, PLUCK_EVERY: 1, PLUCK_DECAY: 0.9
+    },
+    calm: {
+      STYLE: 'calm', BPM: 64, BAR: 4,
+      // Dm7 → Cmaj7 → B♭maj7 → C7
+      CHORDS: [[146.8, 174.6, 220.0, 261.6], [130.8, 164.8, 196.0, 246.9], [116.5, 146.8, 174.6, 220.0], [130.8, 164.8, 196.0, 233.1]],
+      PAD_VOLUME: 0.01, BASS_VOLUME: 0.025, PLUCK_VOLUME: 0.02, PLUCK_EVERY: 2, PLUCK_DECAY: 1.1
+    },
+    chase: {
+      STYLE: 'chase', BPM: 132,
+      // Am → Am → F → E
+      CHORDS: [[220.0, 261.6, 329.6], [220.0, 261.6, 329.6], [174.6, 220.0, 261.6], [164.8, 207.7, 246.9]],
+      BASS_VOLUME: 0.05, HAT_VOLUME: 0.012, KICK_VOLUME: 0.12, SNARE_VOLUME: 0.02, STAB_VOLUME: 0.01
+    }
   }
 };
 
@@ -1112,19 +1208,21 @@ export const FLOAT_TEXT = {
 // --- HUD ---
 export const HUD = {
   TIMER_WARNING: 30, // detik terakhir: timer merah
-  TIMER_TICK_FROM: 10 // detik terakhir: bunyi tik tiap detik
+  TIMER_TICK_FROM: 10, // detik terakhir: bunyi tik tiap detik
+  TIMER_FINAL_FROM: 3 // 3 detik terakhir: tik lebih tinggi
 };
 
 // --- Simpanan (localStorage) ---
 export const SAVE = {
   KEY: 'meongMayhem.save', // versi skema disimpan di dalam data (lihat core/save.js)
-  VERSION: 2,
+  VERSION: 3,
   LEGACY_KEYS: ['meongMayhem.save.v1'] // save lama yang dimigrasi otomatis
 };
 
 // --- Pengaturan (lobi → Pengaturan) ---
 export const SETTINGS = {
-  DEFAULTS: { quality: 'high', volume: 0.8, music: true, sensitivity: 1, invertY: false, showFps: false },
+  // volume = Master; sfx/amb/musicVolume = bus Efek/Suasana/Musik (skema v3)
+  DEFAULTS: { quality: 'high', volume: 0.8, sfxVolume: 1, ambVolume: 0.8, musicVolume: 0.6, sensitivity: 1, invertY: false, showFps: false },
   QUALITY: {
     low: { label: 'Rendah', shadows: false, shadowMapSize: 512, maxPixelRatio: 1 },
     medium: { label: 'Sedang', shadows: true, shadowMapSize: 1024, maxPixelRatio: 1.5 },

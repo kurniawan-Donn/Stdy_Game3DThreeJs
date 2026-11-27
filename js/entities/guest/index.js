@@ -98,6 +98,7 @@ function say(ctx, text) {
   const g = ctx.guest;
   const p = g.mesh.position;
   ctx.floatText.spawn(text, { x: p.x, y: OWNER.EYE_HEIGHT_STAND * g.scale + FLOAT_TEXT.SPEECH_HEIGHT, z: p.z }, 'speech', { duration: FLOAT_TEXT.SPEECH_DURATION });
+  ctx.audio.play('guestMumble', { x: p.x, z: p.z });
 }
 
 function sitAt(g, seat) {

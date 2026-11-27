@@ -61,7 +61,8 @@ import { updateFlashlight } from './entities/flashlight.js';
 import { createTutorialUi } from './ui/tutorialUi.js';
 import { loadLevel } from './systems/levelManager.js';
 import { updateCleaning } from './systems/cleaning.js';
-import { updateSunday, musicLevelAt } from './world/sunday.js';
+import { updateSunday } from './world/sunday.js';
+import { updateSoundscape, musicLevels } from './systems/soundscape.js';
 
 function init() {
   const canvas = document.getElementById('game-canvas');
@@ -188,10 +189,12 @@ function init() {
   const customize = createCustomizeMenu({
     getSave: () => ctx.save,
     preview: (look) => setLobbyLook(ctx.lobby, look),
+    sound: (n) => audio.play(n),
     onChange: applyLook
   });
   const settingsMenu = createSettingsMenu({
     getSave: () => ctx.save,
+    sound: (n) => audio.play(n),
     apply: () => applySettings(ctx),
     resetProgress: () => {
       ctx.save = resetSave();
@@ -224,6 +227,7 @@ function init() {
     }),
     onLevel: (i) => click(() => playLevel(ctx, i))()
   });
+  bindUiSounds(ctx);
   // Jendela kehilangan fokus saat bermain → pause
   document.addEventListener('visibilitychange', () => {
     if (document.hidden) pauseGame(ctx);
@@ -241,6 +245,25 @@ function init() {
   loadLevel(ctx, 0);
   enterLobby(ctx);
   startLoop(ctx);
+}
+
+// Bunyi UI: klik & hover semua tombol/kartu di lapisan menu (satu listener)
+function bindUiSounds(ctx) {
+  let hovered = null;
+  const target = (e) => e.target && e.target.closest && e.target.closest('button, .level-card, .item-card');
+  document.addEventListener('click', (e) => {
+    const b = target(e);
+    if (!b || b.disabled || (b.classList.contains('level-card') && b.classList.contains('locked'))) return;
+    ctx.audio.ensure();
+    const back = b.dataset.action === 'back' || b.dataset.action === 'lobby' || b.dataset.confirm === 'no';
+    ctx.audio.play(back ? 'uiBack' : b.closest('.seg') ? 'uiClick' : b.dataset.action ? 'uiOpen' : 'uiClick');
+  });
+  document.addEventListener('pointerover', (e) => {
+    const b = target(e);
+    if (b === hovered) return;
+    hovered = b;
+    if (b && !b.disabled && e.pointerType === 'mouse') ctx.audio.play('uiHover');
+  });
 }
 
 // Area gelap: kucing & pemilik meredup, tanda bulan pada ikon mata HUD
@@ -318,8 +341,8 @@ function gameFrame(ctx, dt) {
     if (updateTutorial(ctx, dt) === 'done') finishTutorial(ctx);
   }
   updateDarkness(ctx, dt);
-  // Musik speaker (Level Bonus), bisa dimatikan di Pengaturan
-  if (ctx.audio.music) ctx.audio.music(ctx.sunday && ctx.save.settings.music && !ctx.state.isGameOver ? musicLevelAt(ctx) : 0);
+  // Pendengar audio, langkah NPC, suasana (burung, tetesan, dengung robot)
+  updateSoundscape(ctx, wdt);
 
   updatePhysics(ctx, wdt);
   updateParticles(ctx.particles, ctx.scene, wdt);
@@ -369,6 +392,8 @@ function startLoop(ctx) {
       ctx.renderer.render(ctx.scene, ctx.camera);
     }
     updateFpsCounter(ctx, dt);
+    // Musik latar: lobi / tenang / tegang saat dikejar / speaker Level Bonus
+    ctx.audio.setMusic(musicLevels(ctx, dt));
 
     endFrame(ctx.input);
   }

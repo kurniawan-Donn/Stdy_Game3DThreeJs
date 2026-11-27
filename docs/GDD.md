@@ -529,9 +529,12 @@ Preview langsung di lobi saat memilih. Item terkunci tampil dengan harga dan bis
   - **Kucing hitam:** lebih sulit terlihat di area gelap: jangkauan pandang pemilik di area gelap ×0,7 → **×0,5**.
 
 ### Pengaturan
-- **Kualitas grafis:** Rendah (tanpa bayangan, pixel ratio 1), Sedang (bayangan 1024, pixel ratio maks. 1,5), Tinggi (seperti sekarang: bayangan 2048, pixel ratio maks. 2).
-- **Volume**, **musik** (nyala/mati; musik speaker Level Bonus), **sensitivitas mouse**, **balik sumbu Y**, **tampilkan FPS**.
-- Tombol **Hapus Progres** dengan konfirmasi.
+- **Kualitas grafis:** **Otomatis** (bawaan save baru; mulai Tinggi di PC / Rendah di HP, turun satu tingkat jika FPS < 45 selama 4 detik, tidak naik sendiri), Rendah (tanpa bayangan, pixel ratio 1), Sedang (bayangan 1024, pixel ratio maks. 1,5), Tinggi (bayangan 2048, pixel ratio maks. 2).
+- **Suara (mixer):** Master, Efek, Suasana, Musik (0–100%; Musik 0 = mati, menggantikan centang musik lama).
+- **Kontrol:** sensitivitas mouse/sentuh, balik sumbu Y, **atur ulang tombol** (rebind semua aksi keyboard, tombol ganda ditukar otomatis, tombol "Kembalikan bawaan"; `Esc` dan `F3` tetap).
+- **Aksesibilitas:** kurangi getaran kamera, kurangi kilat/efek berkedip, ukuran teks HUD (Kecil/Normal/Besar), mode ramah buta warna (ikon mata & meter).
+- **Tampilkan FPS**, tombol **Hapus Progres** dengan konfirmasi.
+- Simpanan naik ke skema **v3** (migrasi: volume lama → Master, musik mati → Musik 0, kualitas lama dipertahankan).
 
 ### Simpan progres
 - `localStorage` dengan **versi skema** (update berikutnya tidak merusak save lama): tabungan, bintang terbaik per level, item yang dimiliki, kucing & aksesoris terpilih, pengaturan, status tutorial.
@@ -650,7 +653,42 @@ Belum ada. Tambahkan di sini jika muncul keputusan desain yang belum ditentukan.
 - [x] Pengaturan: kualitas grafis, volume, sensitivitas mouse, balik sumbu Y, tampilkan FPS, hapus progres dengan konfirmasi
 - [x] Simpanan berversi skema (dikerjakan di Fase 7)
 
-### Fase 9 — Polish & performa
-- [ ] Efek suara prosedural untuk semua aksi baru
-- [ ] Uji performa di laptop biasa dan optimasi (sudah: bayangan hanya dari matahari, geometri statis digabung, FPS di F3)
-- [ ] Penyeimbangan angka di `config.js` dan uji main menyeluruh
+### Fase 9 — Polish & rilis
+Dikerjakan sebagai commit terpisah per bagian. Angka level/harga **tidak diubah** sebelum tabel usulan penyeimbangan disetujui.
+
+**9.1 Audio lengkap**
+- Audit: sudah bersuara 58 efek. **Belum bersuara:** langkah kucing biasa (selain lonceng), mendarat (pelan/keras), lompat tinggi, merunduk ke kolong, mulai/turun naik robot, tidur & dengkur, zoomies, kehabisan stamina saat lari (efek `pant` tidak dipakai), langkah pemilik & tamu, pemilik mengucap gelembung teks ("hmm", "Hei!", mengomel), ikon "?" muncul, pemilik menyerah mencari, tetesan ember, robot berdengung, klik/hover tombol UI, buka panel, beli & pakai item, pause/lanjut, mulai level (hitung masuk), layar hasil menang/gagal + bintang muncul satu per satu, nyawa berkurang/respawn, tabungan bertambah, peringatan 10 detik terakhir (diperjelas).
+- **Mixer** 4 bus: Master → Efek / Suasana / Musik. Efek = aksi & UI; Suasana = hujan, guntur, jangkrik, detak jam, gumaman rapat, dengung robot, burung pagi (level siang); Musik = musik latar + speaker Level Bonus.
+- **Posisional ringan:** suara dunia dikirim dengan posisi (`audio.play(nama, pos)`); pendengar = kucing. Volume turun linear 1 → 0,25 dari 2 m ke 12 m, dan jika sumber di ruangan lain (ruangan dari denah `HOUSE`; ruang tamu, ruang makan & dapur yang terbuka dihitung satu ruang) volume ×0,6 dan lowpass 1,2 kHz. Pan kiri/kanan halus terhadap arah kamera. Suara UI & kucing sendiri tidak posisional.
+- **Musik latar prosedural:** lobi = loop tenang (pad + petikan, ±70 BPM); saat main = versi lebih pelan (Level 4 lebih sunyi, Level 3 lebih pelan karena hujan); saat pemilik **MENGEJAR** = lapisan tegang (bas staccato + perkusi, ±130 BPM) masuk dengan crossfade 0,5 detik dan keluar 2 detik setelah kejar selesai. Level Bonus: musik speaker tetap, lapisan tegang menimpa saat dikejar.
+
+**9.2 Penyeimbangan (usulan dulu)**
+- Skrip analisis headless `tools/balance.mjs`: per level hitung **Chaos maksimum** (semua kenakalan aktif, combo optimal, kalung lonceng ×1,2 terpisah) dan **perkiraan santai** (±60% kenakalan, combo jarang, 1× ketahuan), bandingkan dengan target & ambang bintang.
+- **Log playtest lokal** (F3 → `K` nyala/mati, default mati): Chaos per kenakalan, ketahuan (waktu, posisi, ruangan, penyebab), durasi level, bintang, hasil. Tersimpan di `localStorage` terpisah dari save, diekspor JSON (F3 → `J` unduh, juga `copy` di konsol).
+- Hasil: **tabel usulan** target per level, harga kustomisasi, dan kesulitan (jangkauan pandang, kecepatan curiga) → menunggu persetujuan.
+
+**9.3 Performa**
+- Profil tiap level di Chrome: FPS, draw call, segitiga, geometri/tekstur (`renderer.info`), memori JS (`performance.memory`). Tabel hasil dicatat di sini.
+- Kualitas **Otomatis** (lihat Pengaturan); notifikasi kecil "Kualitas diturunkan" saat turun.
+- Uji 20× ganti level berturut-turut di Chrome + headless: jumlah geometri/tekstur/material dan memori kembali ke garis dasar.
+
+**9.4 Kontrol HP & tablet**
+- Deteksi sentuh (`pointer: coarse` / `ontouchstart`) → lapisan kontrol sentuh: joystick kiri (analog: dorong sedikit = endap, penuh = jalan), geser di separuh kanan = putar kamera, cubit = zoom; tombol **Lompat**, **Lari** (tahan), **Endap** (toggle), **E** (ikon & label berganti sesuai prompt: gigit, dorong, masuk kardus, cakar, …), **Meong**, **Pause**.
+- Di HP pause otomatis saat tab disembunyikan (bukan saat kunci mouse lepas). HUD menyesuaikan layar kecil; mode potret menampilkan anjuran "Putar ke lanskap" (tetap bisa main). Kualitas bawaan HP = Otomatis mulai Rendah. Bantuan kontrol menampilkan versi sentuh.
+
+**9.5 Aksesibilitas & kenyamanan**
+- Kurangi getaran kamera (semua getaran ×0,25), kurangi kilat/berkedip (kilat Level 3 tanpa flicker & kecerahan ×0,35, layar KETAHUAN tanpa kedip, LED speaker tidak berkedip), ukuran teks HUD, mode buta warna (meter curiga kuning → biru, "!" merah → oranye + bentuk berbeda; ikon mata pakai pola/garis, bukan hanya warna).
+- Rebind: semua aksi lewat lapisan aksi `input.action('jump')` (kucing, interaksi, meong, pause, bantuan); panel "Kontrol" di Pengaturan.
+
+**9.6 Rilis**
+- GitHub Pages dari branch `main` (root), `.nojekyll`, favicon & meta deskripsi, semua path relatif; langkah pengaturan GitHub untuk pemilik repo.
+- README lengkap (deskripsi, screenshot/GIF, link main, kontrol keyboard & sentuh, level, teknologi, cara lokal, kredit), `CHANGELOG.md`, versi `package.json` 1.0.0, tag `v1.0.0`.
+
+Checklist:
+- [x] 9.1 Audio lengkap: 30 suara baru, mixer 4 bus (Pengaturan → tab Suara), posisional ringan (ruang tamu + ruang makan + dapur = satu ruang akustik), musik lobi/main/kejar, status audio di F3
+- [ ] 9.2 Skrip analisis Chaos, log playtest F3 (ekspor JSON), tabel usulan penyeimbangan
+- [ ] 9.2b Terapkan angka penyeimbangan yang disetujui
+- [ ] 9.3 Profil per level, kualitas Otomatis, uji 20× ganti level di Chrome
+- [ ] 9.4 Kontrol sentuh, HUD layar kecil & potret/lanskap, kualitas HP
+- [ ] 9.5 Aksesibilitas (getaran, kilat, teks HUD, buta warna) & rebind tombol
+- [ ] 9.6 GitHub Pages, README, CHANGELOG, tag v1.0.0

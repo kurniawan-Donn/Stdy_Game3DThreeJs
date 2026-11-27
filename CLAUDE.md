@@ -33,7 +33,7 @@ js/
     input.js            Keyboard (keys/pressed) + mouse (mouseDX/DY via pointer lock atau drag, wheel)
     state.js            State bersama: Chaos, combo, waktu, nyawa (createState/resetRunState)
     camera.js           Kamera orbit third-person (camRig): yaw/pitch/zoom, auto-recenter, spring arm, mode KETAHUAN, getaran
-    audio.js            Efek suara Web Audio: audio.play(nama) dari AUDIO.SFX / AUDIO.NOISE_SFX
+    audio.js            Web Audio: mixer (master → efek/suasana/musik), play(nama, pos?) dari AUDIO.SFX / NOISE_SFX (posisional jika pos), loop, musik prosedural (setMusic), info() untuk F3
     save.js             Simpanan localStorage berversi skema (v2, migrasi save lama): tabungan, rekor level, item, pilihan, pengaturan
     settings.js         Terapkan pengaturan: kualitas (bayangan, pixel ratio), volume; sensitivitas/balik Y dibaca camera.js
     gameFlow.js         Alur LOBI → PILIH LEVEL → MAIN → PAUSE → HASIL (flow.state), pause P & saat kunci mouse lepas
@@ -86,6 +86,7 @@ js/
     shop.js             Toko kustomisasi: harga, beli dengan tabungan, pakai item
     visit.js            Kunjungan tamu (Level 5): pembuka/lewati, mengobrol, dapur bersama, toilet tamu, penutup
     cleaning.js         Bersih-bersih (Level Bonus): jadwal ruangan, kekacauan (mess) dari scoreLog, tidyMess, robotSuck
+    soundscape.js       Lanskap suara per frame: pendengar = kucing, langkah pemilik/tamu, burung, tetesan, dengung robot; musicLevels (lobi/tenang/kejar/speaker)
     night.js            Malam (Level 4): meter terbangun, ikon Zzz, matahari terbit, suara malam, aturan bayangan
     weather.js          Cuaca (Level 3): jadwal kilat/guntur, suara tertutup hujan, cahaya kilat, genangan
     tutorial.js         Latihan (Level 0): langkah, syarat selesai, panah penanda, naskah pemilik
@@ -142,6 +143,7 @@ js/
 - **Performa:** maksimal satu lampu berbayangan aktif (matahari; di Level 4 senter/bulan sesuai kualitas, diatur `updateNight`); jangan menambah lampu dengan bayangan. Gabung geometri statis baru dengan `mergeStaticGroup`.
 - Benda yang jatuh, memantul, atau berserakan memakai `addBody(ctx, {...})` dari `systems/physics.js`. Semua benda dibersihkan saat level diulang.
 - **Kamera** mengorbit kucing (`ctx.camRig`) dan bisa menghadap ke mana saja, jadi objek dan perubahan tampilan harus terlihat dari semua arah. Dinding luar, dinding dalam, plafon, dan pintu tertutup ditangani spring arm (kamera tidak pernah menembus dinding); perabot yang menghalangi memudar lewat `furnitureRefs.fadeables` (diisi otomatis oleh `finish` di `furniture.js`).
+- **Audio** (`core/audio.js`, `systems/soundscape.js`): efek baru = entri di `AUDIO.SFX`/`AUDIO.NOISE_SFX` lalu `ctx.audio.play(nama)`; suara dari sumber di dunia (pemilik, tamu, robot, benda) kirim posisinya: `play(nama, { x, z })` (diredam jarak & beda ruangan, lihat `AUDIO_MIX`). Efek suasana didaftarkan di `AUDIO_MIX.AMBIENT`. Musik dihitung `musicLevels` dan dipanggil tiap frame di semua flow state; level bisa menimpa volume musik tenang lewat `MUSIC_CALM`. Uji headless memakai audio tiruan, jadi fungsi audio opsional (`loop`, `setListener`) dicek dulu sebelum dipanggil di luar `main.js`.
 - Aksi yang berisik memanggil `emitNoise(ctx, { x, z, radius, source })`. Sistem yang perlu "mendengar" mendaftar lewat `onNoise(ctx.noise, fn)`.
 - Objek interaktif didaftarkan lewat `registerInteractable(ctx.interaction, item)` (lihat komentar di `interaction.js`).
 - **Pengembangan:** buka `http://localhost:3000/?debug` agar `window.__meongCtx` tersedia di konsol (untuk pemeriksaan visual/screenshot; tanpa `?debug` tidak ada efek). Dengan F3 terbuka: `L` = kilat (Level 3), `T` = lompat ke 5 detik terakhir.

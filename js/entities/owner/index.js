@@ -626,6 +626,8 @@ function setState(ctx, o, state) {
 }
 
 function backToRoutine(ctx, o, meter) {
+  // Menyerah mencari: "hmm"
+  if (o.state === 'investigate') ctx.audio.play('ownerHmm', { x: o.mesh.position.x, z: o.mesh.position.z });
   o.meter = meter;
   setState(ctx, o, 'routine');
   startWork(o);

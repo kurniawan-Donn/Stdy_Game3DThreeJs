@@ -1457,3 +1457,18 @@ body.mode-lobby #clean-rooms {
   font-weight: 900;
   text-shadow: 0 2px 4px rgba(0, 0, 0, 0.55);
 }
+
+/* ---------- Pengaturan: tab & bagian (Fase 9) ---------- */
+.seg.tabs {
+  flex-wrap: wrap;
+}
+
+.set-section {
+  display: none;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.set-section.active {
+  display: flex;
+}

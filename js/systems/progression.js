@@ -32,6 +32,7 @@ import { resetFootprints } from '../entities/footprints.js';
 import { resetCleaning } from './cleaning.js';
 import { resetCleanRoutine } from '../entities/owner/cleaning.js';
 import { resetSunday } from '../world/sunday.js';
+import { resetSoundscape } from './soundscape.js';
 
 // Dipanggil saat kucing memakan ikan camilan.
 export function onFishEaten(ctx) {
@@ -77,6 +78,7 @@ export function resetGame(ctx) {
   resetCleaning(ctx); // Level Bonus: jadwal ruangan & kekacauan (no-op di level lain)
   resetCleanRoutine(ctx); // pemilik bersih-bersih (setelah resetOwner & resetCleaning)
   resetSunday(ctx); // suasana Minggu pagi: tirai, speaker, jendela terbuka
+  resetSoundscape(ctx); // langkah NPC, kicau burung, tetesan, dengung robot
   // Debu berkilau di berkas matahari hanya di siang yang cerah
   if (ctx.dust && ctx.dust.points) ctx.dust.points.visible = !ctx.weather && !ctx.night;
 

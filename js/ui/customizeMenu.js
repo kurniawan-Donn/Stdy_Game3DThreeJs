@@ -11,7 +11,7 @@ const NOTES = {
 
 const hex = (n) => '#' + n.toString(16).padStart(6, '0');
 
-// hooks: { getSave(), preview(look), onChange() } — onChange dipanggil
+// hooks: { getSave(), preview(look), onChange(), sound?(nama) } — onChange dipanggil
 // setelah beli/pakai (simpan & terapkan ke kucing pemain)
 export function createCustomizeMenu(hooks) {
   const gridEl = document.getElementById('item-grid');
@@ -95,8 +95,12 @@ export function createCustomizeMenu(hooks) {
   );
   actionBtn.addEventListener('click', () => {
     const save = hooks.getSave();
-    const done = isOwned(save, state.tab, state.focus) ? equipItem(save, state.tab, state.focus) : buyItem(save, state.tab, state.focus);
-    if (done) hooks.onChange();
+    const owned = isOwned(save, state.tab, state.focus);
+    const done = owned ? equipItem(save, state.tab, state.focus) : buyItem(save, state.tab, state.focus);
+    if (done) {
+      if (hooks.sound) hooks.sound(owned ? 'equip' : 'buy');
+      hooks.onChange();
+    }
     render();
   });
 

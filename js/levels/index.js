@@ -5,6 +5,7 @@
 // Format satu level:
 //   key, name, description       teks untuk kartu level
 //   DURATION, TARGET_CHAOS       detik & target Chaos
+//   MUSIC_CALM                   (opsional) volume musik latar saat main, bawaan MUSIC_BG.CALM_LEVEL
 //   LIGHTING                     { sun: {intensity, color}, hemi: {intensity},
 //                                  points: { <nama>: {intensity, color} } } menimpa LIGHTS
 //   ACTIVE_MISCHIEF              daftar jenis kenakalan yang aktif (null = semua)

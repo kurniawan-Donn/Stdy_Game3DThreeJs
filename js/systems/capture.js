@@ -128,6 +128,7 @@ export function updateCapture(ctx, dt) {
       if (c.t >= CAPTURE.BLACK_HOLD) {
         c.phase = 'fadeIn';
         c.t = 0;
+        ctx.audio.play('respawn');
       }
       break;
     case 'fadeIn':

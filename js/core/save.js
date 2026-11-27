@@ -2,8 +2,8 @@
 // otomatis; data rusak atau localStorage yang tidak tersedia (mode privat,
 // kuota penuh) tidak menghentikan game: progres hanya tidak tersimpan.
 //
-// Skema v2:
-//   version        2
+// Skema v3 (v2 + mixer suara; centang musik lama → volume Musik):
+//   version        3
 //   chaosBank      tabungan Chaos
 //   levels         { <level.key>: { bestChaos, bestStars } }
 //   owned          { cats: [id...], accessories: [id...] }
@@ -75,6 +75,8 @@ function normalize(data) {
       if (typeof v === typeof def) out.settings[k] = v;
     }
   }
+  // v2 → v3: centang "Musik" dimatikan = volume Musik 0
+  if (num(data.version) < 3 && isObj(data.settings) && data.settings.music === false) out.settings.musicVolume = 0;
   // Pemain lama yang sudah punya progres dianggap sudah lulus latihan
   out.tutorialDone = data.tutorialDone === true || out.chaosBank > 0 || Object.keys(out.levels).length > 0;
   return out;

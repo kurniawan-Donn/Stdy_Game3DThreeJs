@@ -21,6 +21,7 @@ import { startCapture } from '../../systems/capture.js';
 export function say(ctx, text) {
   const p = ctx.owner.mesh.position;
   ctx.floatText.spawn(text, { x: p.x, y: OWNER.EYE_HEIGHT_STAND + FLOAT_TEXT.SPEECH_HEIGHT, z: p.z }, 'speech', { duration: FLOAT_TEXT.SPEECH_DURATION });
+  ctx.audio.play('ownerMumble', { x: p.x, z: p.z });
 }
 
 function duster(ctx) {
