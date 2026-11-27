@@ -14,6 +14,8 @@ function formatTime(seconds) {
 
 export function createHud() {
   const levelTextEl = document.getElementById('level-text');
+  const toastEl = document.getElementById('toast');
+  let toastTimer = null;
   const timerEl = document.getElementById('timer-text');
   const chaosTextEl = document.getElementById('chaos-text');
   const targetTextEl = document.getElementById('target-text');
@@ -78,6 +80,13 @@ export function createHud() {
   let lastComboText = null;
 
   return {
+    // Pemberitahuan singkat di tengah atas (mis. kualitas grafis diturunkan)
+    toast(text, seconds = HUD.TOAST_TIME) {
+      toastEl.textContent = text;
+      toastEl.classList.add('active');
+      if (toastTimer) clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => toastEl.classList.remove('active'), seconds * 1000);
+    },
     setLevel(label, name) {
       levelTextEl.textContent = name ? `${label} · ${name}` : label;
     },

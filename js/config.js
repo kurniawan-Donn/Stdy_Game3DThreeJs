@@ -1217,7 +1217,8 @@ export const FLOAT_TEXT = {
 export const HUD = {
   TIMER_WARNING: 30, // detik terakhir: timer merah
   TIMER_TICK_FROM: 10, // detik terakhir: bunyi tik tiap detik
-  TIMER_FINAL_FROM: 3 // 3 detik terakhir: tik lebih tinggi
+  TIMER_FINAL_FROM: 3, // 3 detik terakhir: tik lebih tinggi
+  TOAST_TIME: 3 // detik pemberitahuan singkat (hud.toast)
 };
 
 // --- Simpanan (localStorage) ---
@@ -1230,12 +1231,16 @@ export const SAVE = {
 // --- Pengaturan (lobi → Pengaturan) ---
 export const SETTINGS = {
   // volume = Master; sfx/amb/musicVolume = bus Efek/Suasana/Musik (skema v3)
-  DEFAULTS: { quality: 'high', volume: 0.8, sfxVolume: 1, ambVolume: 0.8, musicVolume: 0.6, sensitivity: 1, invertY: false, showFps: false },
+  DEFAULTS: { quality: 'auto', volume: 0.8, sfxVolume: 1, ambVolume: 0.8, musicVolume: 0.6, sensitivity: 1, invertY: false, showFps: false },
   QUALITY: {
     low: { label: 'Rendah', shadows: false, shadowMapSize: 512, maxPixelRatio: 1 },
     medium: { label: 'Sedang', shadows: true, shadowMapSize: 1024, maxPixelRatio: 1.5 },
     high: { label: 'Tinggi', shadows: true, shadowMapSize: 2048, maxPixelRatio: 2 }
   },
+  // Kualitas "Otomatis": mulai START (HP: START_TOUCH), turun satu tingkat jika
+  // FPS < FPS_MIN selama HOLD detik; tidak naik sendiri. GRACE = detik
+  // pengamatan diabaikan setelah ganti kualitas / mulai level.
+  AUTO: { LABEL: 'Otomatis', START: 'high', START_TOUCH: 'low', FPS_MIN: 45, HOLD: 4, GRACE: 3, ORDER: ['high', 'medium', 'low'] },
   SENSITIVITY_MIN: 0.3, // pengali CAMERA.MOUSE_SENSITIVITY
   SENSITIVITY_MAX: 2.5,
   SENSITIVITY_STEP: 0.1,

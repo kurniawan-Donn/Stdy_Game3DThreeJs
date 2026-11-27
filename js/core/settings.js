@@ -2,9 +2,55 @@
 // audio, dan UI. Sensitivitas & balik sumbu Y dibaca langsung oleh
 // core/camera.js. Semua preset & batas ada di SETTINGS (config.js).
 import { SETTINGS } from '../config.js';
+import { isTouchDevice } from './device.js';
 
 export function qualityPreset(name) {
-  return SETTINGS.QUALITY[name] || SETTINGS.QUALITY[SETTINGS.DEFAULTS.quality];
+  return SETTINGS.QUALITY[name] || SETTINGS.QUALITY.high;
+}
+
+// Kualitas yang benar-benar dipakai: pilihan pemain, atau tingkat saat ini
+// dari mode Otomatis (ctx.autoQuality)
+export function effectiveQuality(ctx) {
+  const q = ctx.save ? ctx.save.settings.quality : 'high';
+  if (q !== 'auto') return SETTINGS.QUALITY[q] ? q : 'high';
+  if (!ctx.autoQuality) ctx.autoQuality = createAutoQuality();
+  return ctx.autoQuality.tier;
+}
+
+export function createAutoQuality() {
+  const A = SETTINGS.AUTO;
+  return { tier: isTouchDevice() ? A.START_TOUCH : A.START, lowT: 0, grace: A.GRACE, drops: 0 };
+}
+
+// Mode Otomatis: dipanggil tiap frame saat bermain (dt = waktu nyata).
+// Mengembalikan nama tingkat baru jika kualitas baru saja diturunkan.
+export function updateAutoQuality(ctx, dt) {
+  if (!ctx.save || ctx.save.settings.quality !== 'auto') return null;
+  const A = SETTINGS.AUTO;
+  const aq = ctx.autoQuality || (ctx.autoQuality = createAutoQuality());
+  if (aq.grace > 0) {
+    aq.grace -= dt;
+    aq.lowT = 0;
+    return null;
+  }
+  aq.lowT = ctx.fps < A.FPS_MIN ? aq.lowT + dt : 0;
+  if (aq.lowT < A.HOLD) return null;
+  aq.lowT = 0;
+  const i = A.ORDER.indexOf(aq.tier);
+  if (i < 0 || i >= A.ORDER.length - 1) return null;
+  aq.tier = A.ORDER[i + 1];
+  aq.drops++;
+  aq.grace = A.GRACE;
+  applySettings(ctx);
+  return aq.tier;
+}
+
+// Mulai level / kembali dari pause: abaikan FPS sesaat (kompilasi shader dsb.)
+export function autoQualityGrace(ctx) {
+  if (ctx.autoQuality) {
+    ctx.autoQuality.grace = SETTINGS.AUTO.GRACE;
+    ctx.autoQuality.lowT = 0;
+  }
 }
 
 // Kualitas grafis: bayangan (aktif & ukuran peta) dan pixel ratio
@@ -38,7 +84,7 @@ export function applyQuality(renderer, lights, scenes, name) {
 
 export function applySettings(ctx) {
   const st = ctx.save.settings;
-  applyQuality(ctx.renderer, [ctx.lights && ctx.lights.sun, ctx.lobby && ctx.lobby.sun], [ctx.scene, ctx.lobby && ctx.lobby.scene].filter(Boolean), st.quality);
+  applyQuality(ctx.renderer, [ctx.lights && ctx.lights.sun, ctx.lobby && ctx.lobby.sun], [ctx.scene, ctx.lobby && ctx.lobby.scene].filter(Boolean), effectiveQuality(ctx));
   ctx.audio.setVolume(st.volume);
   if (ctx.audio.setMix) ctx.audio.setMix({ sfx: st.sfxVolume, amb: st.ambVolume, music: st.musicVolume });
   if (typeof document !== 'undefined' && document.body) document.body.classList.toggle('show-fps', st.showFps);

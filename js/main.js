@@ -1,6 +1,6 @@
 // Entry point: merangkai semua modul ke satu objek konteks (ctx) lalu
 // menjalankan game loop. Tidak ada state global; semua lewat ctx.
-import { PHYSICS, STAMINA, COMBO } from './config.js';
+import { PHYSICS, STAMINA, COMBO, SETTINGS } from './config.js';
 import { createRenderer, bindResize } from './core/renderer.js';
 import { createInput, endFrame } from './core/input.js';
 import { createState } from './core/state.js';
@@ -46,7 +46,7 @@ import { createHelp } from './ui/help.js';
 import { createMenus } from './ui/menus.js';
 import { createPauseScreen } from './ui/pause.js';
 import { loadSave, resetSave, writeSave } from './core/save.js';
-import { applySettings } from './core/settings.js';
+import { applySettings, updateAutoQuality, effectiveQuality } from './core/settings.js';
 import { selectedLook } from './systems/shop.js';
 import { createLobby, updateLobby, setLobbyLook } from './world/lobby.js';
 import { createCustomizeMenu } from './ui/customizeMenu.js';
@@ -197,6 +197,7 @@ function init() {
   const settingsMenu = createSettingsMenu({
     getSave: () => ctx.save,
     sound: (n) => audio.play(n),
+    autoTier: () => SETTINGS.QUALITY[effectiveQuality(ctx)].label,
     apply: () => applySettings(ctx),
     resetProgress: () => {
       ctx.save = resetSave();
@@ -242,7 +243,10 @@ function init() {
   applySettings(ctx);
   // Pengembangan saja: buka dengan ?debug untuk memeriksa ctx dari konsol
   // browser (pemeriksaan visual & screenshot). Tanpa ?debug tidak ada efek.
-  if (new URLSearchParams(window.location.search).has('debug')) window.__meongCtx = ctx;
+  if (new URLSearchParams(window.location.search).has('debug')) {
+    window.__meongCtx = ctx;
+    window.__meongDebug = { playLevel: (i) => playLevel(ctx, i), enterLobby: () => enterLobby(ctx) };
+  }
   // Log playtest dari konsol: meongPlaytest.on(), .json(), .unduh(), .hapus()
   window.meongPlaytest = {
     on: () => setPlaytestEnabled(ctx.playtest, true),
@@ -336,6 +340,9 @@ function gameFrame(ctx, dt) {
       ctx.hud.setCombo(comboTimeLeft(ctx), COMBO.MULTIPLIER);
       ctx.hud.setHideStatus(hideIcon(ctx));
       updateLevelTimer(ctx, dt);
+      // Kualitas Otomatis: turun satu tingkat jika FPS rendah terus-menerus
+      const dropped = updateAutoQuality(ctx, dt);
+      if (dropped) ctx.hud.toast(`Kualitas grafis diturunkan: ${SETTINGS.QUALITY[dropped].label}`);
     }
     updateDoor(ctx.door, wdt);
     // Cuaca (hujan, petir) & jejak kaki basah — hanya di level hujan

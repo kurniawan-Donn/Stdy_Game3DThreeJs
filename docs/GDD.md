@@ -693,6 +693,22 @@ Temuan: ★★★ Level 2 & 3 **tidak mungkin** tanpa kalung lonceng; Level 5 ha
 - Kualitas **Otomatis** (lihat Pengaturan); notifikasi kecil "Kualitas diturunkan" saat turun.
 - Uji 20× ganti level berturut-turut di Chrome + headless: jumlah geometri/tekstur/material dan memori kembali ke garis dasar.
 
+Profil Chrome (laptop pengembang, kualitas Tinggi, 1568×764, rata-rata 3 detik setelah level dimuat):
+
+| Level | FPS | Frame terlama | Draw call | Segitiga | Geometri | Tekstur | Program shader | Heap JS |
+|---|---|---|---|---|---|---|---|---|
+| 0 Latihan | 60 | 18 ms | 143 | 5.630 | 307 | 6 | 13 | 28 MB* |
+| 1 Senin Pagi | 60 | 17 ms | 183 | 6.942 | 295 | 6 | 10 | 17 MB |
+| 2 Deadline | 58 | 50 ms** | 187 | 7.222 | 297 | 6 | 10 | 16 MB |
+| 3 Sore Hujan | 60 | 17 ms | 191 | 7.358 | 307 | 6 | 12 | 19 MB |
+| 4 Malam Hari | 60 | 17 ms | 194 | 7.564 | 283 | 8 | 15 | 20 MB |
+| 5 Kedatangan Tamu | 60 | 17 ms | 159 | 6.510 | 324 | 6 | 13 | 21 MB |
+| Bonus | 60 | 17 ms | 184 | 7.509 | 322 | 6 | 13 | 18 MB |
+
+\* heap sebelum GC (sampah dari level sebelumnya). \*\* satu frame kompilasi shader saat level pertama kali dimuat.
+
+Uji 20× ganti level berturut-turut (semua level bergiliran) di Chrome: geometri 327 → 326, tekstur 6 → 6, objek scene 460 → 460, larik/Map di `ctx` dan elemen DOM tidak bertambah; heap JS setelah GC dipicu 24,0 → 24,1 MB → **tidak ada kebocoran**. Kualitas Otomatis diuji dengan frame diperlambat buatan (±30 FPS): turun Tinggi → Sedang setelah ±4 detik, pemberitahuan tampil.
+
 **9.4 Kontrol HP & tablet**
 - Deteksi sentuh (`pointer: coarse` / `ontouchstart`) → lapisan kontrol sentuh: joystick kiri (analog: dorong sedikit = endap, penuh = jalan), geser di separuh kanan = putar kamera, cubit = zoom; tombol **Lompat**, **Lari** (tahan), **Endap** (toggle), **E** (ikon & label berganti sesuai prompt: gigit, dorong, masuk kardus, cakar, …), **Meong**, **Pause**.
 - Di HP pause otomatis saat tab disembunyikan (bukan saat kunci mouse lepas). HUD menyesuaikan layar kecil; mode potret menampilkan anjuran "Putar ke lanskap" (tetap bisa main). Kualitas bawaan HP = Otomatis mulai Rendah. Bantuan kontrol menampilkan versi sentuh.
@@ -709,7 +725,7 @@ Checklist:
 - [x] 9.1 Audio lengkap: 30 suara baru, mixer 4 bus (Pengaturan → tab Suara), posisional ringan (ruang tamu + ruang makan + dapur = satu ruang akustik), musik lobi/main/kejar, status audio di F3
 - [x] 9.2 Skrip analisis Chaos (`npm run balance`), log playtest F3 (K nyala/mati, J unduh JSON; juga `meongPlaytest` di konsol), tabel usulan penyeimbangan
 - [x] 9.2b Terapkan angka penyeimbangan yang disetujui: ambang bintang per level (Level 2, 3, 5); target, harga, dan kesulitan tidak diubah
-- [ ] 9.3 Profil per level, kualitas Otomatis, uji 20× ganti level di Chrome
+- [x] 9.3 Profil per level (semua ±60 FPS, < 200 draw call), kualitas Otomatis (bawaan save baru), uji 20× ganti level di Chrome tanpa kebocoran
 - [ ] 9.4 Kontrol sentuh, HUD layar kecil & potret/lanskap, kualitas HP
 - [ ] 9.5 Aksesibilitas (getaran, kilat, teks HUD, buta warna) & rebind tombol
 - [ ] 9.6 GitHub Pages, README, CHANGELOG, tag v1.0.0

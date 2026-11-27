@@ -8,6 +8,7 @@ import { releasePointerLock } from './input.js';
 import { writeSave } from './save.js';
 import { TUTORIAL_INDEX } from '../levels/index.js';
 import { abortPlaytestSession } from '../systems/playtestLog.js';
+import { autoQualityGrace } from './settings.js';
 
 export function createFlow() {
   return { state: 'lobby', helpShown: false, resumeLock: false };
@@ -57,6 +58,7 @@ export function playLevel(ctx, index) {
   ctx.pause.hide();
   setMode(ctx, 'play', !!level.TUTORIAL);
   ctx.audio.play('levelStart');
+  autoQualityGrace(ctx);
   // Bantuan kontrol muncul otomatis di level pertama yang dimainkan
   // (Latihan punya petunjuk sendiri)
   if (!flow.helpShown && !level.TUTORIAL) {
@@ -127,6 +129,7 @@ export function resumeGame(ctx) {
   ctx.pause.hide();
   ctx.input.keys = {};
   ctx.audio.play('resume');
+  autoQualityGrace(ctx);
   return true;
 }
 

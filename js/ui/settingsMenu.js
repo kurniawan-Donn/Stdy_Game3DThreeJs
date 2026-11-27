@@ -15,7 +15,7 @@ const RANGES = {
   sensitivity: { min: SETTINGS.SENSITIVITY_MIN, max: SETTINGS.SENSITIVITY_MAX, step: SETTINGS.SENSITIVITY_STEP, fmt: (v) => `×${v.toFixed(1)}` }
 };
 
-// hooks: { getSave(), apply(), resetProgress(), sound?(nama) }
+// hooks: { getSave(), apply(), resetProgress(), sound?(nama), autoTier?() }
 export function createSettingsMenu(hooks) {
   const panel = document.getElementById('settings-panel');
   const qualityEl = document.getElementById('set-quality');
@@ -26,11 +26,11 @@ export function createSettingsMenu(hooks) {
   const vals = [...panel.querySelectorAll('[data-val]')];
   const extras = []; // { render() } dari bagian tambahan (mis. rebind)
 
-  for (const [id, q] of Object.entries(SETTINGS.QUALITY)) {
+  for (const [id, label] of [['auto', SETTINGS.AUTO.LABEL], ...Object.entries(SETTINGS.QUALITY).map(([k, q]) => [k, q.label])]) {
     const b = document.createElement('button');
     b.className = 'seg-btn';
     b.dataset.q = id;
-    b.textContent = q.label;
+    b.textContent = label;
     qualityEl.appendChild(b);
   }
   for (const el of inputs) {
@@ -50,7 +50,10 @@ export function createSettingsMenu(hooks) {
   }
   function render() {
     const s = st();
-    for (const b of qualityEl.querySelectorAll('.seg-btn')) b.classList.toggle('active', b.dataset.q === s.quality);
+    for (const b of qualityEl.querySelectorAll('.seg-btn')) {
+      b.classList.toggle('active', b.dataset.q === s.quality);
+      if (b.dataset.q === 'auto') b.textContent = s.quality === 'auto' && hooks.autoTier ? `${SETTINGS.AUTO.LABEL} · ${hooks.autoTier()}` : SETTINGS.AUTO.LABEL;
+    }
     for (const el of inputs) {
       const v = s[el.dataset.set];
       if (el.type === 'checkbox') el.checked = !!v;

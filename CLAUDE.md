@@ -35,7 +35,8 @@ js/
     camera.js           Kamera orbit third-person (camRig): yaw/pitch/zoom, auto-recenter, spring arm, mode KETAHUAN, getaran
     audio.js            Web Audio: mixer (master → efek/suasana/musik), play(nama, pos?) dari AUDIO.SFX / NOISE_SFX (posisional jika pos), loop, musik prosedural (setMusic), info() untuk F3
     save.js             Simpanan localStorage berversi skema (v2, migrasi save lama): tabungan, rekor level, item, pilihan, pengaturan
-    settings.js         Terapkan pengaturan: kualitas (bayangan, pixel ratio), volume; sensitivitas/balik Y dibaca camera.js
+    settings.js         Terapkan pengaturan: kualitas (bayangan, pixel ratio; mode Otomatis turun jika FPS < 45), volume/mixer; effectiveQuality(ctx) = tingkat yang dipakai
+    device.js           isTouchDevice() (layar sentuh; ?touch untuk menguji di PC)
     gameFlow.js         Alur LOBI → PILIH LEVEL → MAIN → PAUSE → HASIL (flow.state), pause P & saat kunci mouse lepas
     dispose.js          disposeObject3D / removeAndDispose: lepas geometri, material, tekstur objek level
     mergeStatic.js      Gabung mesh statis per material (mengurangi draw call)
@@ -147,7 +148,7 @@ js/
 - **Audio** (`core/audio.js`, `systems/soundscape.js`): efek baru = entri di `AUDIO.SFX`/`AUDIO.NOISE_SFX` lalu `ctx.audio.play(nama)`; suara dari sumber di dunia (pemilik, tamu, robot, benda) kirim posisinya: `play(nama, { x, z })` (diredam jarak & beda ruangan, lihat `AUDIO_MIX`). Efek suasana didaftarkan di `AUDIO_MIX.AMBIENT`. Musik dihitung `musicLevels` dan dipanggil tiap frame di semua flow state; level bisa menimpa volume musik tenang lewat `MUSIC_CALM`. Uji headless memakai audio tiruan, jadi fungsi audio opsional (`loop`, `setListener`) dicek dulu sebelum dipanggil di luar `main.js`.
 - Aksi yang berisik memanggil `emitNoise(ctx, { x, z, radius, source })`. Sistem yang perlu "mendengar" mendaftar lewat `onNoise(ctx.noise, fn)`.
 - Objek interaktif didaftarkan lewat `registerInteractable(ctx.interaction, item)` (lihat komentar di `interaction.js`).
-- **Pengembangan:** buka `http://localhost:3000/?debug` agar `window.__meongCtx` tersedia di konsol (untuk pemeriksaan visual/screenshot; tanpa `?debug` tidak ada efek). Dengan F3 terbuka: `L` = kilat (Level 3), `T` = lompat ke 5 detik terakhir.
+- **Pengembangan:** buka `http://localhost:3000/?debug` agar `window.__meongCtx` (dan `__meongDebug.playLevel(i)`) tersedia di konsol (untuk pemeriksaan visual/screenshot; tanpa `?debug` tidak ada efek). Dengan F3 terbuka: `L` = kilat (Level 3), `T` = lompat ke 5 detik terakhir.
 - **Penyeimbangan:** `npm run balance` (`tools/balance.mjs`) menghitung Chaos maksimum & perkiraan santai/mahir per level dari data. Log playtest: F3 → `K` nyala/mati, `J` unduh JSON (kunci localStorage sendiri, bukan save).
 - Tekan `F3` di game untuk overlay debug. Pakai overlay ini untuk memeriksa radius noise dan jangkauan interaksi.
 - Urutan `scene.add` di `main.js` mempengaruhi urutan render objek transparan, jadi jangan diacak tanpa alasan.

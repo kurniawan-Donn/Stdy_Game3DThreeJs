@@ -1472,3 +1472,25 @@ body.mode-lobby #clean-rooms {
 .set-section.active {
   display: flex;
 }
+
+/* Pemberitahuan singkat (hud.toast) */
+#toast {
+  position: fixed;
+  top: 64px;
+  left: 50%;
+  transform: translate(-50%, -8px);
+  padding: 8px 16px;
+  border-radius: 10px;
+  background: rgba(15, 23, 42, 0.9);
+  color: #f8fafc;
+  font-size: 14px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.25s, transform 0.25s;
+  z-index: 40;
+}
+
+#toast.active {
+  opacity: 1;
+  transform: translate(-50%, 0);
+}

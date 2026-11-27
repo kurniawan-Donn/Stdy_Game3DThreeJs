@@ -8,6 +8,7 @@
 // - Matahari terbit di akhir level (cahaya hangat bertahap), lalu layar hasil.
 // - Maksimal satu lampu berbayangan: senter (kualitas Tinggi) atau bulan (Sedang).
 // Hanya aktif di level yang punya blok NIGHT.
+import { effectiveQuality } from '../core/settings.js';
 import * as THREE from 'three';
 import { NIGHT_FX as F, SETTINGS, LIGHT_ZONES } from '../config.js';
 import { removeAndDispose } from '../core/dispose.js';
@@ -31,7 +32,7 @@ export function resetNight(ctx) {
   if (ctx.hud.setWake) ctx.hud.setWake(null);
   // Bayangan bulan/matahari kembali mengikuti pengaturan kualitas
   if (ctx.lights && ctx.lights.sun) {
-    const q = SETTINGS.QUALITY[(ctx.save && ctx.save.settings.quality) || 'high'] || SETTINGS.QUALITY.high;
+    const q = SETTINGS.QUALITY[effectiveQuality(ctx)];
     ctx.lights.sun.castShadow = q.shadows;
   }
   if (!N) {
@@ -188,7 +189,7 @@ export function updateNight(ctx, dt) {
 
   // Satu lampu berbayangan: Tinggi = senter, Sedang = bulan, Rendah = tidak ada
   // (saat matahari terbit senter mati, jadi matahari yang berbayangan)
-  const quality = (ctx.save && ctx.save.settings.quality) || 'high';
+  const quality = effectiveQuality(ctx);
   const dawn = !!n.dawn;
   if (ctx.lights) ctx.lights.sun.castShadow = dawn ? quality !== 'low' : quality === 'medium';
   if (ctx.flashlight) ctx.flashlight.spot.castShadow = !dawn && quality === 'high';
