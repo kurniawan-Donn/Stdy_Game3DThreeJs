@@ -1,6 +1,6 @@
 // Kucing pemain: model low-poly, gerakan relatif kamera, lompat, dan animasi.
 import * as THREE from 'three';
-import { PLAYER, PHYSICS, CAT_ANIM, NOISE, OWNER, VACUUM, HIDE_BOX, CATNIP, CUSTOMIZATION } from '../config.js';
+import { PLAYER, PHYSICS, CAT_ANIM, NOISE, OWNER, VACUUM, HIDE_BOX, CATNIP, CUSTOMIZATION, DUSTER_PROP } from '../config.js';
 import { buildCatModel, disposeCatModel } from './catModel.js';
 import { resolveRoomCollisions, getGroundHeight, pushOutOfCircle, crawlBoxAt } from '../systems/collision.js';
 import { canRun, trySpendHighJump, updateStamina, isExhausted } from '../systems/stamina.js';
@@ -144,6 +144,7 @@ export function yawTowards(cat, x, z) {
 
 // Kembalikan kucing ke posisi awal (animClock & walkCycle sengaja tidak direset).
 export function resetCat(cat) {
+  cat.carrying = null; // kemoceng (Level Bonus)
   cat.isGrounded = true;
   cat.groundHeight = 0;
   cat.landingSquashTimer = 0;
@@ -189,7 +190,8 @@ export function updateCat(ctx, dt) {
   }
 
   // Selama aksi kenakalan, kontrol dikunci
-  const locked = !!cat.action;
+  // Keranjang cucian (Level Bonus) tidak bisa digeser: kucing diam di dalamnya
+  const locked = !!cat.action || !!(cat.inBox && cat.inBox.fixed);
   const wantsSneak = !locked && !!keys['KeyC'];
   const wantsRun = !locked && !!(keys['ShiftLeft'] || keys['ShiftRight']);
 
@@ -225,7 +227,8 @@ export function updateCat(ctx, dt) {
   const running = !sneaking && moveLen > 0 && (zoomies || (wantsRun && canRun(stamina)));
   cat.moveMode = sneaking ? 'sneak' : running ? 'run' : 'walk';
   cat.profile = sneaking ? PLAYER.SNEAK_PROFILE : PLAYER.NORMAL_PROFILE;
-  const maxSpeed = zoomies && !sneaking ? CATNIP.SPEED : MODE_SPEED[cat.moveMode];
+  // Membawa kemoceng (Level Bonus): lebih pelan
+  const maxSpeed = (zoomies && !sneaking ? CATNIP.SPEED : MODE_SPEED[cat.moveMode]) * (cat.carrying ? DUSTER_PROP.CARRY_SPEED_MULT : 1);
 
   if (moveLen > 0) {
     moveX /= moveLen;
@@ -265,7 +268,7 @@ export function updateCat(ctx, dt) {
   }
 
   // Aksi kenakalan: putar badan menghadap target
-  if (locked && cat.action.faceYaw !== undefined) {
+  if (cat.action && cat.action.faceYaw !== undefined) {
     let diff = cat.action.faceYaw - cat.yaw;
     while (diff > Math.PI) diff -= Math.PI * 2;
     while (diff < -Math.PI) diff += Math.PI * 2;
@@ -274,7 +277,7 @@ export function updateCat(ctx, dt) {
   }
 
   // Lompat: Spasi = lompat biasa (gratis); Shift + Spasi = lompat tinggi (pakai stamina)
-  if (!locked && keys['Space'] && cat.isGrounded && !cat.underCrawl && !cat.inBox) {
+  if (!locked && keys['Space'] && cat.isGrounded && !cat.underCrawl && !cat.inBox && !cat.carrying) {
     const highJump = wantsRun && trySpendHighJump(stamina);
     playerVel.y = highJump ? PLAYER.HIGH_JUMP_FORCE : PLAYER.JUMP_FORCE;
     cat.isGrounded = false;

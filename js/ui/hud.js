@@ -30,6 +30,12 @@ export function createHud() {
   const stormEl = document.getElementById('storm-badge');
   const wakeEl = document.getElementById('wake-badge');
   const visitEl = document.getElementById('visit-banner');
+  const cleanEl = document.getElementById('clean-rooms');
+  let cleanList = null;
+  let cleanNow = -1;
+  let cleanLeft = -1;
+  let cleanIcons = [];
+  let cleanLabel = null;
   let lastWake;
   let lastStorm = null;
   let lastMeeting = null;
@@ -64,8 +70,8 @@ export function createHud() {
   let lastComboText = null;
 
   return {
-    setLevel(levelId, name) {
-      levelTextEl.textContent = name ? `Level ${levelId} · ${name}` : `Level ${levelId}`;
+    setLevel(label, name) {
+      levelTextEl.textContent = name ? `${label} · ${name}` : label;
     },
     // Indikator "SEDANG RAPAT" (rapat video Level 2)
     setMeeting(on) {
@@ -163,6 +169,49 @@ export function createHud() {
       wakeEl.title = frac >= 1 ? 'Pemilik terjaga!' : `Pemilik tidur (terbangun ${Math.round(frac * 100)}%)`;
     },
     // Level 5: banner adegan pembuka ("Tamu datang!", Enter = lewati)
+    // Level Bonus: urutan ruangan bersih-bersih (ikon), ruangan sekarang +
+    // bilah sisa waktunya. rooms = null → disembunyikan.
+    setCleanRooms(rooms, now = 0, left = 1) {
+      if (!cleanEl) return;
+      if (!rooms) {
+        if (cleanList) cleanEl.classList.remove('active');
+        cleanList = null;
+        cleanNow = -1;
+        return;
+      }
+      if (rooms !== cleanList) {
+        cleanList = rooms;
+        cleanNow = -1;
+        cleanEl.textContent = '';
+        cleanIcons = [];
+        for (const r of rooms) {
+          const el = document.createElement('span');
+          el.className = 'cr-icon';
+          el.title = r.name;
+          el.textContent = r.icon;
+          cleanEl.appendChild(el);
+          cleanIcons.push(el);
+        }
+        cleanLabel = document.createElement('span');
+        cleanLabel.className = 'cr-label';
+        cleanEl.appendChild(cleanLabel);
+        cleanEl.classList.add('active');
+      }
+      const icons = cleanIcons;
+      if (now !== cleanNow) {
+        cleanNow = now;
+        icons.forEach((el, i) => {
+          el.classList.toggle('now', i === now);
+          el.classList.toggle('next', i === (now + 1) % rooms.length);
+        });
+        if (cleanLabel) cleanLabel.textContent = rooms[now].name;
+      }
+      const q = Math.round(left * 50) / 50;
+      if (q !== cleanLeft && icons[now]) {
+        cleanLeft = q;
+        icons[now].style.setProperty('--left', String(q));
+      }
+    },
     setVisitBanner(on) {
       visitEl.classList.toggle('active', !!on);
     },

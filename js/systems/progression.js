@@ -2,6 +2,7 @@
 // (Skor & kenaikan level berbasis koin dihapus di Fase 2; diganti Chaos.)
 import { VACUUM, STAMINA, FISH } from '../config.js';
 import { resetRunState, currentLevel } from '../core/state.js';
+import { levelLabel } from '../levels/index.js';
 import { resetCamera } from '../core/camera.js';
 import { resetCat } from '../entities/cat.js';
 import { spawnFish, hideFish } from '../entities/fish.js';
@@ -28,6 +29,9 @@ import { resetVisit } from './visit.js';
 import { resetFlashlight } from '../entities/flashlight.js';
 import { resetWeather } from './weather.js';
 import { resetFootprints } from '../entities/footprints.js';
+import { resetCleaning } from './cleaning.js';
+import { resetCleanRoutine } from '../entities/owner/cleaning.js';
+import { resetSunday } from '../world/sunday.js';
 
 // Dipanggil saat kucing memakan ikan camilan.
 export function onFishEaten(ctx) {
@@ -70,11 +74,15 @@ export function resetGame(ctx) {
   resetTutorial(ctx); // Latihan: pemilik dinaskahkan (no-op di level biasa)
   resetWeather(ctx); // Level hujan: hujan, petir, genangan (no-op di level lain)
   resetFootprints(ctx);
+  resetCleaning(ctx); // Level Bonus: jadwal ruangan & kekacauan (no-op di level lain)
+  resetCleanRoutine(ctx); // pemilik bersih-bersih (setelah resetOwner & resetCleaning)
+  resetSunday(ctx); // suasana Minggu pagi: tirai, speaker, jendela terbuka
   // Debu berkilau di berkas matahari hanya di siang yang cerah
   if (ctx.dust && ctx.dust.points) ctx.dust.points.visible = !ctx.weather && !ctx.night;
 
+  const starts = ctx.cleaning ? ctx.cleaning.C.ROBOT_STARTS : null;
   for (let i = 0; i < VACUUM.INITIAL_COUNT; i++) {
-    spawnObstacle(ctx);
+    spawnObstacle(ctx, starts && starts[i] ? starts[i] : null);
   }
   spawnFish(ctx);
 
@@ -82,7 +90,7 @@ export function resetGame(ctx) {
   resetCameraOcclusion(ctx);
 
   const level = currentLevel(state);
-  hud.setLevel(level.id, level.name);
+  hud.setLevel(levelLabel(level), level.name);
   hud.setTimer(state.timeLeft);
   hud.setChaos(0, level.TARGET_CHAOS);
   hud.setCombo(0);

@@ -16,6 +16,8 @@ import { createAlarmClock } from './alarmClock.js';
 import { createCake } from './cake.js';
 import { createGuestBag } from './guestBag.js';
 import { createGuestChair } from './guestChair.js';
+import { createLaundry } from './laundry.js';
+import { createDuster } from './duster.js';
 
 const FACTORIES = {
   glass: createGlass,
@@ -31,7 +33,9 @@ const FACTORIES = {
   cake: createCake, // Level 5 (tamu)
   teacup: createTeacup,
   guestBag: createGuestBag,
-  guestChair: createGuestChair
+  guestChair: createGuestChair,
+  laundry: createLaundry, // Level Bonus (bersih-bersih)
+  duster: createDuster
 };
 
 export function createMischiefSystem(scene) {
@@ -54,8 +58,31 @@ export function resetMischief(ctx) {
   for (const [type, specs] of Object.entries(MISCHIEF_LAYOUT)) {
     if (active && !active.includes(type)) continue;
     const factory = FACTORIES[type];
-    for (const spec of specs) m.instances.push(factory(ctx, spec));
+    for (const spec of specs) {
+      const inst = factory(ctx, spec);
+      inst.kind = type;
+      inst.spec = spec;
+      m.instances.push(inst);
+    }
   }
+}
+
+// Buat ulang satu objek seperti semula (Level Bonus: pemilik membereskan).
+// carry: data yang dibawa ke objek baru ({ tidyCount, lhoKokGiven, exhausted }).
+// exhausted = objek tetap rapi tetapi tidak bisa dinakali lagi.
+export function respawnMischief(ctx, inst, carry = {}) {
+  const m = ctx.mischief;
+  const i = m.instances.indexOf(inst);
+  if (i < 0) return null;
+  if (inst.unregister) inst.unregister();
+  if (inst.dispose) inst.dispose(ctx);
+  const fresh = FACTORIES[inst.kind](ctx, inst.spec);
+  fresh.kind = inst.kind;
+  fresh.spec = inst.spec;
+  Object.assign(fresh, carry);
+  if (carry.exhausted) fresh.done = true;
+  m.instances[i] = fresh;
+  return fresh;
 }
 
 export function updateMischief(ctx, dt) {

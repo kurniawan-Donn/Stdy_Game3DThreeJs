@@ -173,7 +173,8 @@ export function createLivingRoom(scene) {
       glass.position.set(...along(wall.inward * (t / 2 - F.GLASS_INSET), cy, 0));
       glass.rotation.y = faceIn;
       group.add(glass);
-      windows.push({
+      const info = {
+        curtainMesh: null,
         type: w.type,
         axis: wall.axis,
         inward: wall.inward,
@@ -183,15 +184,20 @@ export function createLivingRoom(scene) {
         center: along(0, cy, 0), // tengah jendela di bidang dinding
         glassPos: along(wall.inward * (t / 2 - F.GLASS_INSET), cy, 0),
         outward: [wall.axis === 'z' ? -wall.inward : 0, 0, wall.axis === 'x' ? -wall.inward : 0]
-      });
+      };
+      windows.push(info);
       if (w.type === 'curtain') {
-        // Tirai tertutup: kamar tidur gelap
+        // Tirai tertutup: kamar tidur gelap (Level Bonus: ditarik ke samping)
         const curtain = new THREE.Mesh(new THREE.PlaneGeometry(len + 0.3, h + 0.3), curtainMat);
         curtain.position.set(...along(wall.inward * (t / 2 + 0.05), cy, 0));
         curtain.rotation.y = faceIn;
         curtain.castShadow = true;
+        curtain.userData.noMerge = true; // bisa digeser (Level Bonus)
         group.add(curtain);
-      } else {
+        info.curtainMesh = curtain;
+        info.curtainHome = curtain.position.clone();
+      }
+      {
         const backdrop = new THREE.Mesh(new THREE.PlaneGeometry(len + F.BACKDROP_PADDING, h + F.BACKDROP_PADDING), backdropMat);
         backdrop.position.set(...along(-wall.inward * F.BACKDROP_DISTANCE, cy, 0));
         backdrop.rotation.y = faceIn;

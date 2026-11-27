@@ -10,6 +10,26 @@ import { hideSpotOf, isBoxMoving } from './hiding.js';
 
 const HALF_ANGLE = THREE.MathUtils.degToRad(OWNER.VISION_ANGLE_DEG / 2);
 
+// Pemilik (atau NPC dengan eye/lookYaw) melihat titik pt? Kerucut pandang,
+// jangkauan (default VISION_RANGE, area gelap ×DARK_RANGE_MULT kecuali kilat),
+// dan line-of-sight ke titik yang diangkat `lift` meter.
+// Dipakai jejak kaki basah (Level 3) & kekacauan (Level Bonus).
+export function ownerSeesPoint(ctx, pt, { range = OWNER.VISION_RANGE, lift = 0, npc = ctx.owner } = {}) {
+  const o = npc;
+  if (!o || !o.eye) return false;
+  const dx = pt.x - o.eye.x;
+  const dz = pt.z - o.eye.z;
+  const dist = Math.hypot(dx, dz);
+  const flashing = ctx.weather && ctx.weather.flashT > 0;
+  if (!flashing && isInDarkZone(pt.x, pt.z)) range *= PERCEPTION.DARK_RANGE_MULT;
+  if (dist > range) return false;
+  let angle = Math.atan2(dx, dz) - o.lookYaw;
+  while (angle > Math.PI) angle -= Math.PI * 2;
+  while (angle < -Math.PI) angle += Math.PI * 2;
+  if (Math.abs(angle) > HALF_ANGLE) return false;
+  return hasLineOfSight(ctx.colliders, o.eye, { x: pt.x, y: (pt.y || 0) + lift, z: pt.z });
+}
+
 // Ray (segmen) dari a ke b memotong kotak perabot?
 // Rentang tinggi kotak: lantai..topHeight; perabot berkolong hanya bagian atas
 // (crawlHeight..topHeight), jadi kolong meja yang terbuka bisa dilihat tembus.
@@ -154,7 +174,7 @@ export function senseCat(ctx, eye, lookYaw) {
 
 function boxSamplePoints(box) {
   const p = box.mesh.position;
-  const h = HIDE_BOX.HEIGHT;
+  const h = box.height || HIDE_BOX.HEIGHT;
   return [
     { x: p.x, y: h * 0.5, z: p.z },
     { x: p.x, y: h * 0.95, z: p.z }

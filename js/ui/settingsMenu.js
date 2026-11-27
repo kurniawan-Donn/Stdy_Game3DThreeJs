@@ -1,5 +1,5 @@
 // Panel Pengaturan di lobi: kualitas grafis, volume, sensitivitas mouse,
-// balik sumbu Y, tampilkan FPS, dan Hapus Progres (dengan konfirmasi).
+// musik, balik sumbu Y, tampilkan FPS, dan Hapus Progres (dengan konfirmasi).
 import { SETTINGS } from '../config.js';
 import { writeSave } from '../core/save.js';
 
@@ -11,6 +11,7 @@ export function createSettingsMenu(hooks) {
   const sensEl = document.getElementById('set-sens');
   const sensVal = document.getElementById('set-sens-val');
   const invertEl = document.getElementById('set-invert');
+  const musicEl = document.getElementById('set-music');
   const fpsEl = document.getElementById('set-fps');
   const resetBtn = document.getElementById('reset-progress');
   const confirmEl = document.getElementById('reset-confirm');
@@ -44,6 +45,7 @@ export function createSettingsMenu(hooks) {
     sensEl.value = String(s.sensitivity);
     sensVal.textContent = `×${s.sensitivity.toFixed(1)}`;
     invertEl.checked = s.invertY;
+    if (musicEl) musicEl.checked = s.music;
     fpsEl.checked = s.showFps;
   }
 
@@ -59,6 +61,10 @@ export function createSettingsMenu(hooks) {
   });
   sensEl.addEventListener('input', () => {
     st().sensitivity = Number(sensEl.value);
+    commit();
+  });
+  if (musicEl) musicEl.addEventListener('change', () => {
+    st().music = musicEl.checked;
     commit();
   });
   invertEl.addEventListener('change', () => {

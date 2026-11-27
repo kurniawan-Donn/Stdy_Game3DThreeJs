@@ -4,15 +4,13 @@
 // detik. Pemilik yang melihat jejak segar menyelidiki ke jejak terbaru.
 // Semua jejak dalam satu InstancedMesh (satu draw call).
 import * as THREE from 'three';
-import { FOOTPRINTS as FP, FURNITURE_LAYOUT, OWNER, PERCEPTION } from '../config.js';
+import { FOOTPRINTS as FP, FURNITURE_LAYOUT } from '../config.js';
 import { removeAndDispose } from '../core/dispose.js';
 import { scoreMischief } from '../systems/chaos.js';
-import { hasLineOfSight } from '../systems/perception.js';
-import { isInDarkZone } from '../world/house.js';
+import { ownerSeesPoint } from '../systems/perception.js';
 import { ownerNoticeTrail } from './owner/index.js';
 
 const tmpObj = new THREE.Object3D();
-const HALF_ANGLE = THREE.MathUtils.degToRad(OWNER.VISION_ANGLE_DEG / 2);
 
 export function resetFootprints(ctx) {
   if (ctx.footprints) removeAndDispose(ctx.footprints.mesh);
@@ -74,23 +72,6 @@ function placePrint(ctx, fp) {
 }
 
 // Apakah pemilik melihat titik ini? (kerucut, jangkauan, area gelap, LOS)
-function ownerSeesPoint(ctx, pt) {
-  const o = ctx.owner;
-  if (!o.eye) return false;
-  const dx = pt.x - o.eye.x;
-  const dz = pt.z - o.eye.z;
-  const dist = Math.hypot(dx, dz);
-  let range = OWNER.VISION_RANGE;
-  const flashing = ctx.weather && ctx.weather.flashT > 0;
-  if (!flashing && isInDarkZone(pt.x, pt.z)) range *= PERCEPTION.DARK_RANGE_MULT;
-  if (dist > range) return false;
-  let angle = Math.atan2(dx, dz) - o.lookYaw;
-  while (angle > Math.PI) angle -= Math.PI * 2;
-  while (angle < -Math.PI) angle += Math.PI * 2;
-  if (Math.abs(angle) > HALF_ANGLE) return false;
-  return hasLineOfSight(ctx.colliders, o.eye, { x: pt.x, y: pt.y + FP.SIGHT_LIFT, z: pt.z });
-}
-
 export function updateFootprints(ctx, dt) {
   const fp = ctx.footprints;
   if (!fp) return;
@@ -142,7 +123,7 @@ export function updateFootprints(ctx, dt) {
   for (let i = fp.prints.length - 1; i >= 0; i--) {
     const pr = fp.prints[i];
     if (pr.age > fp.W.FRESH_TIME) break; // lebih tua lagi = tidak segar
-    if (pr.noticed || !ownerSeesPoint(ctx, pr)) continue;
+    if (pr.noticed || !ownerSeesPoint(ctx, pr, { lift: FP.SIGHT_LIFT })) continue;
     // Seluruh jejak segar dianggap sudah diketahui; ikuti ke jejak terbaru
     for (const q of fp.prints) if (q.age <= fp.W.FRESH_TIME) q.noticed = true;
     const newest = fp.prints[fp.prints.length - 1];

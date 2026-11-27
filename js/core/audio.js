@@ -1,5 +1,5 @@
 // Efek suara sintetis memakai Web Audio API (tanpa file eksternal).
-import { AUDIO, MEETING, RAIN_FX } from '../config.js';
+import { AUDIO, MEETING, RAIN_FX, MUSIC } from '../config.js';
 
 export function createAudio() {
   let audioCtx = null;
@@ -216,6 +216,76 @@ export function createAudio() {
     src.stop(now + A.THUNDER_DURATION);
   }
 
+  // Musik santai (Level Bonus): sekuens prosedural dijadwalkan LOOKAHEAD
+  // detik ke depan tiap frame. level 0 = berhenti (nada terjadwal habis
+  // sendiri). Saat pause/lobi fungsi ini tidak dipanggil, jadi musik diam.
+  let musicGain = null;
+  let musicNext = 0; // waktu audio ketukan berikutnya
+  let musicBeat = 0;
+  function musicNote(freq, at, vol, type, decay) {
+    const osc = audioCtx.createOscillator();
+    const g = audioCtx.createGain();
+    osc.type = type;
+    osc.frequency.value = freq;
+    g.gain.setValueAtTime(AUDIO.FADE_TO, at);
+    g.gain.linearRampToValueAtTime(vol, at + 0.02);
+    g.gain.exponentialRampToValueAtTime(AUDIO.FADE_TO, at + decay);
+    osc.connect(g);
+    g.connect(musicGain);
+    osc.start(at);
+    osc.stop(at + decay + 0.05);
+  }
+  function music(level) {
+    if (!audioCtx) return;
+    const now = audioCtx.currentTime;
+    if (level <= 0) {
+      if (musicGain) {
+        musicGain.gain.setTargetAtTime(0, now, 0.15);
+        musicGain = null;
+      }
+      return;
+    }
+    if (!musicGain) {
+      musicGain = audioCtx.createGain();
+      musicGain.gain.value = 0;
+      musicGain.connect(master);
+      musicNext = now + 0.05;
+      musicBeat = 0;
+    }
+    musicGain.gain.setTargetAtTime(level, now, 0.3);
+    if (musicNext < now) musicNext = now + 0.02; // tertinggal (mis. setelah pause)
+    const beat = 60 / MUSIC.BPM;
+    while (musicNext < now + MUSIC.LOOKAHEAD) {
+      const chord = MUSIC.CHORDS[Math.floor(musicBeat / 4) % MUSIC.CHORDS.length];
+      const b = musicBeat % 4;
+      if (b === 0) {
+        // Akor piano elektrik (sinus + sedikit segitiga), sedikit diurai
+        chord.forEach((f, i) => musicNote(f, musicNext + i * 0.03, MUSIC.CHORD_VOLUME, i % 2 ? 'triangle' : 'sine', MUSIC.NOTE_DECAY * 2));
+        musicNote(chord[0] / MUSIC.BASS_DIV, musicNext, MUSIC.BASS_VOLUME, 'sine', beat * 1.8);
+      } else if (b === 2) {
+        musicNote(chord[0] / MUSIC.BASS_DIV * 1.5, musicNext, MUSIC.BASS_VOLUME * 0.8, 'sine', beat * 1.5);
+        musicNote(chord[2] * 2, musicNext + beat * 0.5, MUSIC.CHORD_VOLUME * 0.6, 'sine', MUSIC.NOTE_DECAY);
+      }
+      // Ketukan pelan (hi-hat noise pendek)
+      const src = audioCtx.createBufferSource();
+      src.buffer = getNoiseBuffer();
+      const hp = audioCtx.createBiquadFilter();
+      hp.type = 'highpass';
+      hp.frequency.value = 7000;
+      const hg = audioCtx.createGain();
+      const at = musicNext + beat * 0.5;
+      hg.gain.setValueAtTime(MUSIC.HAT_VOLUME, at);
+      hg.gain.exponentialRampToValueAtTime(AUDIO.FADE_TO, at + 0.05);
+      src.connect(hp);
+      hp.connect(hg);
+      hg.connect(musicGain);
+      src.start(at);
+      src.stop(at + 0.06);
+      musicNext += beat;
+      musicBeat++;
+    }
+  }
+
   function setVolume(v) {
     volume = v;
     if (master) master.gain.value = v;
@@ -227,6 +297,7 @@ export function createAudio() {
     murmur,
     rain,
     thunder,
+    music,
     setVolume,
     playJump: () => playSfx(AUDIO.SFX.jump),
     playPant: () => playSfx(AUDIO.SFX.pant),

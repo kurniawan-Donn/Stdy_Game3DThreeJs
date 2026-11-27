@@ -1375,3 +1375,85 @@ body.mode-lobby #visit-banner {
   box-shadow: 0 3px 10px rgba(0, 0, 0, 0.3);
   text-shadow: none;
 }
+
+/* --- Level Bonus: kartu khusus, ikon urutan ruangan, angka Chaos berkurang --- */
+.level-card.bonus {
+  background: linear-gradient(135deg, rgba(120, 72, 10, 0.92), rgba(51, 65, 85, 0.92));
+  border: 1px solid rgba(250, 204, 21, 0.75);
+  box-shadow: 0 0 14px rgba(250, 204, 21, 0.25);
+}
+
+.level-card.bonus .lc-num {
+  color: #facc15;
+  font-weight: 800;
+}
+
+body.mode-lobby #clean-rooms {
+  display: none;
+}
+
+#clean-rooms {
+  position: absolute;
+  top: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: none;
+  gap: 6px;
+  align-items: center;
+  padding: 5px 10px;
+  background: rgba(15, 23, 42, 0.62);
+  border-radius: 999px;
+  pointer-events: none;
+  font-size: 13px;
+  color: #e2e8f0;
+}
+
+#clean-rooms.active {
+  display: flex;
+}
+
+#clean-rooms .cr-icon {
+  position: relative;
+  width: 30px;
+  height: 30px;
+  display: grid;
+  place-items: center;
+  font-size: 17px;
+  border-radius: 50%;
+  background: rgba(51, 65, 85, 0.7);
+  opacity: 0.55;
+  overflow: hidden;
+}
+
+#clean-rooms .cr-icon.next {
+  opacity: 0.85;
+  outline: 1px dashed rgba(250, 204, 21, 0.7);
+}
+
+#clean-rooms .cr-icon.now {
+  opacity: 1;
+  background: rgba(250, 204, 21, 0.3);
+  outline: 2px solid #facc15;
+}
+
+#clean-rooms .cr-icon.now::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  height: 3px;
+  width: calc(var(--left, 1) * 100%);
+  background: #facc15;
+}
+
+#clean-rooms .cr-label {
+  margin-left: 4px;
+  font-weight: 700;
+}
+
+.float-text.penalty {
+  color: #ef4444;
+  font-size: 22px;
+  font-weight: 900;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.55);
+}

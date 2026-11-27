@@ -105,7 +105,7 @@ pilih misi kenakalan → menyelinap → lakukan kenakalan → kabur & sembunyi �
 | 3 | **Sore Hujan** | 4,5 menit | 450 | Hujan & petir: kilat menyingkap, guntur menutupi suara, jejak kaki basah | dibangun |
 | 4 | **Malam Hari** | 5 menit | 350 | Pemilik tidur; terbangun oleh suara, menyelidiki dengan senter | dibangun |
 | 5 | **Kedatangan Tamu** | 5 menit | 500 | Pemilik & tamu mengobrol; tamu ingin mengelus kucing dan mengadu ke pemilik | dibangun |
-| bonus | **Minggu Bersih-bersih** | – | – | (ide) | dicatat |
+| bonus | **Minggu Bersih-bersih** | 5 menit | 400 | Pemilik bersih-bersih ruangan demi ruangan dan membereskan kekacauan; dua robot menyedot serpihan | dibangun |
 
 - **Terbuka:** Level 1 selalu terbuka. Level berikutnya terbuka jika level sebelumnya pernah selesai dengan **minimal 1 bintang**.
 - Setiap level adalah **satu file data** di `js/levels/`: nama, deskripsi singkat, durasi, target Chaos, pencahayaan, kenakalan aktif, posisi objek, dan pengubah perilaku pemilik (menimpa nilai `config.js` selama level berjalan, dipulihkan saat ganti level). Menambah level = satu file baru + satu baris import di `js/levels/index.js` (tanpa build tool, browser tidak bisa membaca isi folder).
@@ -233,6 +233,41 @@ Terbuka setelah Level 4 mendapat minimal 1 bintang. Durasi **5 menit**, target *
 
 **Performa:** dua NPC dengan A* & persepsi masing-masing; persepsi tamu dibatasi 15×/detik. Diukur di Chrome: 60 FPS (sama dengan Level 1).
 
+### Level Bonus — Minggu Bersih-bersih
+Terbuka setelah Level 5 mendapat minimal 1 bintang. Di Pilih Level tampil sebagai kartu khusus **BONUS** (bukan "Level 6"). Durasi **5 menit**, target **400**.
+
+**Suasana**
+- Minggu pagi cerah: matahari lebih terang, jendela terbuka dengan tirai tipis berkibar pelan (dua panel di tiap jendela ruang tamu & dapur).
+- Tirai kamar tidur terbuka: **kamar tidur tidak lagi gelap** (lorong tetap gelap).
+- **Musik santai samar** dari speaker kecil di rak TV (prosedural Web Audio: akor lembut + ketukan pelan, sedikit lebih keras di dekat speaker). Bisa dimatikan di Pengaturan (**Musik: Nyala/Mati**). Musik tidak menutupi suara kenakalan.
+
+**Rutinitas bersih-bersih**
+- Pemilik berpindah ruangan berurutan: **ruang tamu (+ ruang makan) → dapur → kamar tidur → kamar mandi → lorong → ulang**, **50 detik** per ruangan (5 menit = 6 giliran). Ruang kerja tidak dibersihkan.
+- HUD menampilkan urutan sebagai **ikon kecil** (ruangan sekarang menyala, dengan bilah sisa waktu, ruangan berikutnya di sebelahnya).
+- Tiap ruangan: **12 detik mengelap debu dengan kemoceng** di satu perabot, lalu **meletakkan kemoceng** di lantai (tempat tetap ruangan itu) dan **menyapu** sisa waktunya. **5 detik sebelum giliran habis** ia mengambil kemocengnya, lalu langsung pindah ke ruangan berikutnya (bisa sedikit mendahului jadwal di HUD).
+- Menyapu = berjalan pelan (0,6 m/s) **menyisir ruangan** mengikuti titik-titik sapuan (grid 0,9 m di sel navigasi yang bebas, berliku baris demi baris; ruang tamu tidak tersapu habis dalam satu giliran); kepala bergoyang ±30° di sekitar arah jalan, jadi kerucut pandang terus berpindah.
+- **Mengecek kolong sofa (ruang tamu) dan kasur (kamar tidur) adalah bagian rutinitas:** setelah 12 detik menyapu di ruangan itu pemilik selalu membungkuk memeriksa kolong (1,5 detik, 100%); kucing yang bersembunyi di sana ditarik keluar. Saat menyelidiki, peluang memeriksa kolong tetap 25%. **Kardus & keranjang cucian yang diam tetap aman.**
+- Suara kenakalan tetap membuat pemilik curiga/menyelidiki seperti biasa; setelah itu ia melanjutkan langkah bersih-bersihnya (waktu ruangan tetap berjalan).
+
+**Membereskan kekacauan**
+- Kekacauan yang **terlihat pemilik saat sedang bersih-bersih di ruangan itu** (line-of-sight ke titik kekacauan, jangkauan 4 m, diperiksa 10×/detik) akan didatangi dan **dibereskan** (berjongkok 2 detik). Objek kembali seperti semula dan **Chaos berkurang 50%** dari Chaos yang didapat dari kenakalan itu (angka merah melayang, mis. **"-20"**). Chaos tidak bisa di bawah 0.
+- Kenakalan yang sudah dibereskan **bisa dilakukan sekali lagi** (setelah itu objek tetap rapi/nonaktif). Kekacauan ulang juga bisa dibereskan lagi (-50% lagi).
+- **"Lho, kok?!"**: jika pemilik melihat lagi kekacauan pada objek yang **sudah pernah ia bereskan**, kucing mendapat **bonus +30 Chaos** (tanpa combo, sekali per objek), pemilik berkata "Lho, kok?!" (balon teks), dan curiganya naik **+30** (menoleh ke sekitar).
+- Kekacauan yang terlihat di luar ruangan jadwalnya (mis. saat menyelidiki) tidak dibereskan, tetapi tetap bisa memicu "Lho, kok?!".
+
+**Dua robot vacuum**
+- Dua robot menyala dan bisa ditumpangi (seperti biasa), mulai di ruangan berbeda.
+- Robot **menyedot benda kecil** di lantai yang dilaluinya (≤ 4,5 cm): pecahan gelas, lembar tisu, serpihan tanah pot. Kekacauan yang buktinya (pecahan gelas / lembar tisu) habis disedot **hilang dari pandangan pemilik** (tidak dibereskan = tidak ada pengurangan Chaos), tetapi objeknya juga tidak kembali (tidak bisa diulang).
+- Di level ini pecahan gelas tidak memudar sendiri (tetap sampai disedot atau dibereskan).
+
+**Kenakalan khusus**
+- **Mengacak tumpukan pakaian bersih** yang baru dilipat (4 lipatan berwarna di ujung kasur, di atas selimut): **75 Chaos**, suara **0,6 m** (kain). `E` dari atas kasur: kucing berguling di tumpukan, pakaian berserakan di kasur & lantai.
+- **Menggigit & menyeret kemoceng** saat pemilik meletakkannya: `E` = gigit (kucing membawanya, kecepatan ×0,7, tidak bisa melompat, suara seret 0,6 m). Lepas dengan `E`; jika sudah **≥ 2 m** dari tempatnya: **35 Chaos**, suara **0,6 m** (sekali per peletakan; tertangkap/masuk kardus = terlepas tanpa Chaos). Kecepatan ×0,7 berlaku juga saat berlari. Pemilik yang melihat kucing membawa kemoceng = kepergok (meter 100). Saat mau mengambilnya dan tidak ada, pemilik berkata "Kemocengku mana?" dan menoleh ke sekitar 3 detik; jika terlihat ia mengambilnya (= dibereskan, -50%; kemoceng yang dilepas < 2 m diambil tanpa pengurangan), jika tidak ia pindah ruangan tanpa kemoceng (tanpa mengelap) sampai menemukannya lagi.
+- **Keranjang cucian** (tempat sembunyi baru, kamar mandi): `E` = masuk/keluar, hanya mata yang mengintip. Diam = aman seperti kardus; masuk di depan mata pemilik tidak menyelamatkan. Tidak bisa dipindah dan tidak diperiksa pemilik.
+- Kenakalan Level 1 lainnya tetap aktif (gelas, tisu, cakar, remote, pot, ikan dapur, tisu toilet), kecuali **acak-acak selimut** yang diganti tumpukan pakaian (keduanya di kasur, prompt `E` bertabrakan).
+
+**Performa:** diukur di Chrome: 60 FPS (sama dengan Level 1). Tambahan: 2 kenakalan, 4 panel tirai, speaker, keranjang; tirai kamar tidur tidak digabung (1 draw call).
+
 ## 5. Kenakalan & Chaos
 
 Setiap kenakalan memberi Chaos dan memancarkan suara dengan radius tertentu. Pemilik yang berada di dalam radius suara akan mendengarnya.
@@ -246,6 +281,9 @@ Setiap kenakalan memberi Chaos dan memancarkan suara dengan radius tertentu. Pem
 | Tidur di tas tamu (Level 5) | 45 | 0 m |
 | Menjatuhkan cangkir teh (Level 5) | 45 | 4 m |
 | Merebut kursi tamu (Level 5) | 20 | 0 m |
+| Mengacak pakaian bersih (Bonus) | 75 | 0,6 m |
+| Menyeret kemoceng ≥ 2 m (Bonus) | 35 | 0,6 m |
+| Bonus "Lho, kok?!" (Bonus) | +30 (tanpa combo) | – |
 | Jatuhkan jam beker (Level 4) | 40 | 5 m |
 | Tarik tisu toilet | 35 | 1,2 m |
 | Cakar sofa | 20 | 1,6 m |
@@ -492,7 +530,7 @@ Preview langsung di lobi saat memilih. Item terkunci tampil dengan harga dan bis
 
 ### Pengaturan
 - **Kualitas grafis:** Rendah (tanpa bayangan, pixel ratio 1), Sedang (bayangan 1024, pixel ratio maks. 1,5), Tinggi (seperti sekarang: bayangan 2048, pixel ratio maks. 2).
-- **Volume**, **sensitivitas mouse**, **balik sumbu Y**, **tampilkan FPS**.
+- **Volume**, **musik** (nyala/mati; musik speaker Level Bonus), **sensitivitas mouse**, **balik sumbu Y**, **tampilkan FPS**.
 - Tombol **Hapus Progres** dengan konfirmasi.
 
 ### Simpan progres
@@ -600,7 +638,7 @@ Belum ada. Tambahkan di sini jika muncul keputusan desain yang belum ditentukan.
 - [x] Level 3 Sore Hujan: hujan & tetesan di kaca, petir (kilat menyingkap, guntur menutupi suara, ikon hitung mundur), suara kecil tertutup hujan, jejak kaki basah, tutup jendela & ember, buat teh
 - [x] Level 4 Malam Hari: pemilik tidur & meter terbangun, senter (SpotLight, kilau mata), berkas bulan, camilan tengah malam, kneading & jam beker, matahari terbit, nakas baru di kamar
 - [x] Level 5 Kedatangan Tamu: tamu (model pemilik berparameter), pembuka/penutup, mengobrol & dapur & toilet, "Pus, pus!" + mengelus + camilan, mengadu, 4 kenakalan tamu, pintu depan baru
-- [ ] Bonus Minggu Bersih-bersih
+- [x] Bonus Minggu Bersih-bersih: kartu BONUS, jadwal 5 ruangan + ikon HUD, kemoceng & sapu, cek kolong rutin, membereskan (−50%) & ulang sekali, "Lho, kok?!", robot menyedot serpihan, pakaian bersih, kemoceng diseret, keranjang cucian, musik speaker (bisa dimatikan), jendela terbuka
 - [x] Tutorial bertahap (Level 0 Latihan) yang otomatis dimulai saat pertama main, bisa dilewati dan diulang
 - [x] Pose loaf dirapikan: kaki terselip di bawah badan, perut menyentuh alas
 

@@ -1,7 +1,7 @@
 // Menu lobi (DOM): menu utama, Pilih Level (kartu per level), Cara Bermain.
 // Kustomisasi & Pengaturan ditangani ui/customizeMenu.js & ui/settingsMenu.js
 // (dibuka lewat handlers). Semua aksi diteruskan ke handlers dari main.js.
-import { LEVELS, TUTORIAL_LEVEL, TUTORIAL_INDEX } from '../levels/index.js';
+import { LEVELS, TUTORIAL_LEVEL, TUTORIAL_INDEX, levelLabel } from '../levels/index.js';
 import { STAR_THRESHOLDS } from '../config.js';
 import { levelRecord } from '../core/save.js';
 import { isLevelUnlocked, highestUnlockedIndex } from '../systems/levelManager.js';
@@ -58,7 +58,7 @@ export function createMenus(handlers) {
       menus.current = 'main';
       menus.setBank(save.chaosBank);
       const i = highestUnlockedIndex(save);
-      playSubEl.textContent = save.tutorialDone ? `Level ${LEVELS[i].id} · ${LEVELS[i].name}` : `Level 0 · ${TUTORIAL_LEVEL.name}`;
+      playSubEl.textContent = save.tutorialDone ? `${levelLabel(LEVELS[i])} · ${LEVELS[i].name}` : `Level 0 · ${TUTORIAL_LEVEL.name}`;
       show('main');
     },
     showLevels(save) {
@@ -83,17 +83,17 @@ export function createMenus(handlers) {
         const open = isLevelUnlocked(save, i);
         const rec = levelRecord(save, level);
         const card = document.createElement('button');
-        card.className = 'level-card' + (open ? '' : ' locked');
+        card.className = 'level-card' + (open ? '' : ' locked') + (level.bonus ? ' bonus' : '');
         card.dataset.action = 'level';
         card.dataset.index = String(i);
         card.disabled = !open;
         card.innerHTML = `
-          <span class="lc-num">Level ${level.id}</span>
+          <span class="lc-num">${level.bonus ? '★ BONUS' : `Level ${level.id}`}</span>
           <span class="lc-name"></span>
           <span class="lc-desc"></span>
           <span class="lc-meta">${fmtTime(level.DURATION)} · target ${level.TARGET_CHAOS}</span>
           <span class="lc-stars ${rec.bestStars ? '' : 'none'}">${stars(rec.bestStars)}</span>
-          ${open ? '' : '<span class="lc-lock">🔒 Dapatkan 1 bintang di level sebelumnya</span>'}`;
+          ${open ? '' : `<span class="lc-lock">🔒 Dapatkan 1 bintang di ${level.bonus ? `Level ${level.id - 1}` : 'level sebelumnya'}</span>`}`;
         card.querySelector('.lc-name').textContent = level.name;
         card.querySelector('.lc-desc').textContent = level.description;
         cardsEl.appendChild(card);

@@ -93,6 +93,22 @@ Hujan terlihat di luar jendela ruang tamu dan jendela dapur (jendela kamar tidur
 
 Seluruh rumah lainnya area gelap; lampu tidur lorong & lampu malam kamar tetap menyala.
 
+## Level Bonus — Minggu Bersih-bersih
+
+| Objek | Posisi (x, z) | Catatan |
+|---|---|---|
+| Ruang tamu (+ ruang makan) | elap rak TV dari (1,1; 0,35) · kemoceng (−1,0; 3,0) | cek kolong sofa dari (3,45; 1,65) |
+| Dapur | elap konter dari (4,75; −3,9) · kemoceng (4,2; −2,9) | |
+| Kamar tidur | elap meja rias dari (−5,55; −2,45) · kemoceng (−3,3; −2,4) | cek kolong kasur dari (−3,95; −3,6); tidak gelap (tirai terbuka) |
+| Kamar mandi | elap wastafel dari (−0,9; −4,1) · kemoceng (−1,2; −2,2) | |
+| Lorong | elap kusen dari (−2,0; −0,95) · kemoceng (1,8; −0,9) | tetap gelap |
+| Tumpukan pakaian bersih | kasur (−5,0; −3,3), tinggi 0,55 | menggantikan selimut |
+| Keranjang cucian | (−2,3; −1,88), menghadap timur | tempat sembunyi tetap, Ø 0,48 m, tinggi 0,5 m |
+| Speaker musik | rak TV (1,62; −0,06) | |
+| Robot vacuum | (−1,2; 3,4) dan (5,8; −1,0) | posisi awal |
+
+Titik sapuan dibuat otomatis (grid 0,9 m di sel navigasi yang bebas per ruangan).
+
 ## Level 5 — Kedatangan Tamu
 
 | Objek | Posisi (x, z) | Catatan |

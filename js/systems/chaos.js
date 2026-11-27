@@ -33,6 +33,8 @@ export function scoreMischief(ctx, type, position, noisePosition = position) {
   s.mischiefCount += 1;
   s.lastMischiefTime = ctx.time;
   s.recentChaos.push({ x: position.x, z: position.z, t: ctx.time });
+  // Catatan untuk sistem lain (mis. bersih-bersih Level Bonus: kekacauan yang bisa dibereskan)
+  if (s.scoreLog) s.scoreLog.push({ type, amount, x: position.x, y: position.y || 0, z: position.z, t: ctx.time });
   if (s.recentChaos.length > 20) s.recentChaos.shift();
 
   emitNoise(ctx, {
@@ -60,4 +62,26 @@ export function scoreMischief(ctx, type, position, noisePosition = position) {
 
   ctx.hud.setChaos(s.chaos, target);
   return amount;
+}
+
+// Ubah Chaos tanpa kenakalan (Level Bonus): delta < 0 = dibereskan pemilik
+// (angka merah "-N"), delta > 0 = bonus (angka "+N"). Chaos tidak di bawah 0.
+export function adjustChaos(ctx, delta, position) {
+  const s = ctx.state;
+  const before = s.chaos;
+  s.chaos = Math.max(0, s.chaos + delta);
+  const shown = s.chaos - before;
+  if (delta < 0) {
+    ctx.floatText.spawn(`${shown}`, position, 'penalty');
+    ctx.audio.play('chaosLoss');
+  } else {
+    ctx.floatText.spawn(`+${shown}`, position, 'chaos');
+    ctx.audio.play('chaos');
+  }
+  const target = currentLevel(s).TARGET_CHAOS;
+  const stars = countStars(s.chaos, target);
+  if (stars > s.starsReached) ctx.audio.play('star');
+  s.starsReached = stars; // bintang bisa hilang lagi jika Chaos berkurang
+  ctx.hud.setChaos(s.chaos, target);
+  return shown;
 }

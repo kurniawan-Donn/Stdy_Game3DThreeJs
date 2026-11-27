@@ -9,7 +9,7 @@ export function createFloatingText(layerEl) {
   const items = [];
 
   return {
-    // kind: 'chaos' | 'combo' (kelas CSS)
+    // kind: 'chaos' | 'combo' | 'penalty' | 'speech' | ... (kelas CSS)
     // opts.duration: lama tampil (balon teks NPC lebih lama)
     spawn(text, worldPos, kind, opts = {}) {
       const el = document.createElement('div');

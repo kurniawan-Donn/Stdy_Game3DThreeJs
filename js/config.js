@@ -736,6 +736,10 @@ export const AUDIO = {
     guestLaugh: [[420, 360, 0.09, 'sawtooth', 0.05, 0], [440, 370, 0.09, 'sawtooth', 0.05, 0.13], [460, 380, 0.09, 'sawtooth', 0.05, 0.26], [430, 350, 0.12, 'sawtooth', 0.045, 0.39]], // tawa tamu
     purr: [[55, 50, 0.4, 'sawtooth', 0.04, 0]], // dengkur
     fishTreat: [[880, 1320, 0.12, 'sine', 0.06, 0]], // camilan dari tamu
+    tidy: [[520, 660, 0.1, 'triangle', 0.05, 0], [660, 880, 0.12, 'triangle', 0.05, 0.12]], // pemilik membereskan (Bonus)
+    chaosLoss: [[440, 260, 0.25, 'triangle', 0.07, 0]], // Chaos berkurang
+    lhoKok: [[300, 520, 0.18, 'sine', 0.07, 0], [520, 360, 0.2, 'sine', 0.06, 0.2]], // "Lho, kok?!"
+    duster: [[1400, 1100, 0.06, 'triangle', 0.03, 0]], // kemoceng digigit/dilepas
     frontDoor: [[200, 140, 0.25, 'square', 0.035, 0]], // pintu depan
     meetingBusted: [[880, 300, 0.35, 'square', 0.07, 0], [600, 200, 0.4, 'square', 0.06, 0.12]], // ketahuan berisik saat rapat
     alarm: [
@@ -779,7 +783,11 @@ export const AUDIO = {
     boxIn: [{ DURATION: 0.18, VOLUME: 0.08, FILTER: 'lowpass', FREQ: 700, Q: 0.7, DELAY: 0 }],
     boxOut: [{ DURATION: 0.15, VOLUME: 0.07, FILTER: 'lowpass', FREQ: 900, Q: 0.7, DELAY: 0 }],
     kick: [{ DURATION: 0.06, VOLUME: 0.06, FILTER: 'lowpass', FREQ: 500, Q: 0.7, DELAY: 0 }],
-    flush: [{ DURATION: 1.2, VOLUME: 0.08, FILTER: 'lowpass', FREQ: 1200, Q: 0.7, DELAY: 0 }]
+    flush: [{ DURATION: 1.2, VOLUME: 0.08, FILTER: 'lowpass', FREQ: 1200, Q: 0.7, DELAY: 0 }],
+    laundry: [{ DURATION: 0.9, VOLUME: 0.04, FILTER: 'lowpass', FREQ: 800, Q: 0.7, DELAY: 0 }],
+    suck: [{ DURATION: 0.12, VOLUME: 0.03, FILTER: 'highpass', FREQ: 2500, Q: 0.7, DELAY: 0 }],
+    sweep: [{ DURATION: 0.25, VOLUME: 0.012, FILTER: 'bandpass', FREQ: 3500, Q: 0.8, DELAY: 0 }],
+    drag: [{ DURATION: 0.3, VOLUME: 0.02, FILTER: 'bandpass', FREQ: 1800, Q: 0.8, DELAY: 0 }]
   },
   // Suara meong sintetis: sawtooth melalui filter bandpass dengan nada naik-turun
   MEOW_VOICE: {
@@ -829,6 +837,9 @@ export const MISCHIEF = {
   guestChair: { CHAOS: 20, NOISE_RADIUS: 0 }, // merebut kursi tamu saat ia di toilet (Level 5)
   knead: { CHAOS: 60, NOISE_RADIUS: 0.8 }, // menginjak-injak selimut di atas pemilik tidur (Level 4)
   alarmClock: { CHAOS: 40, NOISE_RADIUS: 5 }, // jam beker jatuh & berdering (Level 4)
+  laundry: { CHAOS: 75, NOISE_RADIUS: 0.6 }, // mengacak tumpukan pakaian bersih (Bonus), kain
+  duster: { CHAOS: 35, NOISE_RADIUS: 0.6 }, // menyeret kemoceng ≥ 2 m (Bonus)
+  lhoKok: { CHAOS: 30, NOISE_RADIUS: 0, NO_COMBO: true }, // bonus "Lho, kok?!" (Bonus): pemilik menemukan kekacauan ulang
   wetPaws: { CHAOS: 5, NOISE_RADIUS: 0, NO_COMBO: true } // jejak kaki basah di sofa/kasur/meja (Level 3), sekali per perabot, tanpa bonus combo
 };
 export const COMBO = {
@@ -1113,7 +1124,7 @@ export const SAVE = {
 
 // --- Pengaturan (lobi → Pengaturan) ---
 export const SETTINGS = {
-  DEFAULTS: { quality: 'high', volume: 0.8, sensitivity: 1, invertY: false, showFps: false },
+  DEFAULTS: { quality: 'high', volume: 0.8, music: true, sensitivity: 1, invertY: false, showFps: false },
   QUALITY: {
     low: { label: 'Rendah', shadows: false, shadowMapSize: 512, maxPixelRatio: 1 },
     medium: { label: 'Sedang', shadows: true, shadowMapSize: 1024, maxPixelRatio: 1.5 },
@@ -1281,6 +1292,85 @@ export const TEACUP = { RADIUS: 0.04, HEIGHT: 0.06, COLOR: 0xf1f5f9, TEA: 0x9a5b
 export const GUEST_BAG = { SIZE: { W: 0.38, H: 0.12, D: 0.3 }, COLOR: 0x8a5a3b, STRAP: 0x5c3a24, HOLD: 0.6, NAP_DURATION: 4, MARKER_HEIGHT: 0.2 };
 export const GUEST_CHAIR = { SIT_DURATION: 1.2, MARKER_HEIGHT: 0.15 };
 
+// --- Level Bonus: Minggu Bersih-bersih (jadwal & angka gameplay di levels/bonus.js) ---
+export const CLEAN_FX = {
+  // Alat di tangan pemilik (owner/model.js); hanya terlihat saat dipakai
+  BROOM: { HANDLE: 1.05, HANDLE_R: 0.012, HEAD_W: 0.3, HEAD_H: 0.09, HEAD_D: 0.06, HANDLE_COLOR: 0xb58552, HEAD_COLOR: 0xd9b25c },
+  DUSTER: { HANDLE: 0.42, HANDLE_R: 0.01, TUFT_R: 0.07, TUFT_L: 0.2, HANDLE_COLOR: 0x8b5a2b, TUFT_COLORS: [0xe85d75, 0xf6c445, 0x5aa9e6] },
+  SWEEP_FREQ: 5, // ayunan sapu (rad/detik)
+  SWEEP_AMP: 0.35,
+  DUST_FREQ: 6, // ayunan kemoceng
+  DUST_AMP: 0.4,
+  SWEEP_SOUND_EVERY: 0.9, // bunyi sapu samar (detik)
+  SWEEP_SOUND_RANGE: 6, // hanya dimainkan jika kucing dekat
+  PENALTY_COLOR: 0xef4444
+};
+export const LAUNDRY = {
+  // Tumpukan pakaian bersih terlipat (4 lipatan berwarna) di ujung kasur
+  PIECE: { W: 0.3, H: 0.045, D: 0.24 },
+  COLORS: [0x60a5fa, 0xf9a8d4, 0xfde68a, 0x86efac],
+  ACTION_DURATION: 1.4, // kucing berguling di tumpukan
+  SCATTER_AT: 0.7,
+  SCATTER_SPEED: 1.3,
+  SCATTER_UP: 1.6,
+  SPIN: 6,
+  RESTITUTION: 0.1,
+  FRICTION: 8,
+  MARKER_HEIGHT: 0.3
+};
+export const DUSTER_PROP = {
+  BITE_DIST: 0.55, // jarak prompt "Gigit kemoceng" (kucing di lantai)
+  DROP_MIN_DIST: 2, // Chaos jika dilepas ≥ 2 m dari tempat pemilik meletakkannya
+  CARRY_SPEED_MULT: 0.7, // kucing membawa kemoceng: lebih pelan, tak bisa melompat
+  DRAG_NOISE_RADIUS: 0.6, // suara seret saat bergerak
+  DRAG_NOISE_EVERY: 0.5,
+  MOUTH_OFFSET: { y: -0.03, z: 0.1 },
+  MOUTH_SCALE: 0.8,
+  FLOOR_Y: 0.02,
+  MARKER_HEIGHT: 0.3
+};
+// Keranjang cucian: tempat sembunyi tetap (tidak bisa digeser), seperti kardus diam
+export const LAUNDRY_BASKET = {
+  RADIUS: 0.24,
+  HEIGHT: 0.5,
+  COLOR: 0xd8c6a3,
+  RIM: 0xb79f74,
+  CLOTH: 0x93c5fd,
+  EYE_HEIGHT: 0.47, // mata mengintip di atas tepi keranjang
+  ENTER_DIST: 0.55,
+  MARKER_HEIGHT: 0.6
+};
+// Musik santai prosedural dari speaker (Web Audio): piano elektrik + bas + ketukan pelan
+export const MUSIC = {
+  BPM: 78,
+  // Akor 4 ketuk masing-masing (frekuensi Hz): Fmaj7 → Em7 → Dm7 → Cmaj7
+  CHORDS: [
+    [174.6, 220.0, 261.6, 329.6],
+    [164.8, 196.0, 246.9, 293.7],
+    [146.8, 174.6, 220.0, 261.6],
+    [130.8, 164.8, 196.0, 246.9]
+  ],
+  BASS_DIV: 2, // bas = akar akor satu oktaf di bawah
+  NOTE_DECAY: 1.4,
+  CHORD_VOLUME: 0.035,
+  BASS_VOLUME: 0.05,
+  HAT_VOLUME: 0.008,
+  LOOKAHEAD: 0.4, // detik dijadwalkan di depan
+  BASE_LEVEL: 0.55, // volume di seluruh rumah
+  NEAR_LEVEL: 1, // volume di samping speaker
+  NEAR_DIST: 1.5,
+  FAR_DIST: 8,
+  SPEAKER: { W: 0.12, H: 0.18, D: 0.1, COLOR: 0x1f2937, GRILL: 0x4b5563, LED: 0x34d399 }
+};
+// Suasana Minggu pagi: tirai tipis berkibar di jendela terbuka
+export const SUNDAY_FX = {
+  SHEER_COLOR: 0xfff3d6,
+  SHEER_OPACITY: 0.8,
+  SWAY_FREQ: 1.3,
+  SWAY_AMP: 0.12,
+  OPEN_CURTAIN_SCALE: 0.28 // tirai kamar tidur ditarik ke samping
+};
+
 // --- Latihan / tutorial (systems/tutorial.js, levels/level0.js) ---
 export const TUTORIAL = {
   MOVE_DIST: 1.5, // meter berjalan untuk langkah "Gerak"
@@ -1395,8 +1485,8 @@ export const BASKET = {
 
 // --- Area gelap: jangkauan pandang pemilik ×DARK_RANGE_MULT ---
 export const DARK_ZONES = [
-  { x: -1.75, z: -0.9, width: 10.5, depth: 1.2 }, // lorong
-  { x: -4.8, z: -3.25, width: 4.4, depth: 3.5 } // kamar tidur (tirai tertutup)
+  { name: 'hallway', x: -1.75, z: -0.9, width: 10.5, depth: 1.2 }, // lorong
+  { name: 'bedroom', x: -4.8, z: -3.25, width: 4.4, depth: 3.5 } // kamar tidur (tirai tertutup)
 ];
 // Tampilan area gelap: lapisan redup kehangatan rendah di lantai, dinding, dan
 // plafon zona; kucing & pemilik di dalam zona ikut meredup; lampu malam lemah.
@@ -1502,6 +1592,8 @@ export const OWNER_ANIM = {
   PET_AMP: 0.3,
   WAVE_FREQ: 9,
   WAVE_AMP: 0.35,
+  TIDY_FREQ: 6, // Bonus: tangan memungut saat membereskan
+  TIDY_AMP: 0.3,
   LOOK_AROUND_SPEED: 1.6, // menoleh kiri-kanan saat menyelidiki
   LOOK_AROUND_YAW: 1.1,
   POSE_LERP: 10

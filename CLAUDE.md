@@ -27,7 +27,7 @@ docs/denah.md           Denah rumah 14 × 10 m (ASCII + koordinat, loop, jalan p
 js/
   main.js               Entry point: membuat objek konteks `ctx`, menjalankan game loop (lobi / main / pause)
   config.js             SEMUA angka penyetelan (lihat aturan di bawah)
-  levels/               Satu file data per level (level0.js Latihan, level1.js Senin Pagi, level2.js Deadline, level3.js Sore Hujan, level4.js Malam Hari, level5.js Kedatangan Tamu) + index.js (daftar & format)
+  levels/               Satu file data per level (level0.js Latihan, level1.js Senin Pagi, level2.js Deadline, level3.js Sore Hujan, level4.js Malam Hari, level5.js Kedatangan Tamu, bonus.js Minggu Bersih-bersih) + index.js (daftar, format, levelLabel)
   core/
     renderer.js         Scene, kamera, WebGLRenderer, resize
     input.js            Keyboard (keys/pressed) + mouse (mouseDX/DY via pointer lock atau drag, wheel)
@@ -45,6 +45,7 @@ js/
     room.js             Rumah dari HOUSE: lantai kayu/keramik, dinding luar+jendela, dinding dalam+bukaan, plafon
     furniture.js        Perabot seluruh rumah + collider AABB (crawlHeight = kolong); { colliders, refs, mergeStats }
     dust.js             Partikel debu di berkas cahaya jendela
+    sunday.js           Suasana Minggu pagi (Level Bonus): tirai tipis berkibar, tirai kamar tidur terbuka, speaker musik
     rain.js             Visual hujan (Level 3): garis hujan InstancedMesh, tetesan di kaca, genangan & ember
     lobby.js            Lobi 3D (scene terpisah): sudut rumah, kucing di bantal berputar, siklus pose idle
     house.js            Pintu kamar mandi (collider dinamis), keranjang kucing, area gelap (isInDarkZone, lapisan redup, lampu malam, createDarkTint/updateDarkTint)
@@ -64,7 +65,9 @@ js/
     owner/              Pemilik rumah
       index.js          Rutinitas, meter curiga, state machine, mengejar, pendengaran
       meeting.js        Rapat video (Level 2): jadwal, layar laptop wajah, suara bicara samar, suara keras = "!"
-      model.js          Model manusia low-poly (pivot sendi); createOwnerMesh(look) berparameter (warna, rambut, tinggi)
+      model.js          Model manusia low-poly (pivot sendi); createOwnerMesh(look) berparameter (warna, rambut, tinggi); sapu & kemoceng di tangan (createDusterMesh)
+      movement.js       Gerak NPC: turnTowards, walkTo (A*), followPath, lookAt (dipakai pemilik, tamu, bersih-bersih)
+      cleaning.js       Rutinitas bersih-bersih (Level Bonus): elap → letakkan kemoceng → sapu → cek kolong → bereskan → ambil kemoceng
       animation.js      Pose: jalan, lari, duduk mengetik, minum, meregang, mengangkat
     particles.js        Percikan partikel saat camilan diambil
     mischief/           Objek kenakalan, satu file per jenis
@@ -73,6 +76,7 @@ js/
       glass.js tissue.js scratch.js remote.js pot.js kitchenFish.js toiletPaper.js blanket.js
       knead.js alarmClock.js   (khusus Level 4, posisinya dari LAYOUT.MISCHIEF_LAYOUT file level)
       cake.js guestBag.js guestChair.js (+ cangkir teh = varian glass.js)   (khusus Level 5)
+      laundry.js duster.js   (khusus Level Bonus)
   systems/
     collision.js        Lingkaran vs AABB, tinggi permukaan, cek posisi bebas
     spawn.js            Cari posisi lantai acak yang aman
@@ -81,6 +85,7 @@ js/
     level.js            Timer level, akhir level, bintang, tabungan
     shop.js             Toko kustomisasi: harga, beli dengan tabungan, pakai item
     visit.js            Kunjungan tamu (Level 5): pembuka/lewati, mengobrol, dapur bersama, toilet tamu, penutup
+    cleaning.js         Bersih-bersih (Level Bonus): jadwal ruangan, kekacauan (mess) dari scoreLog, tidyMess, robotSuck
     night.js            Malam (Level 4): meter terbangun, ikon Zzz, matahari terbit, suara malam, aturan bayangan
     weather.js          Cuaca (Level 3): jadwal kilat/guntur, suara tertutup hujan, cahaya kilat, genangan
     tutorial.js         Latihan (Level 0): langkah, syarat selesai, panah penanda, naskah pemilik
@@ -122,6 +127,7 @@ js/
 - **Cuaca** (`systems/weather.js`): aktif hanya di level dengan blok `WEATHER`. `ctx.weather.flashT > 0` = kilat (area gelap tidak berlaku di persepsi & peredupan), `isNoiseMasked` dipakai `ownerHearNoise`. Zona gelap tambahan per level lewat `LAYOUT.EXTRA_DARK_ZONES` (`rebuildDarkOverlays`). Objek transparan di belakang kaca jendela perlu `renderOrder` negatif (kaca menulis depth). Debug: F3 + `L` = kilat.
 - **Malam** (`systems/night.js`): aktif di level dengan blok `NIGHT`. Pemilik `nightMode`: `asleep` (tidak melihat, tidak menghalangi kucing, suara → `wakeFromNoise`), bangun → `flashlightOn` → menyelidiki → `startWork` = kembali tidur (`toBed`). Persepsi saat senter menyala ada di `perception.js` (sorotan, 2 m, `isInLightZone`). Zona terang lewat `LAYOUT.EXTRA_LIGHT_ZONES` (`LIGHT_ZONES`); zona gelap `noOverlay` tanpa lapisan redup. Lampu arah tanpa bayangan menembus dinding, jadi bulan sengaja sangat redup.
 - **Tamu** (`entities/guest`, `systems/visit.js`): aktif di level dengan blok `GUEST`. Tamu memakai `createOwnerMesh(look)`, `animateOwner`, dan fungsi gerak pemilik yang diekspor (`npcWalkTo`, `npcTurnTowards`, `npcLookAt`). Jadwal berdua memanggil `ownerVisitActivity`; tamu mengadu lewat `ownerReport`. Panggilan tamu = noise `guestCall` (pemilik menoleh tanpa curiga). Kucing yang sedang dielus (`cat.action.type === 'petted'`) bukan kenakalan. Mode khusus pemilik (`guestMode`, `nightMode`) di-reset di awal `resetOwner`.
+- **Bersih-bersih** (`systems/cleaning.js`, `owner/cleaning.js`): aktif di level dengan blok `CLEANING`. `scoreMischief` mencatat tiap Chaos di `state.scoreLog`; `updateCleaning` mengubahnya jadi *mess* (objek + benda fisika yang lahir sejak `inst.startedAt`, diisi `registerMischief`). `tidyMess` memotong Chaos (`adjustChaos`) lalu `respawnMischief` (objek dibuat ulang dari `inst.kind`/`inst.spec`; `exhausted` = rapi tapi nonaktif) atau `inst.onTidy` (kemoceng). Benda fisika dengan `noClaim` (kardus dilempar) tidak pernah jadi bagian kekacauan. Mode pemilik `cleanMode` di-reset di awal `resetOwner`, lalu diaktifkan `resetCleanRoutine` setelah `resetCleaning`; giliran ruangan dicatat di `owner.clean.slot`. Zona gelap bawaan bisa dimatikan per level lewat `LAYOUT.DISABLE_DARK_ZONES` (nama zona). Musik speaker: `audio.music(level)` tiap frame (dijadwalkan 0,4 detik ke depan, diam sendiri saat pause/lobi).
 - **Kustomisasi:** tampilan kucing = `{ cat, accessory }` dari `CUSTOMIZATION` (config). Model dibuat `buildCatModel` (dipakai kucing pemain & lobi). Ganti tampilan lewat `setCatLook` (model lama di-dispose), lalu buat ulang `ctx.darkTint.cat`. Efek gameplay hanya dua: `cat.bell` (Chaos ×1,2, langkah berbunyi) dan `cat.darkStealth` (kucing hitam di area gelap); selain itu murni kosmetik.
 - **Lobi:** saat `flow.state` = `lobby`/`select`, loop merender `ctx.lobby.scene` (bukan rumah). Menu/panel di DOM (`#lobby`).
 - **Simpanan** hanya lewat `core/save.js` (`ctx.save`); semua akses localStorage dibungkus try/catch. Saat skema berubah, naikkan `SAVE.VERSION` dan tambahkan migrasi.

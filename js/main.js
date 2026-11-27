@@ -60,6 +60,8 @@ import { updateNight } from './systems/night.js';
 import { updateFlashlight } from './entities/flashlight.js';
 import { createTutorialUi } from './ui/tutorialUi.js';
 import { loadLevel } from './systems/levelManager.js';
+import { updateCleaning } from './systems/cleaning.js';
+import { updateSunday, musicLevelAt } from './world/sunday.js';
 
 function init() {
   const canvas = document.getElementById('game-canvas');
@@ -272,6 +274,7 @@ function gameFrame(ctx, dt) {
       updateOwner(ctx, wdt);
       updateGuest(ctx, wdt); // tamu ikut tertawa
       updateMischief(ctx, wdt);
+      updateCleaning(ctx);
       updateObstacles(ctx, wdt);
       updateHideBoxes(ctx);
     } else {
@@ -292,6 +295,7 @@ function gameFrame(ctx, dt) {
       updateObstacles(ctx, dt);
       updateOwner(ctx, dt);
       updateGuest(ctx, dt);
+      updateCleaning(ctx); // Level Bonus: catat kekacauan, ikon ruangan
       updateNoise(ctx.noise, dt);
 
       ctx.hud.setStamina(ctx.stamina.value, STAMINA.MAX, isExhausted(ctx.stamina));
@@ -309,10 +313,13 @@ function gameFrame(ctx, dt) {
     updateFlashlight(ctx);
     // Tamu: pembuka, jadwal berdua, penutup
     updateVisit(ctx, wdt);
+    updateSunday(ctx, wdt);
     // Latihan: langkah & naskah pemilik (juga selama alur KETAHUAN)
     if (updateTutorial(ctx, dt) === 'done') finishTutorial(ctx);
   }
   updateDarkness(ctx, dt);
+  // Musik speaker (Level Bonus), bisa dimatikan di Pengaturan
+  if (ctx.audio.music) ctx.audio.music(ctx.sunday && ctx.save.settings.music && !ctx.state.isGameOver ? musicLevelAt(ctx) : 0);
 
   updatePhysics(ctx, wdt);
   updateParticles(ctx.particles, ctx.scene, wdt);

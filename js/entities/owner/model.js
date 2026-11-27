@@ -2,7 +2,7 @@
 // Menghadap +Z lokal. Sendi memakai pivot Group agar mudah dianimasikan:
 // hips → (legL/legR: hip → knee), torso → (armL/armR: shoulder → elbow → hand), head.
 import * as THREE from 'three';
-import { MATERIALS } from '../../config.js';
+import { MATERIALS, CLEAN_FX } from '../../config.js';
 
 const HIP_Y = 0.89; // kaki menapak di y = 0; puncak kepala ±1,74 m
 
@@ -11,6 +11,30 @@ function box(w, h, d, mat, y = 0, x = 0, z = 0) {
   m.position.set(x, y, z);
   m.castShadow = true;
   return m;
+}
+
+// Kemoceng (Level Bonus): gagang + 3 jumbai warna-warni; gagang di y 0,
+// jumbai mengarah ke −Y. Dipakai di tangan pemilik & sebagai objek kenakalan.
+export function createDusterMesh() {
+  const D = CLEAN_FX.DUSTER;
+  const duster = new THREE.Group();
+  const dusterStick = new THREE.Mesh(
+    new THREE.CylinderGeometry(D.HANDLE_R, D.HANDLE_R, D.HANDLE, 6),
+    new THREE.MeshStandardMaterial({ color: D.HANDLE_COLOR, roughness: 0.8 })
+  );
+  dusterStick.position.y = -D.HANDLE / 2;
+  duster.add(dusterStick);
+  D.TUFT_COLORS.forEach((c, i) => {
+    const tuft = new THREE.Mesh(
+      new THREE.ConeGeometry(D.TUFT_R * (1 - i * 0.18), D.TUFT_L, 7),
+      new THREE.MeshStandardMaterial({ color: c, roughness: 1 })
+    );
+    tuft.rotation.x = Math.PI;
+    tuft.position.y = -D.HANDLE - D.TUFT_L * (0.3 + i * 0.25);
+    tuft.castShadow = true;
+    duster.add(tuft);
+  });
+  return duster;
 }
 
 // look (opsional, untuk tamu Level 5): { skin, hair, shirt, pants, shoes }
@@ -84,6 +108,32 @@ export function createOwnerMesh(look = {}) {
   mug.visible = false;
   armR.hand.add(mug);
 
+  // Alat bersih-bersih (Level Bonus) di tangan kanan, searah lengan bawah;
+  // hanya terlihat saat dipakai (owner.tool, owner/animation.js)
+  const B = CLEAN_FX.BROOM;
+  const broom = new THREE.Group();
+  const broomStick = new THREE.Mesh(
+    new THREE.CylinderGeometry(B.HANDLE_R, B.HANDLE_R, B.HANDLE, 6),
+    new THREE.MeshStandardMaterial({ color: B.HANDLE_COLOR, roughness: 0.8 })
+  );
+  broomStick.position.y = -B.HANDLE / 2;
+  broom.add(broomStick);
+  const broomHead = new THREE.Mesh(
+    new THREE.BoxGeometry(B.HEAD_W, B.HEAD_H, B.HEAD_D),
+    new THREE.MeshStandardMaterial({ color: B.HEAD_COLOR, roughness: 0.95 })
+  );
+  broomHead.position.y = -B.HANDLE - B.HEAD_H / 2;
+  broomHead.castShadow = true;
+  broom.add(broomHead);
+  broom.position.y = -0.04;
+  broom.visible = false;
+  armR.hand.add(broom);
+
+  const duster = createDusterMesh();
+  duster.position.y = -0.04;
+  duster.visible = false;
+  armR.hand.add(duster);
+
   // Leher & kepala (pivot di leher untuk menoleh)
   torso.add(box(0.1, 0.07, 0.1, skin, 0.5));
   const head = new THREE.Group();
@@ -105,7 +155,7 @@ export function createOwnerMesh(look = {}) {
   if (look.scale) root.scale.setScalar(look.scale);
   return {
     root,
-    parts: { hips, torso, head, legL, legR, armL, armR, mug }
+    parts: { hips, torso, head, legL, legR, armL, armR, mug, broom, duster }
   };
 }
 

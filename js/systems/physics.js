@@ -10,6 +10,7 @@
 //   frictionless?,   // true: tanpa gesekan sampai benda melayang (dorongan gelas)
 //   life?, fade?, material?,  // opsional: benda hilang perlahan setelah life detik
 //   onImpact?(body, impactSpeed, ctx),
+//   noClaim?,        // bukan bagian kekacauan (kardus dilempar): tidak dibereskan/disedot
 //   grounded, sleeping, airborneTime
 // }
 import * as THREE from 'three';
@@ -31,6 +32,7 @@ export function addBody(ctx, opts) {
     sleeping: false,
     frictionless: false,
     airborneTime: 0,
+    bornAt: ctx.time || 0, // waktu dibuat (Level Bonus: benda milik kekacauan mana)
     ...opts
   };
   if (!body.mesh.parent) ctx.scene.add(body.mesh);

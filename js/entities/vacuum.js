@@ -4,6 +4,7 @@ import * as THREE from 'three';
 import { VACUUM, MATERIALS, ROOM_HALF_W, ROOM_HALF_D, PLAYER } from '../config.js';
 import { findFreeFloorPosition } from '../systems/spawn.js';
 import { removeAndDispose } from '../core/dispose.js';
+import { robotSuck } from '../systems/cleaning.js';
 
 function createRobotVacuumMesh() {
   const R = VACUUM.RADIUS;
@@ -42,8 +43,9 @@ function randRange(a, b) {
   return a + Math.random() * (b - a);
 }
 
-export function spawnObstacle(ctx) {
-  const pos = findFreeFloorPosition(ctx.colliders, ctx.cat.mesh.position, VACUUM.RADIUS, VACUUM.MIN_PLAYER_DIST);
+// at (opsional): posisi awal tetap (Level Bonus: dua robot di ruangan berbeda)
+export function spawnObstacle(ctx, at = null) {
+  const pos = at || findFreeFloorPosition(ctx.colliders, ctx.cat.mesh.position, VACUUM.RADIUS, VACUUM.MIN_PLAYER_DIST);
   const mesh = createRobotVacuumMesh();
   mesh.position.set(pos.x, 0, pos.z);
   ctx.scene.add(mesh);
@@ -172,6 +174,7 @@ export function updateObstacles(ctx, dt) {
   const subDt = dt / steps;
 
   for (const obs of obstacles) {
+    if (ctx.cleaning) robotSuck(ctx, obs, dt); // Level Bonus: menyedot serpihan kecil
     obs.wanderIn -= dt;
     if (obs.wanderIn <= 0 && obs.turnTarget === null) {
       obs.turnTarget = obs.heading + (Math.random() * 2 - 1) * VACUUM.WANDER_TURN;

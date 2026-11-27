@@ -1,11 +1,11 @@
 // Pemilik rumah (GDD §8–9): rutinitas waypoint, persepsi, meter curiga,
 // dan state machine RUTINITAS → CURIGA (?) → MENYELIDIKI → MENGEJAR (!).
 // Saat menangkap kucing, kendali diserahkan ke systems/capture.js.
-import { OWNER, OWNER_ROUTINE as R, SUSPICION as S, CHASE, NAV, OWNER_ANIM, HIDE_BOX, HIDE_SPOT, RIDE } from '../../config.js';
+import { OWNER, OWNER_ROUTINE as R, SUSPICION as S, CHASE, OWNER_ANIM, HIDE_BOX, HIDE_SPOT, RIDE } from '../../config.js';
 import { createOwnerMesh, HIP_Y } from './model.js';
 import { currentLevel } from '../../core/state.js';
 import { animateOwner, isSittingPose } from './animation.js';
-import { findPath } from '../../systems/navGrid.js';
+import { wrapAngle, turnTowards, yawTo, clearPath, walkTo, lookAt } from './movement.js';
 import { senseCat } from '../../systems/perception.js';
 import { isAnnoying } from '../../systems/meow.js';
 import { setDoorOpen, isDoorOpen, isDoorClosed } from '../../world/house.js';
@@ -14,14 +14,7 @@ import { hideSpotOf, recentChaosNear } from '../../systems/hiding.js';
 import { resetMeetings, updateMeeting, endMeeting, dueMeeting, isLoudDuringMeeting } from './meeting.js';
 import { isNoiseMasked, weatherConfig } from '../../systems/weather.js';
 import { nightConfig, wakeFromNoise, isWakeFull, onOwnerWoke, onOwnerSleep } from '../../systems/night.js';
-
-const HEAD_MAX = (OWNER.HEAD_MAX_YAW_DEG * Math.PI) / 180;
-
-function wrapAngle(a) {
-  while (a > Math.PI) a -= Math.PI * 2;
-  while (a < -Math.PI) a += Math.PI * 2;
-  return a;
-}
+import { updateCleanRoutine, resumeCleaning, checkLhoKok } from './cleaning.js';
 
 function rand(min, max) {
   return min + Math.random() * (max - min);
@@ -74,7 +67,11 @@ export function createOwner(scene) {
     flashlightOn: false,
     // Tamu (Level 5): mengobrol di meja makan, ke dapur bersama
     guestMode: false,
-    guestSeat: null
+    guestSeat: null,
+    // Bersih-bersih (Level Bonus, owner/cleaning.js)
+    cleanMode: false,
+    clean: null,
+    tool: null // alat di tangan: null | 'broom' | 'duster'
   };
 }
 
@@ -83,6 +80,9 @@ export function resetOwner(ctx) {
   // Mode khusus level sebelumnya dimatikan dulu (startWork membacanya)
   o.guestMode = false;
   o.nightMode = false;
+  o.cleanMode = false; // diatur resetCleanRoutine (setelah resetCleaning)
+  o.clean = null;
+  o.tool = null;
   const spot = R.SPOTS.desk;
   o.mesh.visible = true;
   o.away = false;
@@ -385,61 +385,14 @@ export function ownerStartChase(ctx, start) {
 
 // --- Gerak & navigasi ---------------------------------------------------
 
-function turnTowards(o, targetYaw, dt) {
-  const diff = wrapAngle(targetYaw - o.yaw);
-  o.yaw += diff * Math.min(1, OWNER.TURN_SPEED * dt);
-  o.mesh.rotation.y = o.yaw;
-}
-
-function yawTo(o, x, z) {
-  return Math.atan2(x - o.mesh.position.x, z - o.mesh.position.z);
-}
-
-function clearPath(o) {
-  o.path = null;
-  o.pathGoal = null;
-}
-
-// Berjalan mengikuti jalur A* ke target. Mengembalikan true jika sudah sampai.
-function walkTo(ctx, o, target, speed, dt, replan = false) {
-  const pos = o.mesh.position;
-  o.replanT -= dt;
-  const goalMoved = !o.pathGoal || Math.hypot(o.pathGoal.x - target.x, o.pathGoal.z - target.z) > 0.3;
-  if (!o.path || (goalMoved && (!replan || o.replanT <= 0))) {
-    o.path = findPath(ctx.nav, pos.x, pos.z, target.x, target.z) || [];
-    o.pathGoal = { x: target.x, z: target.z };
-    o.replanT = NAV.REPLAN_INTERVAL;
-  }
-  return followPath(o, speed, dt);
-}
-
-function followPath(o, speed, dt) {
-  const pos = o.mesh.position;
-  let step = speed * dt;
-  while (o.path.length && step > 0) {
-    const wp = o.path[0];
-    const dx = wp.x - pos.x;
-    const dz = wp.z - pos.z;
-    const d = Math.hypot(dx, dz);
-    if (d <= NAV.ARRIVE_DIST) {
-      o.path.shift();
-      continue;
-    }
-    const move = Math.min(step, d);
-    pos.x += (dx / d) * move;
-    pos.z += (dz / d) * move;
-    o.walkPhase += move * OWNER_ANIM.WALK_STRIDE;
-    step -= move;
-    turnTowards(o, Math.atan2(dx, dz), dt);
-    o.pose = speed > OWNER.INVESTIGATE_SPEED ? 'run' : 'walk';
-    break;
-  }
-  return o.path.length === 0;
-}
-
 // --- Rutinitas ----------------------------------------------------------
 
 function startWork(o) {
+  if (o.cleanMode) {
+    // Bersih-bersih: lanjutkan langkah yang sedang dikerjakan
+    resumeCleaning(o);
+    return;
+  }
   if (o.guestMode) {
     // Tamu: "kembali bekerja" = kembali duduk mengobrol
     o.activity = 'toSeat';
@@ -493,6 +446,7 @@ function startActivity(o, act) {
 function updateRoutine(ctx, o, dt) {
   if (o.nightMode && updateNightRoutine(ctx, o, dt)) return;
   if (o.guestMode && updateVisitRoutine(ctx, o, dt)) return;
+  if (o.cleanMode && o.clean && updateCleanRoutine(ctx, o, dt)) return;
   const spots = R.SPOTS;
   o.headYaw += (0 - o.headYaw) * Math.min(1, OWNER.HEAD_TURN_SPEED * dt);
 
@@ -677,14 +631,6 @@ function backToRoutine(ctx, o, meter) {
   startWork(o);
 }
 
-function lookAt(o, point, dt, turnBody) {
-  if (!point) return;
-  const target = yawTo(o, point.x, point.z);
-  if (turnBody) turnTowards(o, target, dt);
-  const rel = Math.max(-HEAD_MAX, Math.min(HEAD_MAX, wrapAngle(target - o.yaw)));
-  o.headYaw += (rel - o.headYaw) * Math.min(1, OWNER.HEAD_TURN_SPEED * dt);
-}
-
 function suspicionGain(ctx, o) {
   return isAnnoying(ctx.meow) ? S.ANNOYED_MULT : 1;
 }
@@ -721,8 +667,8 @@ function updatePerception(ctx, o, dt) {
   if (o.seen) o.lastSeenAt = ctx.time;
   if (o.seen) {
     o.attention = { x: cat.mesh.position.x, z: cat.mesh.position.z };
-    if (cat.action) {
-      // Kepergok sedang berbuat nakal: langsung "!"
+    if (cat.action || cat.carrying) {
+      // Kepergok sedang berbuat nakal (atau membawa kemoceng): langsung "!"
       o.meter = S.MAX;
     } else {
       const near = S.GAIN_NEAR_DIST;
@@ -825,6 +771,17 @@ export function updateOwner(ctx, dt) {
   if (!o.away && !o.asleep) updatePerception(ctx, o, dt);
   else o.seen = false;
 
+  // Bersih-bersih: "Lho, kok?!" saat melihat kekacauan ulang → curiga
+  if (o.cleanMode && !o.away && o.state !== 'chase' && o.state !== 'capture') {
+    const p = checkLhoKok(ctx, o, dt);
+    if (p) {
+      const C = ctx.cleaning.C;
+      o.meter = Math.min(o.meter + C.LHO_KOK_SUSPICION * suspicionGain(ctx, o), Math.max(o.meter, S.NOISE_CAP));
+      o.attention = { x: p.x, z: p.z };
+      if (o.state === 'routine') setState(ctx, o, 'curious');
+    }
+  }
+
   if (o.state !== 'chase' && o.meter >= S.MAX) setState(ctx, o, 'chase');
 
   switch (o.state) {
@@ -898,7 +855,7 @@ export function updateOwner(ctx, dt) {
 }
 
 // Dipakai tamu (entities/guest) agar tidak menduplikasi gerak & navigasi
-export { walkTo as npcWalkTo, turnTowards as npcTurnTowards, lookAt as npcLookAt, clearPath as npcClearPath };
+export { walkTo as npcWalkTo, turnTowards as npcTurnTowards, lookAt as npcLookAt, clearPath as npcClearPath } from './movement.js';
 
 function updateChase(ctx, o, dt) {
   const cat = ctx.cat.mesh.position;

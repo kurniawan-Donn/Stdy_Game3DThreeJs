@@ -19,6 +19,9 @@
 //   LAYOUT.EXTRA_LIGHT_ZONES     zona terang yang membatalkan area gelap
 //   NIGHT                        malam: pemilik tidur, meter terbangun, senter (lihat level4.js)
 //   GUEST                        tamu: pembuka/penutup, jadwal berdua, AI tamu (lihat level5.js)
+//   CLEANING                     bersih-bersih: jadwal ruangan, membereskan, robot menyedot (lihat bonus.js)
+//   LAYOUT.DISABLE_DARK_ZONES    nama zona gelap (DARK_ZONES) yang dimatikan selama level ini
+//   bonus                        true = level bonus (kartu "BONUS", label tanpa nomor)
 //   TIME_UP_REASON               teks alasan di layar hasil saat waktu habis
 //   TUTORIAL, STEPS              hanya Level 0 (Latihan), lihat level0.js
 import level0 from './level0.js';
@@ -27,8 +30,14 @@ import level2 from './level2.js';
 import level3 from './level3.js';
 import level4 from './level4.js';
 import level5 from './level5.js';
+import bonus from './bonus.js';
 
-export const LEVELS = [level1, level2, level3, level4, level5].map((l, i) => ({ ...l, id: i + 1 }));
+export const LEVELS = [level1, level2, level3, level4, level5, bonus].map((l, i) => ({ ...l, id: i + 1 }));
+
+// Label tampilan: "Level 3" atau "BONUS"
+export function levelLabel(level) {
+  return level.bonus ? 'BONUS' : `Level ${level.id}`;
+}
 
 // Latihan (tutorial) berada di luar urutan buka level; indeksnya -1
 export const TUTORIAL_INDEX = -1;

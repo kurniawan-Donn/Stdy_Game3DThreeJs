@@ -61,6 +61,18 @@ function applyOverrides(ctx, level) {
     zones.push(...layout.EXTRA_DARK_ZONES);
     ctx.levelOverrides.push({ revert: () => zones.splice(n) });
   }
+  // Zona gelap bawaan yang dimatikan (mis. tirai kamar tidur terbuka di Level Bonus)
+  if (layout.DISABLE_DARK_ZONES && layout.DISABLE_DARK_ZONES.length) {
+    const zones = CONFIG.DARK_ZONES;
+    const saved = zones.slice();
+    const keep = zones.filter((z) => !layout.DISABLE_DARK_ZONES.includes(z.name));
+    zones.length = 0;
+    zones.push(...keep);
+    ctx.levelOverrides.push({ revert: () => {
+      zones.length = 0;
+      zones.push(...saved);
+    } });
+  }
   // Zona terang (membatalkan area gelap), mis. berkas cahaya bulan
   if (layout.EXTRA_LIGHT_ZONES && layout.EXTRA_LIGHT_ZONES.length) {
     const zones = CONFIG.LIGHT_ZONES;

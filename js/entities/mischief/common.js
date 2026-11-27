@@ -11,6 +11,11 @@ export function registerMischief(ctx, inst, item) {
   inst.done = false;
   inst.unregister = registerInteractable(ctx.interaction, {
     ...item,
+    // Waktu mulai (Level Bonus: benda fisika sejak saat ini milik kekacauan ini)
+    onInteract: (c) => {
+      inst.startedAt = c.time;
+      item.onInteract(c);
+    },
     isEnabled: (c) => !inst.done && (item.isEnabled ? item.isEnabled(c) : true)
   });
 }

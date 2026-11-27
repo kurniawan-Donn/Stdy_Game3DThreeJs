@@ -8,7 +8,8 @@
 // Kardus yang tidak ditempati adalah collider (bisa dinaiki & memblokir jalur);
 // grid navigasi dibangun ulang saat kardus berpindah.
 import * as THREE from 'three';
-import { HIDE_BOX, MATERIALS } from '../config.js';
+import { HIDE_BOX, MATERIALS, LAUNDRY_BASKET as LB } from '../config.js';
+import { currentLevel } from '../core/state.js';
 import { registerInteractable } from '../systems/interaction.js';
 import { addBody } from '../systems/physics.js';
 import { createNavGrid } from '../systems/navGrid.js';
@@ -69,14 +70,50 @@ function buildBoxMesh() {
   return { group, eyes };
 }
 
+// Keranjang cucian (Level Bonus): tempat sembunyi tetap, terbuka di atas,
+// mata kucing mengintip di atas tepinya
+function buildBasketMesh() {
+  const group = new THREE.Group();
+  const mat = new THREE.MeshStandardMaterial({ color: LB.COLOR, roughness: 0.95, side: THREE.DoubleSide });
+  const wall = new THREE.Mesh(new THREE.CylinderGeometry(LB.RADIUS, LB.RADIUS * 0.85, LB.HEIGHT, 16, 1, true), mat);
+  wall.position.y = LB.HEIGHT / 2;
+  wall.castShadow = true;
+  wall.receiveShadow = true;
+  group.add(wall);
+  const bottom = new THREE.Mesh(new THREE.CircleGeometry(LB.RADIUS * 0.85, 16), mat);
+  bottom.rotation.x = -Math.PI / 2;
+  bottom.position.y = 0.01;
+  group.add(bottom);
+  const rim = new THREE.Mesh(new THREE.TorusGeometry(LB.RADIUS, 0.018, 6, 20), new THREE.MeshStandardMaterial({ color: LB.RIM, roughness: 0.9 }));
+  rim.rotation.x = Math.PI / 2;
+  rim.position.y = LB.HEIGHT;
+  group.add(rim);
+  // Pakaian kotor menyembul di dalam
+  const cloth = new THREE.Mesh(new THREE.SphereGeometry(LB.RADIUS * 0.8, 10, 6, 0, Math.PI * 2, 0, Math.PI / 2), new THREE.MeshStandardMaterial({ color: LB.CLOTH, roughness: 1 }));
+  cloth.scale.y = 0.35;
+  cloth.position.y = LB.HEIGHT * 0.78;
+  group.add(cloth);
+  const eyes = new THREE.Group();
+  const eyeMat = new THREE.MeshBasicMaterial({ ...MATERIALS.catEyeGlow });
+  for (const sgn of [-1, 1]) {
+    const e = new THREE.Mesh(new THREE.SphereGeometry(HIDE_BOX.EYE_SIZE, 8, 6), eyeMat);
+    e.position.set(sgn * HIDE_BOX.EYE_SPACING / 2, LB.EYE_HEIGHT, LB.RADIUS * 0.45);
+    e.scale.z = 0.4;
+    eyes.add(e);
+  }
+  eyes.visible = false;
+  group.add(eyes);
+  return { group, eyes };
+}
+
 function setColliderAt(box, x, z, solid) {
-  const h = HIDE_BOX.SIZE / 2;
+  const h = (box.size || HIDE_BOX.SIZE) / 2;
   const c = box.collider;
   c.minX = x - h;
   c.maxX = x + h;
   c.minZ = z - h;
   c.maxZ = z + h;
-  c.topHeight = solid ? HIDE_BOX.HEIGHT : 0;
+  c.topHeight = solid ? box.height || HIDE_BOX.HEIGHT : 0;
   c.occludes = solid;
   c.navBlocks = solid;
 }
@@ -116,7 +153,39 @@ export function createHideBoxes(ctx) {
     }));
     boxes.push(box);
   }
+  // Level Bonus: keranjang cucian di kamar mandi
+  const C = currentLevel(ctx.state).CLEANING;
+  if (C && C.LAUNDRY_BASKET) boxes.push(createLaundryBasket(ctx, C.LAUNDRY_BASKET));
   return boxes;
+}
+
+function createLaundryBasket(ctx, spec) {
+  const { group, eyes } = buildBasketMesh();
+  group.position.set(spec.x, 0, spec.z);
+  group.rotation.y = spec.yaw || 0;
+  ctx.scene.add(group);
+  const collider = { minX: 0, maxX: 0, minZ: 0, maxZ: 0, topHeight: 0, climbable: false, occludes: true, navBlocks: true, crawlHeight: 0, hideBox: true };
+  const box = { mesh: group, eyes, collider, occupied: false, compromised: false, body: null, tossed: false, unregister: [], fixed: true, basket: true, size: LB.RADIUS * 2, height: LB.HEIGHT };
+  setColliderAt(box, spec.x, spec.z, true);
+  ctx.colliders.push(collider);
+  box.unregister.push(registerInteractable(ctx.interaction, {
+    label: 'Masuk keranjang cucian',
+    position: group.position,
+    surfaceY: 0,
+    markerHeight: LB.MARKER_HEIGHT,
+    maxDist: LB.ENTER_DIST,
+    isEnabled: (c) => !box.occupied && !c.cat.inBox && !c.cat.carrying,
+    onInteract: (c) => enterBox(c, box)
+  }));
+  box.unregister.push(registerInteractable(ctx.interaction, {
+    label: 'Keluar keranjang',
+    position: group.position,
+    inBoxOnly: true,
+    markerHeight: LB.MARKER_HEIGHT,
+    isEnabled: (c) => c.cat.inBox === box,
+    onInteract: (c) => exitBox(c)
+  }));
+  return box;
 }
 
 export function disposeHideBoxes(ctx) {
@@ -177,6 +246,11 @@ export function tossBox(ctx) {
   box.occupied = false;
   box.compromised = false;
   box.eyes.visible = false;
+  // Keranjang cucian tetap di tempatnya (tidak dilempar)
+  if (box.fixed) {
+    setColliderAt(box, box.mesh.position.x, box.mesh.position.z, true);
+    return;
+  }
   box.tossed = true;
   setColliderAt(box, box.mesh.position.x, box.mesh.position.z, false);
   const o = ctx.owner.mesh.position;
@@ -188,7 +262,8 @@ export function tossBox(ctx) {
     radius: HIDE_BOX.SIZE / 2,
     bottomOffset: 0,
     restitution: HIDE_BOX.TOSS_RESTITUTION,
-    friction: HIDE_BOX.TOSS_FRICTION
+    friction: HIDE_BOX.TOSS_FRICTION,
+    noClaim: true
   });
   box.body.vel.set((dx / d) * HIDE_BOX.TOSS_SPEED, HIDE_BOX.TOSS_UP, (dz / d) * HIDE_BOX.TOSS_SPEED);
   box.body.angVel.set(HIDE_BOX.TOSS_SPIN, HIDE_BOX.TOSS_SPIN * 0.5, 0);

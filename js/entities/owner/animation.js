@@ -1,8 +1,9 @@
 // Animasi pemilik: pose target per kegiatan, diinterpolasi halus ke sendi.
 // Pose: stand, walk, run, sit, type, stretch, glance, drink, window, lookAround, lift, sleep (berbaring: rotasi badan di owner/index.js)
 // Level 5 (juga tamu): sitTalk, sitDrink, sitLaugh, laugh, crouch, pet, wave
+// Level Bonus: sweep (menyapu sambil berjalan), dust (mengelap dengan kemoceng), tidy (memungut)
 import * as THREE from 'three';
-import { OWNER_ANIM as A, OWNER_ROUTINE } from '../../config.js';
+import { OWNER_ANIM as A, OWNER_ROUTINE, CLEAN_FX } from '../../config.js';
 import { HIP_Y } from './model.js';
 
 const SIT_POSES = new Set(['sit', 'type', 'stretch', 'glance', 'sitTalk', 'sitDrink', 'sitLaugh']);
@@ -121,6 +122,37 @@ function targetsFor(owner, t) {
       T.headX = -0.05;
       break;
     }
+    case 'sweep': {
+      // Menyapu: kaki seperti berjalan (walkPhase), sapu diayun kiri-kanan
+      const s = Math.sin(owner.walkPhase);
+      T.legL = [s * A.WALK_LEG_SWING * 0.6, Math.max(0, -s) * 0.5];
+      T.legR = [-s * A.WALK_LEG_SWING * 0.6, Math.max(0, s) * 0.5];
+      const sw = Math.sin(t * CLEAN_FX.SWEEP_FREQ) * CLEAN_FX.SWEEP_AMP;
+      T.armR = [-0.72, 0.12 + sw, 0];
+      T.armL = [-0.75, -0.1 + sw * 0.5, -0.35];
+      T.torsoX = 0.14;
+      T.headX = 0.2;
+      break;
+    }
+    case 'dust': {
+      // Mengelap debu: lengan kanan terangkat, kemoceng diayun
+      T.armR = [-1.45, 0.2 + Math.sin(t * CLEAN_FX.DUST_FREQ) * CLEAN_FX.DUST_AMP, -0.25];
+      T.armL = [-0.2, -0.1, -0.3];
+      T.headX = 0.05;
+      break;
+    }
+    case 'tidy': {
+      // Berjongkok memungut kekacauan dengan dua tangan
+      T.hipsY = HIP_Y * A.CROUCH_HIP;
+      T.legL = [-1.6, 2.3];
+      T.legR = [-1.6, 2.3];
+      T.torsoX = 0.6;
+      T.headX = 0.45;
+      const k = Math.sin(t * A.TIDY_FREQ) * A.TIDY_AMP;
+      T.armR = [-1.0 + k, 0.12, -0.2];
+      T.armL = [-1.0 - k, -0.12, -0.2];
+      break;
+    }
     case 'lift':
       T.armL = [-1.35, -0.1, -0.25];
       T.armR = [-1.35, 0.1, -0.25];
@@ -155,4 +187,7 @@ export function animateOwner(owner, dt, t) {
   p.head.rotation.x = lerp(p.head.rotation.x, T.headX, k);
   p.head.rotation.y = owner.headYaw;
   p.mug.visible = owner.pose === 'drink' || owner.pose === 'sitDrink';
+  // Alat bersih-bersih (Level Bonus): owner.tool = null | 'broom' | 'duster'
+  if (p.broom) p.broom.visible = owner.tool === 'broom';
+  if (p.duster) p.duster.visible = owner.tool === 'duster';
 }
