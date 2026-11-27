@@ -52,6 +52,7 @@ import { createLobby, updateLobby, setLobbyLook } from './world/lobby.js';
 import { createCustomizeMenu } from './ui/customizeMenu.js';
 import { createSettingsMenu } from './ui/settingsMenu.js';
 import { createTouchControls } from './ui/touchControls.js';
+import { createRebindSection } from './ui/rebindMenu.js';
 import { isTouchDevice } from './core/device.js';
 import { createFlow, enterLobby, openLevelSelect, playLevel, playContinue, retryLevel, playNextLevel,
   pauseGame, resumeGame, updateFlowInput, onPointerLockChange, playTutorial, skipTutorial, finishTutorial } from './core/gameFlow.js';
@@ -216,6 +217,7 @@ function init() {
       applyLook();
     }
   });
+  settingsMenu.addSection(createRebindSection({ getSave: () => ctx.save, commit: () => settingsMenu.commit() }));
   ctx.menus = createMenus({
     play: click(() => {
       enterFullscreen(ctx);

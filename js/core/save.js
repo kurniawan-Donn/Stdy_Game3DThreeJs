@@ -10,7 +10,7 @@
 //   selected       { cat: id, accessory: id | null }
 //   settings       lihat SETTINGS.DEFAULTS
 //   tutorialDone   status tutorial (Level 0, fase berikutnya)
-import { SAVE, SETTINGS, CUSTOMIZATION } from '../config.js';
+import { SAVE, SETTINGS, CUSTOMIZATION, CONTROLS } from '../config.js';
 import { LEVELS } from '../levels/index.js';
 
 function storage() {
@@ -28,9 +28,22 @@ export function defaultSave() {
     levels: {},
     owned: { cats: [...CUSTOMIZATION.FREE_CATS], accessories: [] },
     selected: { cat: CUSTOMIZATION.DEFAULT_CAT, accessory: null },
-    settings: { ...SETTINGS.DEFAULTS },
+    settings: { ...SETTINGS.DEFAULTS, keybinds: {} },
     tutorialDone: false
   };
+}
+
+// Rebind: hanya aksi yang dikenal, maks. 2 tombol per aksi, tanpa tombol tetap
+function cleanKeybinds(kb) {
+  const out = {};
+  if (!isObj(kb)) return out;
+  for (const action of Object.keys(CONTROLS.DEFAULT)) {
+    const codes = kb[action];
+    if (!Array.isArray(codes)) continue;
+    const ok = codes.filter((c) => typeof c === 'string' && c && !CONTROLS.FIXED.includes(c)).slice(0, 2);
+    if (ok.length) out[action] = ok;
+  }
+  return out;
 }
 
 const num = (v, d = 0) => (Number.isFinite(Number(v)) ? Number(v) : d);
@@ -75,6 +88,10 @@ function normalize(data) {
       if (typeof v === typeof def) out.settings[k] = v;
     }
   }
+  // Nilai pilihan & rebind tombol divalidasi
+  if (!SETTINGS.HUD_SIZES[out.settings.hudSize]) out.settings.hudSize = SETTINGS.DEFAULTS.hudSize;
+  if (!['auto', ...Object.keys(SETTINGS.QUALITY)].includes(out.settings.quality)) out.settings.quality = SETTINGS.DEFAULTS.quality;
+  out.settings.keybinds = cleanKeybinds(isObj(data.settings) ? data.settings.keybinds : null);
   // v2 → v3: centang "Musik" dimatikan = volume Musik 0
   if (num(data.version) < 3 && isObj(data.settings) && data.settings.music === false) out.settings.musicVolume = 0;
   // Pemain lama yang sudah punya progres dianggap sudah lulus latihan

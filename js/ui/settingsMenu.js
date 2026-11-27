@@ -25,6 +25,20 @@ export function createSettingsMenu(hooks) {
   const inputs = [...panel.querySelectorAll('[data-set]')];
   const vals = [...panel.querySelectorAll('[data-val]')];
   const extras = []; // { render() } dari bagian tambahan (mis. rebind)
+  const hudSizeEl = document.getElementById('set-hudsize');
+  for (const [id, label] of Object.entries(SETTINGS.HUD_SIZES)) {
+    const b = document.createElement('button');
+    b.className = 'seg-btn';
+    b.dataset.size = id;
+    b.textContent = label;
+    hudSizeEl.appendChild(b);
+  }
+  hudSizeEl.addEventListener('click', (e) => {
+    const b = e.target.closest('.seg-btn');
+    if (!b) return;
+    st().hudSize = b.dataset.size;
+    commit();
+  });
 
   for (const [id, label] of [['auto', SETTINGS.AUTO.LABEL], ...Object.entries(SETTINGS.QUALITY).map(([k, q]) => [k, q.label])]) {
     const b = document.createElement('button');
@@ -63,6 +77,7 @@ export function createSettingsMenu(hooks) {
       const k = el.dataset.val;
       el.textContent = RANGES[k] ? RANGES[k].fmt(s[k]) : String(s[k]);
     }
+    for (const b of hudSizeEl.querySelectorAll('.seg-btn')) b.classList.toggle('active', b.dataset.size === s.hudSize);
     for (const x of extras) x.render();
   }
   function showTab(tab) {
@@ -109,15 +124,18 @@ export function createSettingsMenu(hooks) {
     }
   });
 
-  return {
+  const api = {
     open() {
       confirmEl.classList.remove('active');
+      for (const x of extras) if (x.cancel) x.cancel();
       render();
     },
     render,
     showTab,
     addSection(x) {
       extras.push(x);
-    }
+    },
+    commit
   };
+  return api;
 }

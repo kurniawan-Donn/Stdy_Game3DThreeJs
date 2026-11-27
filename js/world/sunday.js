@@ -94,7 +94,8 @@ export function updateSunday(ctx, dt) {
     // Angin pagi: tirai mengayun ke dalam rumah
     sh.pivot.children[0].rotation.x = -Math.abs(Math.sin(s.clock * F.SWAY_FREQ + sh.phase)) * F.SWAY_AMP - 0.03;
   }
-  s.led.visible = Math.sin(s.clock * (MUSIC.BPM / 60) * Math.PI * 2) > -0.2;
+  // LED berkedip mengikuti ketukan (tetap menyala jika "Kurangi kilat")
+  s.led.visible = (ctx.save && ctx.save.settings.reduceFlash) || Math.sin(s.clock * (MUSIC.BPM / 60) * Math.PI * 2) > -0.2;
 }
 
 // Volume musik di posisi kucing (sedikit lebih keras di dekat speaker)

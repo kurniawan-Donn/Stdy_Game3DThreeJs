@@ -6,7 +6,7 @@
 // - Hujan: suara kucing dengan radius < RAIN_MASK_RADIUS tertutup hujan.
 // - Genangan bocor mengecil setelah pemilik menutup jendela & menaruh ember.
 // Hanya aktif di level yang punya blok WEATHER.
-import { RAIN_FX as F } from '../config.js';
+import { RAIN_FX as F, SETTINGS } from '../config.js';
 import { currentLevel } from '../core/state.js';
 import { triggerShake } from '../core/camera.js';
 import { setDarkOverlayFade } from '../world/house.js';
@@ -92,7 +92,9 @@ export function updateWeather(ctx, dt) {
   if (w.muteT > 0) w.muteT = Math.max(0, w.muteT - dt);
 
   // Kilat: intensitas lampu yang ada dinaikkan (berkedip), area gelap memudar
-  const f = w.flashT > 0 ? 1 - F.FLASH.FLICKER + F.FLASH.FLICKER * Math.sin(w.flashT * F.FLASH.FLICKER_FREQ) : 0;
+  // Pengaturan "Kurangi kilat": tanpa kedip, kecerahan jauh lebih rendah
+  const calm = !!(ctx.save && ctx.save.settings.reduceFlash);
+  const f = w.flashT <= 0 ? 0 : calm ? SETTINGS.REDUCED_FLASH_BOOST : 1 - F.FLASH.FLICKER + F.FLASH.FLICKER * Math.sin(w.flashT * F.FLASH.FLICKER_FREQ);
   if (w.base && ctx.lights) {
     ctx.lights.sun.intensity = w.base.sun + f * F.FLASH.SUN_BOOST;
     ctx.lights.hemi.intensity = w.base.hemi + f * F.FLASH.HEMI_BOOST;

@@ -1276,7 +1276,9 @@ export const SAVE = {
 // --- Pengaturan (lobi → Pengaturan) ---
 export const SETTINGS = {
   // volume = Master; sfx/amb/musicVolume = bus Efek/Suasana/Musik (skema v3)
-  DEFAULTS: { quality: 'auto', volume: 0.8, sfxVolume: 1, ambVolume: 0.8, musicVolume: 0.6, sensitivity: 1, invertY: false, showFps: false },
+  DEFAULTS: { quality: 'auto', volume: 0.8, sfxVolume: 1, ambVolume: 0.8, musicVolume: 0.6, sensitivity: 1, invertY: false, showFps: false,
+    // Aksesibilitas (Fase 9.5) & rebind tombol (aksi → [kode], hanya yang diubah)
+    reduceShake: false, reduceFlash: false, hudSize: 'normal', colorblind: false, keybinds: {} },
   QUALITY: {
     low: { label: 'Rendah', shadows: false, shadowMapSize: 512, maxPixelRatio: 1 },
     medium: { label: 'Sedang', shadows: true, shadowMapSize: 1024, maxPixelRatio: 1.5 },
@@ -1289,7 +1291,10 @@ export const SETTINGS = {
   SENSITIVITY_MIN: 0.3, // pengali CAMERA.MOUSE_SENSITIVITY
   SENSITIVITY_MAX: 2.5,
   SENSITIVITY_STEP: 0.1,
-  VOLUME_STEP: 0.05
+  VOLUME_STEP: 0.05,
+  HUD_SIZES: { small: 'Kecil', normal: 'Normal', large: 'Besar' },
+  REDUCED_SHAKE_MULT: 0.25, // "Kurangi getaran kamera"
+  REDUCED_FLASH_BOOST: 0.35 // "Kurangi kilat": kecerahan kilat (tanpa kedip)
 };
 
 // --- Kustomisasi kucing (GDD §14). Harga dalam tabungan Chaos. ---

@@ -110,7 +110,8 @@ js/
     pause.js            Layar pause: Lanjutkan / Ulangi / (Lewati latihan) / Lobi
     tutorialUi.js       Kotak petunjuk latihan + layar "Latihan selesai!"
     customizeMenu.js    Panel Kustomisasi: tab Kucing/Aksesoris, preview langsung, Beli/Pakai
-    settingsMenu.js     Panel Pengaturan + Hapus Progres (konfirmasi di halaman, bukan dialog browser)
+    settingsMenu.js     Panel Pengaturan bertab (Umum/Suara/Kontrol/Aksesibilitas; kontrol generik data-set) + Hapus Progres (konfirmasi di halaman)
+    rebindMenu.js       Atur ulang tombol keyboard (assignKey: tukar otomatis, simpan hanya yang berbeda dari bawaan)
     floatingText.js     Teks melayang (+40, COMBO x1.5) yang mengikuti posisi 3D
     screenEffects.js    Efek layar CSS: desaturasi, vignette, teks KETAHUAN!, fade hitam
     ownerIndicator.js   Ikon ?/! + meter curiga di atas kepala pemilik (+ label debug)
@@ -148,6 +149,7 @@ js/
 - **Kamera** mengorbit kucing (`ctx.camRig`) dan bisa menghadap ke mana saja, jadi objek dan perubahan tampilan harus terlihat dari semua arah. Dinding luar, dinding dalam, plafon, dan pintu tertutup ditangani spring arm (kamera tidak pernah menembus dinding); perabot yang menghalangi memudar lewat `furnitureRefs.fadeables` (diisi otomatis oleh `finish` di `furniture.js`).
 - **Audio** (`core/audio.js`, `systems/soundscape.js`): efek baru = entri di `AUDIO.SFX`/`AUDIO.NOISE_SFX` lalu `ctx.audio.play(nama)`; suara dari sumber di dunia (pemilik, tamu, robot, benda) kirim posisinya: `play(nama, { x, z })` (diredam jarak & beda ruangan, lihat `AUDIO_MIX`). Efek suasana didaftarkan di `AUDIO_MIX.AMBIENT`. Musik dihitung `musicLevels` dan dipanggil tiap frame di semua flow state; level bisa menimpa volume musik tenang lewat `MUSIC_CALM`. Uji headless memakai audio tiruan, jadi fungsi audio opsional (`loop`, `setListener`) dicek dulu sebelum dipanggil di luar `main.js`.
 - Aksi yang berisik memanggil `emitNoise(ctx, { x, z, radius, source })`. Sistem yang perlu "mendengar" mendaftar lewat `onNoise(ctx.noise, fn)`.
+- **Aksesibilitas:** `settings.reduceShake` (camera.js), `reduceFlash` (kilat weather.js, kedip kebal cat.js, LED sunday.js, CSS `body.reduce-flash`), `hudSize` & `colorblind` (kelas `body.hud-*`, `body.colorblind`). Efek berkedip/bergetar baru harus menghormati opsi ini. Teks tombol di HTML memakai `<span data-key="aksi">` (diisi `applyKeyLabels`).
 - **Input:** gameplay membaca **aksi** (`actionDown(ctx.input, 'interact')`, `actionPressed(...)`), bukan kode tombol, agar rebind & kontrol sentuh otomatis ikut. Aksi baru = entri di `CONTROLS.ACTIONS` + `CONTROLS.DEFAULT`. Teks yang menyebut tombol memakai penanda `{aksi}` + `formatKeys` (mis. langkah latihan); langkah latihan bisa punya teks `touch`. Uji sentuh di PC: `?touch` (sentuhan sintetis lewat `TouchEvent`).
 - Objek interaktif didaftarkan lewat `registerInteractable(ctx.interaction, item)` (lihat komentar di `interaction.js`).
 - **Pengembangan:** buka `http://localhost:3000/?debug` agar `window.__meongCtx` (dan `__meongDebug.playLevel(i)`) tersedia di konsol (untuk pemeriksaan visual/screenshot; tanpa `?debug` tidak ada efek). Dengan F3 terbuka: `L` = kilat (Level 3), `T` = lompat ke 5 detik terakhir.

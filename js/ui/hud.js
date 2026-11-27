@@ -15,6 +15,7 @@ function formatTime(seconds) {
 export function createHud() {
   const levelTextEl = document.getElementById('level-text');
   const toastEl = document.getElementById('toast');
+  const keyNames = { meow: 'Q', interact: 'E' }; // label tombol (ikut rebind)
   let toastTimer = null;
   const timerEl = document.getElementById('timer-text');
   const chaosTextEl = document.getElementById('chaos-text');
@@ -80,6 +81,12 @@ export function createHud() {
   let lastComboText = null;
 
   return {
+    // Label tombol meong & interaksi setelah rebind (core/settings.js)
+    setKeyNames(names) {
+      Object.assign(keyNames, names);
+      lastMeowText = '';
+      lastPrompt = undefined;
+    },
     // Pemberitahuan singkat di tengah atas (mis. kualitas grafis diturunkan)
     toast(text, seconds = HUD.TOAST_TIME) {
       toastEl.textContent = text;
@@ -137,7 +144,7 @@ export function createHud() {
       }
     },
     setMeowCooldown(remaining) {
-      const text = remaining > 0 ? `${Math.ceil(remaining)}s` : 'Q ✓';
+      const text = remaining > 0 ? `${Math.ceil(remaining)}s` : `${keyNames.meow} ✓`;
       if (text !== lastMeowText) {
         meowStatusEl.textContent = text;
         meowStatusEl.classList.toggle('cooldown', remaining > 0);
@@ -148,7 +155,7 @@ export function createHud() {
       if (label === lastPrompt) return;
       lastPrompt = label;
       if (label) {
-        promptEl.textContent = `E: ${label}`;
+        promptEl.textContent = `${keyNames.interact}: ${label}`;
         promptEl.classList.add('active');
       } else {
         promptEl.classList.remove('active');

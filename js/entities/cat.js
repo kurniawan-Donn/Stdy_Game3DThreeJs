@@ -389,7 +389,8 @@ function finishCatFrame(ctx, dt, footsteps = false) {
   // Kedip saat kebal sementara
   if (state.invulnerableTimer > 0) {
     state.invulnerableTimer -= dt;
-    player.visible = Math.floor(state.invulnerableTimer * CAT_ANIM.BLINK_RATE) % 2 === 0;
+    // Kedip kebal (tidak berkedip jika "Kurangi kilat")
+    player.visible = (ctx.save && ctx.save.settings.reduceFlash) || Math.floor(state.invulnerableTimer * CAT_ANIM.BLINK_RATE) % 2 === 0;
     if (state.invulnerableTimer <= 0) {
       state.invulnerableTimer = 0;
       player.visible = true;

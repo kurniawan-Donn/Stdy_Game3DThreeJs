@@ -6,7 +6,7 @@
 // - saat KETAHUAN: berputar ke samping agar pemilik & kucing terlihat bersama
 // - getaran kamera kecil (triggerShake)
 import * as THREE from 'three';
-import { CAMERA, CAMERA_SHAKE, ROOM, ROOM_HALF_W, ROOM_HALF_D } from '../config.js';
+import { CAMERA, CAMERA_SHAKE, ROOM, ROOM_HALF_W, ROOM_HALF_D, SETTINGS } from '../config.js';
 
 const DEG = Math.PI / 180;
 const PITCH_MIN = CAMERA.PITCH_MIN_DEG * DEG;
@@ -33,11 +33,12 @@ export function triggerShake(shake, amplitude, duration) {
   shake.time = duration;
 }
 
-function updateShake(shake, dt) {
+// mult: pengali amplitudo (Pengaturan → Kurangi getaran kamera)
+function updateShake(shake, dt, mult = 1) {
   if (shake.time > 0) {
     shake.time = Math.max(0, shake.time - dt);
     shake.clock += dt;
-    const a = shake.amplitude * (shake.time / shake.duration);
+    const a = shake.amplitude * (shake.time / shake.duration) * mult;
     const w = shake.clock * CAMERA_SHAKE.FREQUENCY;
     shake.offset.set(Math.sin(w) * a, Math.cos(w * 1.3) * a, 0);
   } else {
@@ -258,7 +259,7 @@ function placeCamera(ctx, dt, snap) {
   pushOutOfBlockers(camera.position, rig.focus, blockers);
   camera.lookAt(rig.focus);
 
-  updateShake(ctx.cameraShake, dt);
+  updateShake(ctx.cameraShake, dt, ctx.save && ctx.save.settings.reduceShake ? SETTINGS.REDUCED_SHAKE_MULT : 1);
   camera.position.add(ctx.cameraShake.offset);
   camera.updateMatrixWorld();
 }

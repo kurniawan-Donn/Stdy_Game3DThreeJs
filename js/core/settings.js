@@ -3,6 +3,16 @@
 // core/camera.js. Semua preset & batas ada di SETTINGS (config.js).
 import { SETTINGS } from '../config.js';
 import { isTouchDevice } from './device.js';
+import { resolveBindings, keyLabel } from './input.js';
+
+// Teks tombol di UI (<span data-key="aksi">) mengikuti rebind
+export function applyKeyLabels(bindings) {
+  if (!bindings || typeof document === 'undefined' || !document.querySelectorAll) return;
+  for (const el of document.querySelectorAll('[data-key]')) {
+    const codes = bindings[el.dataset.key];
+    el.textContent = keyLabel(codes && codes[0]);
+  }
+}
 
 export function qualityPreset(name) {
   return SETTINGS.QUALITY[name] || SETTINGS.QUALITY.high;
@@ -87,5 +97,18 @@ export function applySettings(ctx) {
   applyQuality(ctx.renderer, [ctx.lights && ctx.lights.sun, ctx.lobby && ctx.lobby.sun], [ctx.scene, ctx.lobby && ctx.lobby.scene].filter(Boolean), effectiveQuality(ctx));
   ctx.audio.setVolume(st.volume);
   if (ctx.audio.setMix) ctx.audio.setMix({ sfx: st.sfxVolume, amb: st.ambVolume, music: st.musicVolume });
-  if (typeof document !== 'undefined' && document.body) document.body.classList.toggle('show-fps', st.showFps);
+  // Rebind tombol: aksi → kode tombol
+  if (ctx.input) ctx.input.bindings = resolveBindings(st.keybinds);
+  if (typeof document !== 'undefined' && document.body) {
+    const b = document.body.classList;
+    b.toggle('show-fps', st.showFps);
+    // Aksesibilitas: kelas CSS
+    b.toggle('reduce-flash', st.reduceFlash);
+    b.toggle('colorblind', st.colorblind);
+    for (const size of Object.keys(SETTINGS.HUD_SIZES)) b.toggle('hud-' + size, st.hudSize === size);
+    applyKeyLabels(ctx.input ? ctx.input.bindings : null);
+  }
+  if (ctx.input && ctx.hud && ctx.hud.setKeyNames) {
+    ctx.hud.setKeyNames({ meow: keyLabel(ctx.input.bindings.meow[0]), interact: keyLabel(ctx.input.bindings.interact[0]) });
+  }
 }

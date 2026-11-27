@@ -1737,3 +1737,118 @@ body.touch #visit-banner {
 #help-overlay.active {
   pointer-events: auto; /* ketuk untuk menutup */
 }
+
+/* ---------- Rebind tombol (Pengaturan → Kontrol) ---------- */
+.rebind {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.rebind-row {
+  display: grid;
+  grid-template-columns: 1fr 72px 72px;
+  gap: 6px;
+  align-items: center;
+  font-size: 12px;
+  color: #cbd5e1;
+}
+
+.rebind-key {
+  padding: 4px 6px;
+  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: #1e293b;
+  color: #f8fafc;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.rebind-key.alt {
+  color: #94a3b8;
+}
+
+.rebind-key.waiting {
+  border-color: #facc15;
+  color: #facc15;
+}
+
+.rebind-note {
+  display: block;
+  font-size: 11px;
+  color: #94a3b8;
+}
+
+.btn.small {
+  padding: 6px 10px;
+  font-size: 12px;
+}
+
+/* ---------- Aksesibilitas (Fase 9.5) ---------- */
+/* Ukuran teks HUD */
+body.hud-small #hud {
+  transform: scale(0.85);
+  transform-origin: top left;
+}
+
+body.hud-large #hud {
+  transform: scale(1.3);
+  transform-origin: top left;
+}
+
+body.hud-large #interact-prompt,
+body.hud-large #toast,
+body.hud-large #tutorial-box {
+  font-size: 18px;
+}
+
+body.hud-large #owner-indicator .oi-icon {
+  font-size: 44px;
+}
+
+/* Kurangi kilat & efek berkedip: animasi kedip/denyut dimatikan */
+body.reduce-flash #owner-indicator .oi-icon.alarm,
+body.reduce-flash #meeting-badge .dot,
+body.reduce-flash #storm-badge.thunder,
+body.reduce-flash #wake-badge.awake {
+  animation: none !important;
+}
+
+body.reduce-flash #zoomies-overlay {
+  animation: none;
+}
+
+/* Ramah buta warna: biru ↔ oranye (bukan hijau ↔ merah) + bentuk */
+body.colorblind #hud .hide-eye.closed {
+  color: #60a5fa;
+}
+
+body.colorblind #hud .hide-eye.half {
+  color: #fde68a;
+}
+
+body.colorblind #hud .hide-eye.open {
+  color: #fb923c;
+  border-width: 2.5px;
+}
+
+body.colorblind #owner-indicator .oi-icon.curious {
+  color: #7dd3fc;
+}
+
+body.colorblind #owner-indicator .oi-icon.alarm {
+  color: #fb923c;
+  background: rgba(15, 23, 42, 0.75);
+  border: 3px solid #fb923c;
+  border-radius: 8px;
+  padding: 0 10px;
+}
+
+body.colorblind #owner-indicator .oi-fill {
+  background: linear-gradient(90deg, #7dd3fc, #fb923c);
+}
+
+body.colorblind .chaos-fill {
+  background: linear-gradient(90deg, #60a5fa, #fb923c) !important;
+}

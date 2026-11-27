@@ -727,5 +727,5 @@ Checklist:
 - [x] 9.2b Terapkan angka penyeimbangan yang disetujui: ambang bintang per level (Level 2, 3, 5); target, harga, dan kesulitan tidak diubah
 - [x] 9.3 Profil per level (semua ±60 FPS, < 200 draw call), kualitas Otomatis (bawaan save baru), uji 20× ganti level di Chrome tanpa kebocoran
 - [x] 9.4 Kontrol sentuh (joystick mengambang analog, geser/cubit kamera, Lompat, Lari, Endap, tombol aksi berikon + label, Meong, Pause), bantuan & latihan versi sentuh, banner tamu bisa diketuk, layar penuh + kunci lanskap, anjuran lanskap di potret, HUD/panel layar kecil, kualitas Otomatis mulai Rendah di HP; lapisan aksi input (`actionDown/actionPressed`)
-- [ ] 9.5 Aksesibilitas (getaran, kilat, teks HUD, buta warna) & rebind tombol
+- [x] 9.5 Aksesibilitas (tab baru: kurangi getaran ×0,25, kurangi kilat & kedip — kilat Level 3 tanpa flicker ×0,35, tanpa kedip kebal/LED/denyut ikon, ukuran HUD Kecil/Normal/Besar, warna ramah buta warna biru↔oranye + bingkai "!") & rebind semua aksi keyboard (2 slot per aksi, tukar otomatis, Kembalikan bawaan; label tombol di bantuan/HUD/latihan ikut berubah)
 - [ ] 9.6 GitHub Pages, README, CHANGELOG, tag v1.0.0
