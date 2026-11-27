@@ -130,6 +130,14 @@ pilih misi kenakalan → menyelinap → lakukan kenakalan → kabur & sembunyi �
 | ★★ | Chaos ≥ 150% target |
 | ★★★ | Chaos ≥ 200% target |
 
+Ambang per level (Fase 9.2, agar ★★★ bisa dicapai tanpa kalung lonceng; target ★ tidak berubah):
+
+| Level | ★ | ★★ | ★★★ |
+|---|---|---|---|
+| 2 Deadline | 400 | 560 (140%) | 700 (175%) |
+| 3 Sore Hujan | 450 | 608 (135%) | 720 (160%) |
+| 5 Kedatangan Tamu | 500 | 700 (140%) | 900 (180%) |
+
 ### Level 3 — Sore Hujan
 Terbuka setelah Level 2 mendapat minimal 1 bintang. Durasi **4,5 menit**, target **450**.
 
@@ -329,7 +337,7 @@ Target level tetap 300 Chaos / 4 menit; disetel ulang lewat playtest karena ruma
 
 ### Umpan balik
 - Angka "+N" melayang dari objek. Jika combo, muncul juga "COMBO x1.5".
-- Chaos Meter di HUD dengan rentang 0–200% target, garis target di 100%, dan tanda bintang di 100%, 150%, dan 200% yang menyala saat tercapai.
+- Chaos Meter di HUD dengan rentang 0 sampai ambang ★★★, garis target di 100%, dan tanda bintang di tiap ambang (bawaan 100%, 150%, 200%; lihat ambang per level di §4) yang menyala saat tercapai.
 - HUD menampilkan sisa waktu jendela combo.
 
 ## 6. Stamina
@@ -700,7 +708,7 @@ Temuan: ★★★ Level 2 & 3 **tidak mungkin** tanpa kalung lonceng; Level 5 ha
 Checklist:
 - [x] 9.1 Audio lengkap: 30 suara baru, mixer 4 bus (Pengaturan → tab Suara), posisional ringan (ruang tamu + ruang makan + dapur = satu ruang akustik), musik lobi/main/kejar, status audio di F3
 - [x] 9.2 Skrip analisis Chaos (`npm run balance`), log playtest F3 (K nyala/mati, J unduh JSON; juga `meongPlaytest` di konsol), tabel usulan penyeimbangan
-- [ ] 9.2b Terapkan angka penyeimbangan yang disetujui
+- [x] 9.2b Terapkan angka penyeimbangan yang disetujui: ambang bintang per level (Level 2, 3, 5); target, harga, dan kesulitan tidak diubah
 - [ ] 9.3 Profil per level, kualitas Otomatis, uji 20× ganti level di Chrome
 - [ ] 9.4 Kontrol sentuh, HUD layar kecil & potret/lanskap, kualitas HP
 - [ ] 9.5 Aksesibilitas (getaran, kilat, teks HUD, buta warna) & rebind tombol

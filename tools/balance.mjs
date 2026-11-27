@@ -64,7 +64,8 @@ function analyse(level) {
     est[name] = Math.round(v);
   }
   const target = level.TARGET_CHAOS;
-  const stars = (v) => STAR_THRESHOLDS.filter((k) => v >= target * k).length;
+  const th = level.STAR_THRESHOLDS || STAR_THRESHOLDS;
+  const stars = (v) => th.filter((k) => v >= target * k).length;
   return {
     key: level.key,
     label: levelLabel(level),
@@ -81,8 +82,8 @@ function analyse(level) {
     mahir: est.mahir,
     starsSantai: stars(est.santai),
     starsMahir: stars(est.mahir),
-    threeStar: Math.round(target * STAR_THRESHOLDS[STAR_THRESHOLDS.length - 1]),
-    maxVsThreeStar: +(max / (target * STAR_THRESHOLDS[STAR_THRESHOLDS.length - 1])).toFixed(2),
+    threeStar: Math.round(target * th[th.length - 1]),
+    maxVsThreeStar: +(max / (target * th[th.length - 1])).toFixed(2),
     chaosPerMin: +(target / (level.DURATION / 60)).toFixed(0)
   };
 }

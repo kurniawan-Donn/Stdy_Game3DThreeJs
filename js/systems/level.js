@@ -8,9 +8,15 @@ import { startDawn } from './night.js';
 import { startOutro } from './visit.js';
 import { hideInteraction } from './interaction.js';
 
-export function countStars(chaos, target) {
+// Ambang bintang level (kelipatan target). Level bisa menimpa lewat
+// STAR_THRESHOLDS di file level; bawaan STAR_THRESHOLDS di config.js.
+export function starThresholds(level) {
+  return (level && level.STAR_THRESHOLDS) || STAR_THRESHOLDS;
+}
+
+export function countStars(chaos, target, thresholds = STAR_THRESHOLDS) {
   let stars = 0;
-  for (const t of STAR_THRESHOLDS) if (chaos >= target * t) stars++;
+  for (const t of thresholds) if (chaos >= target * t) stars++;
   return stars;
 }
 
@@ -53,7 +59,7 @@ export function endLevel(ctx, reason) {
   const target = level.TARGET_CHAOS;
   const timeUp = reason === 'timeUp';
   const won = timeUp && s.chaos >= target;
-  const stars = won ? countStars(s.chaos, target) : 0;
+  const stars = won ? countStars(s.chaos, target, starThresholds(level)) : 0;
   const fraction = timeUp ? RESULTS.BANK_FRACTION_TIME_UP : RESULTS.BANK_FRACTION_OUT_OF_LIVES;
   const banked = Math.round(s.chaos * fraction);
 

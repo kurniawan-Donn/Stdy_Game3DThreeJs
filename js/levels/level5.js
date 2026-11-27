@@ -7,6 +7,7 @@ export default {
   description: 'Ada tamu! Ia ingin mengelusmu dan suka mengadu. Curi kuenya saat tak ada yang menatap meja.',
   DURATION: 300, // 5 menit
   TARGET_CHAOS: 500,
+  STAR_THRESHOLDS: [1, 1.4, 1.8], // Fase 9.2: ★★ 700, ★★★ 900 (★★★ tercapai tanpa kalung lonceng)
   TIME_UP_REASON: 'Tamu pamit pulang!',
   LIGHTING: {},
   ACTIVE_MISCHIEF: null, // semua kenakalan biasa + 4 kenakalan tamu (LAYOUT)

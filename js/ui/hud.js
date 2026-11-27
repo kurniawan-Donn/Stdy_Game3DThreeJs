@@ -3,8 +3,8 @@
 // prompt interaksi (E). Daftar kontrol ada di layar bantuan (ui/help.js).
 import { GAME, STAR_THRESHOLDS, HUD } from '../config.js';
 
-// Bar Chaos mencakup 0 .. (ambang bintang tertinggi × target)
-const METER_MAX = STAR_THRESHOLDS[STAR_THRESHOLDS.length - 1];
+// Bar Chaos mencakup 0 .. (ambang bintang tertinggi × target); ambang bisa
+// berbeda per level (setChaos menerima ambang level aktif)
 
 function formatTime(seconds) {
   const s = Math.ceil(seconds);
@@ -43,22 +43,30 @@ export function createHud() {
   let lastDark = null;
 
   // Garis target & tanda bintang pada Chaos Meter
-  const starEls = STAR_THRESHOLDS.map((t, i) => {
-    const pct = (t / METER_MAX) * 100;
-    if (i === 0) {
-      const line = document.createElement('div');
-      line.className = 'chaos-target';
-      line.style.left = pct + '%';
-      meterEl.appendChild(line);
-    }
+  const targetLine = document.createElement('div');
+  targetLine.className = 'chaos-target';
+  meterEl.appendChild(targetLine);
+  const starEls = STAR_THRESHOLDS.map(() => {
     const star = document.createElement('span');
     star.className = 'chaos-star';
     star.textContent = '★';
-    star.style.left = pct + '%';
-    star.title = `${Math.round(t * 100)}% target`;
     meterEl.appendChild(star);
-    return { el: star, threshold: t };
+    return { el: star, threshold: 1 };
   });
+  let meterMax = 1;
+  let lastThresholds = null;
+  function placeStars(thresholds) {
+    if (thresholds === lastThresholds) return;
+    lastThresholds = thresholds;
+    meterMax = thresholds[thresholds.length - 1];
+    targetLine.style.left = (thresholds[0] / meterMax) * 100 + '%';
+    starEls.forEach((s, i) => {
+      s.threshold = thresholds[i];
+      s.el.style.left = (thresholds[i] / meterMax) * 100 + '%';
+      s.el.title = `${Math.round(thresholds[i] * 100)}% target`;
+    });
+  }
+  placeStars(STAR_THRESHOLDS);
 
   // Cache agar DOM tidak ditulis ulang tiap frame jika nilainya sama
   let lastStaminaPct = -1;
@@ -91,10 +99,11 @@ export function createHud() {
         lastTimerWarn = warn;
       }
     },
-    setChaos(chaos, target) {
+    setChaos(chaos, target, thresholds = STAR_THRESHOLDS) {
+      placeStars(thresholds);
       chaosTextEl.textContent = String(chaos);
       targetTextEl.textContent = String(target);
-      const pct = Math.min(100, (chaos / (target * METER_MAX)) * 100);
+      const pct = Math.min(100, (chaos / (target * meterMax)) * 100);
       chaosFillEl.style.width = pct + '%';
       for (const s of starEls) s.el.classList.toggle('reached', chaos >= target * s.threshold);
     },

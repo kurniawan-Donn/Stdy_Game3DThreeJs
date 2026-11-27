@@ -6,6 +6,7 @@ export default {
   description: 'Pemilik dikejar tenggat: sering menoleh dan dua kali rapat video. Jangan berisik saat rapat!',
   DURATION: 240,
   TARGET_CHAOS: 400,
+  STAR_THRESHOLDS: [1, 1.4, 1.75], // Fase 9.2: ★★ 560, ★★★ 700 (★★★ tercapai tanpa kalung lonceng)
   // Pagi mendung: matahari sedikit lebih redup & dingin
   LIGHTING: {
     sun: { intensity: 1.15, color: 0xffeed8 },

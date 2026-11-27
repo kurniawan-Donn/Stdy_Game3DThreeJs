@@ -1,5 +1,6 @@
 // Camilan dan reset level. (Nyawa berkurang lewat systems/capture.js.)
 // (Skor & kenaikan level berbasis koin dihapus di Fase 2; diganti Chaos.)
+import { starThresholds } from './level.js';
 import { VACUUM, STAMINA, FISH } from '../config.js';
 import { resetRunState, currentLevel } from '../core/state.js';
 import { levelLabel } from '../levels/index.js';
@@ -94,7 +95,7 @@ export function resetGame(ctx) {
   const level = currentLevel(state);
   hud.setLevel(levelLabel(level), level.name);
   hud.setTimer(state.timeLeft);
-  hud.setChaos(0, level.TARGET_CHAOS);
+  hud.setChaos(0, level.TARGET_CHAOS, starThresholds(level));
   hud.setCombo(0);
   hud.setLives(state.lives);
   hud.setStamina(ctx.stamina.value, STAMINA.MAX, false);

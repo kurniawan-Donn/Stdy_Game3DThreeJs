@@ -5,6 +5,7 @@
 // Format satu level:
 //   key, name, description       teks untuk kartu level
 //   DURATION, TARGET_CHAOS       detik & target Chaos
+//   STAR_THRESHOLDS              (opsional) kelipatan target untuk ★/★★/★★★, bawaan STAR_THRESHOLDS config
 //   MUSIC_CALM                   (opsional) volume musik latar saat main, bawaan MUSIC_BG.CALM_LEVEL
 //   LIGHTING                     { sun: {intensity, color}, hemi: {intensity},
 //                                  points: { <nama>: {intensity, color} } } menimpa LIGHTS

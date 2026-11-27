@@ -7,6 +7,7 @@ export default {
   DURATION: 270, // 4,5 menit
   MUSIC_CALM: 0.3, // musik latar lebih pelan (hujan)
   TARGET_CHAOS: 450,
+  STAR_THRESHOLDS: [1, 1.35, 1.6], // Fase 9.2: ★★ 608, ★★★ 720 (★★★ tercapai tanpa kalung lonceng)
   LIGHTING: {
     sun: { intensity: 0.22, color: 0xc98f6a }, // sore kelabu-jingga redup (mendung)
     hemi: { intensity: 0.2 },

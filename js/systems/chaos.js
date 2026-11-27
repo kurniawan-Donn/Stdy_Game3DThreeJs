@@ -4,7 +4,7 @@
 import { MISCHIEF, COMBO, CUSTOMIZATION } from '../config.js';
 import { currentLevel } from '../core/state.js';
 import { emitNoise } from './noise.js';
-import { countStars } from './level.js';
+import { countStars, starThresholds } from './level.js';
 
 // True jika kenakalan berikutnya akan mendapat bonus combo.
 export function isComboActive(ctx) {
@@ -53,14 +53,16 @@ export function scoreMischief(ctx, type, position, noisePosition = position) {
   }
 
   // Bintang baru tercapai?
-  const target = currentLevel(s).TARGET_CHAOS;
-  const stars = countStars(s.chaos, target);
+  const level = currentLevel(s);
+  const target = level.TARGET_CHAOS;
+  const th = starThresholds(level);
+  const stars = countStars(s.chaos, target, th);
   if (stars > s.starsReached) {
     s.starsReached = stars;
     ctx.audio.play('star');
   }
 
-  ctx.hud.setChaos(s.chaos, target);
+  ctx.hud.setChaos(s.chaos, target, th);
   return amount;
 }
 
@@ -78,10 +80,12 @@ export function adjustChaos(ctx, delta, position) {
     ctx.floatText.spawn(`+${shown}`, position, 'chaos');
     ctx.audio.play('chaos');
   }
-  const target = currentLevel(s).TARGET_CHAOS;
-  const stars = countStars(s.chaos, target);
+  const level = currentLevel(s);
+  const target = level.TARGET_CHAOS;
+  const th = starThresholds(level);
+  const stars = countStars(s.chaos, target, th);
   if (stars > s.starsReached) ctx.audio.play('star');
   s.starsReached = stars; // bintang bisa hilang lagi jika Chaos berkurang
-  ctx.hud.setChaos(s.chaos, target);
+  ctx.hud.setChaos(s.chaos, target, th);
   return shown;
 }
