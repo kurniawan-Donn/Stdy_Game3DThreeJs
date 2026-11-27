@@ -186,7 +186,15 @@ export const DEBUG = {
   LIGHTNING_KEY: 'KeyL', // (F3 terbuka, level hujan) picu kilat untuk menyetel visual
   LIGHTNING_HOLD: 1.5, // detik kilat ditahan saat dipicu dari debug
   SKIP_TIME_KEY: 'KeyT', // (F3 terbuka) majukan waktu level ke detik-detik terakhir
-  SKIP_TIME_LEFT: 5
+  SKIP_TIME_LEFT: 5,
+  PLAYTEST_TOGGLE_KEY: 'KeyK', // (F3 terbuka) log playtest nyala/mati
+  PLAYTEST_EXPORT_KEY: 'KeyJ' // (F3 terbuka) unduh log playtest (JSON)
+};
+
+// --- Log playtest lokal (Fase 9.2, systems/playtestLog.js) ---
+export const PLAYTEST_LOG = {
+  KEY: 'meongMayhem.playtestLog', // terpisah dari save game
+  MAX_SESSIONS: 200
 };
 
 // --- Animasi kucing ---

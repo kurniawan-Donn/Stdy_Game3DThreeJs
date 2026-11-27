@@ -7,6 +7,7 @@ import { loadLevel, levelAt, highestUnlockedIndex, nextLevelIndex, isLevelUnlock
 import { releasePointerLock } from './input.js';
 import { writeSave } from './save.js';
 import { TUTORIAL_INDEX } from '../levels/index.js';
+import { abortPlaytestSession } from '../systems/playtestLog.js';
 
 export function createFlow() {
   return { state: 'lobby', helpShown: false, resumeLock: false };
@@ -29,6 +30,7 @@ function silence(ctx) {
 export function enterLobby(ctx) {
   const flow = ctx.flow;
   flow.state = 'lobby';
+  abortPlaytestSession(ctx);
   silence(ctx);
   releasePointerLock();
   ctx.results.hide();

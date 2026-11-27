@@ -87,6 +87,7 @@ js/
     visit.js            Kunjungan tamu (Level 5): pembuka/lewati, mengobrol, dapur bersama, toilet tamu, penutup
     cleaning.js         Bersih-bersih (Level Bonus): jadwal ruangan, kekacauan (mess) dari scoreLog, tidyMess, robotSuck
     soundscape.js       Lanskap suara per frame: pendengar = kucing, langkah pemilik/tamu, burung, tetesan, dengung robot; musicLevels (lobi/tenang/kejar/speaker)
+    playtestLog.js      Log playtest lokal (F3 → K/J, meongPlaytest di konsol): sesi per level, Chaos per kenakalan, ketahuan, hasil
     night.js            Malam (Level 4): meter terbangun, ikon Zzz, matahari terbit, suara malam, aturan bayangan
     weather.js          Cuaca (Level 3): jadwal kilat/guntur, suara tertutup hujan, cahaya kilat, genangan
     tutorial.js         Latihan (Level 0): langkah, syarat selesai, panah penanda, naskah pemilik
@@ -147,6 +148,7 @@ js/
 - Aksi yang berisik memanggil `emitNoise(ctx, { x, z, radius, source })`. Sistem yang perlu "mendengar" mendaftar lewat `onNoise(ctx.noise, fn)`.
 - Objek interaktif didaftarkan lewat `registerInteractable(ctx.interaction, item)` (lihat komentar di `interaction.js`).
 - **Pengembangan:** buka `http://localhost:3000/?debug` agar `window.__meongCtx` tersedia di konsol (untuk pemeriksaan visual/screenshot; tanpa `?debug` tidak ada efek). Dengan F3 terbuka: `L` = kilat (Level 3), `T` = lompat ke 5 detik terakhir.
+- **Penyeimbangan:** `npm run balance` (`tools/balance.mjs`) menghitung Chaos maksimum & perkiraan santai/mahir per level dari data. Log playtest: F3 → `K` nyala/mati, `J` unduh JSON (kunci localStorage sendiri, bukan save).
 - Tekan `F3` di game untuk overlay debug. Pakai overlay ini untuk memeriksa radius noise dan jangkauan interaksi.
 - Urutan `scene.add` di `main.js` mempengaruhi urutan render objek transparan, jadi jangan diacak tanpa alasan.
 

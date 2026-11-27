@@ -63,6 +63,7 @@ import { loadLevel } from './systems/levelManager.js';
 import { updateCleaning } from './systems/cleaning.js';
 import { updateSunday } from './world/sunday.js';
 import { updateSoundscape, musicLevels } from './systems/soundscape.js';
+import { createPlaytestLog, playtestJson, exportPlaytestLog, clearPlaytestLog, setPlaytestEnabled } from './systems/playtestLog.js';
 
 function init() {
   const canvas = document.getElementById('game-canvas');
@@ -143,6 +144,7 @@ function init() {
     windows: house.windows, // info jendela untuk efek hujan
     backdropMat: house.backdropMat,
     levelOverrides: [], // nilai config yang ditimpa level aktif (systems/levelManager.js)
+    playtest: createPlaytestLog(), // log playtest lokal (F3 → K / J)
     save,
     lobby: createLobby(selectedLook(save)),
     flow: createFlow(),
@@ -241,6 +243,14 @@ function init() {
   // Pengembangan saja: buka dengan ?debug untuk memeriksa ctx dari konsol
   // browser (pemeriksaan visual & screenshot). Tanpa ?debug tidak ada efek.
   if (new URLSearchParams(window.location.search).has('debug')) window.__meongCtx = ctx;
+  // Log playtest dari konsol: meongPlaytest.on(), .json(), .unduh(), .hapus()
+  window.meongPlaytest = {
+    on: () => setPlaytestEnabled(ctx.playtest, true),
+    off: () => setPlaytestEnabled(ctx.playtest, false),
+    json: () => playtestJson(ctx.playtest),
+    unduh: () => exportPlaytestLog(ctx.playtest),
+    hapus: () => clearPlaytestLog(ctx.playtest)
+  };
   // Dunia disiapkan dengan level 1, lalu mulai dari lobi
   loadLevel(ctx, 0);
   enterLobby(ctx);

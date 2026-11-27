@@ -1,4 +1,5 @@
 // Timer level, akhir level, rating bintang, dan tabungan Chaos (GDD §4, §10).
+import { endPlaytestSession } from './playtestLog.js';
 import { STAR_THRESHOLDS, RESULTS, HUD } from '../config.js';
 import { currentLevel } from '../core/state.js';
 import { recordLevelResult, defaultSave } from '../core/save.js';
@@ -80,6 +81,7 @@ export function endLevel(ctx, reason) {
     levelName: level.name,
     hasNext: nextLevelIndex(save, s.levelIndex) >= 0
   });
+  endPlaytestSession(ctx, won ? 'menang' : timeUp ? 'kalah' : 'nyawa habis', stars);
   ctx.audio.play(won ? 'win' : 'gameOver');
   if (stars > 0) ctx.audio.play(`stars${Math.min(stars, 3)}`); // bintang muncul satu per satu
 }

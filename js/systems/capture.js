@@ -2,6 +2,7 @@
 // "KETAHUAN!" sambil pemilik mengangkat kucing → fade hitam → kucing muncul di
 // keranjang, nyawa −1, kebal sebentar → fade masuk. Nyawa habis = layar hasil.
 // Durasi dihitung dalam waktu nyata (bukan waktu dunia yang diperlambat).
+import { logCapture } from './playtestLog.js';
 import { CAPTURE, BASKET } from '../config.js';
 import { finishCatAction, resetCatPose } from '../entities/cat.js';
 import { ownerAfterCapture } from '../entities/owner/index.js';
@@ -53,6 +54,7 @@ export function startCapture(ctx) {
 
   ctx.screenFx.showCaughtText(true);
   ctx.audio.play('caught');
+  logCapture(ctx);
   triggerShake(ctx.cameraShake, CAPTURE.SHAKE_AMPLITUDE, CAPTURE.SHAKE_DURATION);
 }
 

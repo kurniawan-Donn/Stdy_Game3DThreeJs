@@ -2,6 +2,7 @@
 // nilai config.js (nilai asli dicadangkan & dipulihkan saat ganti level),
 // mengatur pencahayaan, lalu mereset dunia lewat resetGame.
 // Aturan buka level juga di sini.
+import { beginPlaytestSession, abortPlaytestSession } from './playtestLog.js';
 import * as CONFIG from '../config.js';
 import { LEVELS, levelAt as levelByIndex } from '../levels/index.js';
 import { levelRecord } from '../core/save.js';
@@ -103,12 +104,14 @@ export function applyLighting(lights, lighting = {}) {
 export function loadLevel(ctx, index) {
   const level = levelByIndex(index);
   if (!level) throw new Error(`Level ${index} tidak ada`);
+  abortPlaytestSession(ctx); // sesi log playtest yang belum selesai = keluar
   revertLevelOverrides(ctx);
   ctx.state.levelIndex = index;
   applyOverrides(ctx, level);
   applyLighting(ctx.lights, level.LIGHTING);
   if (ctx.darkFx) rebuildDarkOverlays(ctx.darkFx); // zona gelap bisa berbeda per level
   resetGame(ctx);
+  beginPlaytestSession(ctx);
   return level;
 }
 

@@ -602,6 +602,7 @@ function updateKneel(ctx, o, dt) {
   if (hideSpotOf(ctx.cat) === spot && ctx.state.invulnerableTimer <= 0 && !ctx.capture.active) {
     o.meter = S.MAX;
     o.state = 'chase';
+    o.chaseFrom = 'kneel';
     ctx.audio.play('alarm');
     startCapture(ctx);
     return;
@@ -621,7 +622,10 @@ function setState(ctx, o, state) {
   clearPath(o);
   if (state === 'investigate') o.phase = 'goto';
   // Keluar dari rutinitas: pintu toilet ditutup jika sempat terbuka
-  if (state === 'chase' && prev !== 'chase') ctx.audio.play('alarm');
+  if (state === 'chase' && prev !== 'chase') {
+    o.chaseFrom = prev; // log playtest: penyebab ketahuan
+    ctx.audio.play('alarm');
+  }
   if ((state === 'curious' || state === 'investigate') && prev === 'routine') ctx.audio.play('suspicious');
 }
 

@@ -13,6 +13,7 @@ import { recentMeowCount, isAnnoying } from '../systems/meow.js';
 import { comboTimeLeft } from '../systems/chaos.js';
 import { hideStatus } from '../systems/hiding.js';
 import { remainingMischief } from '../entities/mischief/index.js';
+import { setPlaytestEnabled, beginPlaytestSession, exportPlaytestLog } from '../systems/playtestLog.js';
 
 const RING_Y = 0.03;
 
@@ -154,6 +155,12 @@ export function updateDebugOverlay(ctx) {
   if (ctx.input.pressed[DEBUG.LIGHTNING_KEY] && ctx.weather) strikeLightning(ctx, DEBUG.LIGHTNING_HOLD);
   // Pengembang: lompat ke akhir level (mis. melihat matahari terbit di Level 4)
   if (ctx.input.pressed[DEBUG.SKIP_TIME_KEY] && !ctx.state.isGameOver) ctx.state.timeLeft = Math.min(ctx.state.timeLeft, DEBUG.SKIP_TIME_LEFT);
+  // Log playtest: K nyala/mati, J unduh JSON
+  if (ctx.playtest && ctx.input.pressed[DEBUG.PLAYTEST_TOGGLE_KEY]) {
+    setPlaytestEnabled(ctx.playtest, !ctx.playtest.enabled);
+    if (ctx.playtest.enabled) beginPlaytestSession(ctx); // mulai mencatat level yang sedang berjalan
+  }
+  if (ctx.playtest && ctx.input.pressed[DEBUG.PLAYTEST_EXPORT_KEY]) exportPlaytestLog(ctx.playtest);
   // Zona gelap berubah (level lain) → bangun ulang pita batas
   if (overlay.darkEdges.userData.sig !== DARK_ZONES.length) {
     removeAndDispose(overlay.darkEdges);
@@ -198,7 +205,8 @@ export function updateDebugOverlay(ctx) {
     `ruangan   : ${roomAt(ctx.cat.mesh.position)}${cat.underCrawl ? ' (di kolong)' : ''}${isInDarkZone(p.x, p.z) ? ' · AREA GELAP' : ''}`,
     `sembunyi  : ${hideDebugText(ctx)}`,
     `kamera    : yaw ${(ctx.camRig.yaw * 57.3).toFixed(0)}° pitch ${(ctx.camRig.pitch * 57.3).toFixed(0)}° lengan ${ctx.camRig.arm.toFixed(2)}/${ctx.camRig.zoom.toFixed(2)} m, pudar ${ctx.cameraFading}${ctx.input.pointerLocked ? ', mouse terkunci' : ''}`,
-    `audio     : ${audioDebugText(ctx)}`
+    `audio     : ${audioDebugText(ctx)}`,
+    `playtest  : ${ctx.playtest ? (ctx.playtest.enabled ? 'MENCATAT' : 'mati') + `, ${ctx.playtest.sessions.length} sesi (K nyala/mati, J unduh)` : '-'}`
   ].join('\n');
 }
 

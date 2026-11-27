@@ -667,6 +667,19 @@ Dikerjakan sebagai commit terpisah per bagian. Angka level/harga **tidak diubah*
 - **Log playtest lokal** (F3 → `K` nyala/mati, default mati): Chaos per kenakalan, ketahuan (waktu, posisi, ruangan, penyebab), durasi level, bintang, hasil. Tersimpan di `localStorage` terpisah dari save, diekspor JSON (F3 → `J` unduh, juga `copy` di konsol).
 - Hasil: **tabel usulan** target per level, harga kustomisasi, dan kesulitan (jangkauan pandang, kecepatan curiga) → menunggu persetujuan.
 
+Hasil analisis (`node tools/balance.mjs`; Maks = semua kenakalan dengan combo sempurna; santai = 65% kenakalan, 25% combo; mahir = 90%, 60%):
+
+| Level | Target | Objek | Chaos dasar | Maks | Maks + lonceng | ★★★ | Santai | Mahir |
+|---|---|---|---|---|---|---|---|---|
+| 1 Senin Pagi | 300 | 14 | 500 | 743 | 892 | 600 | 366 (★) | 585 (★★) |
+| 2 Deadline | 400 | 14 | 500 | 743 | 892 | **800** | 366 (–) | 585 (★) |
+| 3 Sore Hujan | 450 | 14 | 500 | 768 | 922 | **900** | 376 (–) | 605 (★) |
+| 4 Malam Hari | 350 | 15 | 575 | 855 | 1026 | 700 | 420 (★) | 673 (★★) |
+| 5 Kedatangan Tamu | 500 | 18 | 680 | 1013 | 1216 | 1000 | 497 (–) | 796 (★★) |
+| Bonus | 400 | 15 | 585 | 1775 | 2130 | 800 | 671 (★★) | 1303 (★★★) |
+
+Temuan: ★★★ Level 2 & 3 **tidak mungkin** tanpa kalung lonceng; Level 5 hanya dengan permainan sempurna. Toko: semua item 4500, satu putaran kampanye ≈ 2700 (santai) / 4550 (mahir).
+
 **9.3 Performa**
 - Profil tiap level di Chrome: FPS, draw call, segitiga, geometri/tekstur (`renderer.info`), memori JS (`performance.memory`). Tabel hasil dicatat di sini.
 - Kualitas **Otomatis** (lihat Pengaturan); notifikasi kecil "Kualitas diturunkan" saat turun.
@@ -686,7 +699,7 @@ Dikerjakan sebagai commit terpisah per bagian. Angka level/harga **tidak diubah*
 
 Checklist:
 - [x] 9.1 Audio lengkap: 30 suara baru, mixer 4 bus (Pengaturan → tab Suara), posisional ringan (ruang tamu + ruang makan + dapur = satu ruang akustik), musik lobi/main/kejar, status audio di F3
-- [ ] 9.2 Skrip analisis Chaos, log playtest F3 (ekspor JSON), tabel usulan penyeimbangan
+- [x] 9.2 Skrip analisis Chaos (`npm run balance`), log playtest F3 (K nyala/mati, J unduh JSON; juga `meongPlaytest` di konsol), tabel usulan penyeimbangan
 - [ ] 9.2b Terapkan angka penyeimbangan yang disetujui
 - [ ] 9.3 Profil per level, kualitas Otomatis, uji 20× ganti level di Chrome
 - [ ] 9.4 Kontrol sentuh, HUD layar kecil & potret/lanskap, kualitas HP
