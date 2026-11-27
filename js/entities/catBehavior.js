@@ -4,6 +4,7 @@
 // - loaf (diam LOAF_DELAY detik) dengan ikon hati, animasi kecil acak saat diam
 // - zoomies setelah makan catnip (sangat cepat & senyap)
 // Fungsi pose dipanggil di akhir animateCat (entities/cat.js).
+import { actionPressed } from '../core/input.js';
 import { IDLE, RIDE, SUN_NAP, SUN_ZONES, VACUUM, CATNIP, CUSTOMIZATION } from '../config.js';
 import { registerInteractable } from '../systems/interaction.js';
 import { crawlBoxAt } from '../systems/collision.js';
@@ -108,7 +109,7 @@ export function updateRiding(ctx, dt) {
   const cat = ctx.cat;
   const obs = cat.riding;
   if (!obs) return false;
-  if (ctx.input.pressed['Space']) {
+  if (actionPressed(ctx.input, 'jump')) {
     dismount(ctx, true);
     return false;
   }

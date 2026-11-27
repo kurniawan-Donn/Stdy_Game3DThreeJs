@@ -51,6 +51,8 @@ import { selectedLook } from './systems/shop.js';
 import { createLobby, updateLobby, setLobbyLook } from './world/lobby.js';
 import { createCustomizeMenu } from './ui/customizeMenu.js';
 import { createSettingsMenu } from './ui/settingsMenu.js';
+import { createTouchControls } from './ui/touchControls.js';
+import { isTouchDevice } from './core/device.js';
 import { createFlow, enterLobby, openLevelSelect, playLevel, playContinue, retryLevel, playNextLevel,
   pauseGame, resumeGame, updateFlowInput, onPointerLockChange, playTutorial, skipTutorial, finishTutorial } from './core/gameFlow.js';
 import { updateTutorial } from './systems/tutorial.js';
@@ -155,7 +157,15 @@ function init() {
   };
 
   ctx.input = createInput(() => audio.ensure(), canvas);
-  ctx.input.allowPointerLock = () => ctx.flow.state === 'playing' && !ctx.state.isGameOver;
+  ctx.input.allowPointerLock = () => !ctx.input.touch && ctx.flow.state === 'playing' && !ctx.state.isGameOver;
+  // HP & tablet: joystick, geser kamera, tombol aksi (ui/touchControls.js)
+  if (isTouchDevice()) {
+    ctx.touchUi = createTouchControls(ctx.input, {
+      pause: () => pauseGame(ctx),
+      onFirstTouch: () => audio.ensure()
+    });
+    bindTouchExtras(ctx);
+  }
   ctx.input.onLockChange = (locked) => onPointerLockChange(ctx, locked);
   const click = (fn) => () => {
     audio.ensure();
@@ -207,7 +217,10 @@ function init() {
     }
   });
   ctx.menus = createMenus({
-    play: click(() => playContinue(ctx)),
+    play: click(() => {
+      enterFullscreen(ctx);
+      playContinue(ctx);
+    }),
     levels: click(() => openLevelSelect(ctx)),
     tutorial: click(() => playTutorial(ctx)),
     howto: click(() => {
@@ -228,7 +241,10 @@ function init() {
       customize.close();
       enterLobby(ctx);
     }),
-    onLevel: (i) => click(() => playLevel(ctx, i))()
+    onLevel: (i) => click(() => {
+      enterFullscreen(ctx);
+      playLevel(ctx, i);
+    })()
   });
   bindUiSounds(ctx);
   // Jendela kehilangan fokus saat bermain → pause
@@ -259,6 +275,34 @@ function init() {
   loadLevel(ctx, 0);
   enterLobby(ctx);
   startLoop(ctx);
+}
+
+// HP: layar penuh + kunci lanskap saat mulai main (diabaikan jika ditolak browser)
+function enterFullscreen(ctx) {
+  if (!ctx.touchUi || document.fullscreenElement) return;
+  const el = document.documentElement;
+  try {
+    const p = el.requestFullscreen ? el.requestFullscreen({ navigationUI: 'hide' }) : null;
+    if (p && p.then) {
+      p.then(() => {
+        if (screen.orientation && screen.orientation.lock) screen.orientation.lock('landscape').catch(() => {});
+      }).catch(() => {});
+    }
+  } catch (e) {
+    // tidak didukung (mis. iPhone): tetap main
+  }
+}
+
+// Sentuh: banner tamu bisa diketuk untuk melewati; anjuran lanskap bisa ditutup
+function bindTouchExtras(ctx) {
+  const banner = document.getElementById('visit-banner');
+  if (banner) banner.addEventListener('click', () => {
+    ctx.input.touch.pressed.skip = true;
+  });
+  const rotate = document.getElementById('rotate-hint');
+  if (rotate) rotate.addEventListener('click', (e) => {
+    if (e.target.closest('[data-action="portrait-ok"]')) document.body.classList.add('portrait-ok');
+  });
 }
 
 // Bunyi UI: klik & hover semua tombol/kartu di lapisan menu (satu listener)
@@ -409,6 +453,7 @@ function startLoop(ctx) {
       ctx.renderer.render(ctx.scene, ctx.camera);
     }
     updateFpsCounter(ctx, dt);
+    if (ctx.touchUi) ctx.touchUi.update(ctx);
     // Musik latar: lobi / tenang / tegang saat dikejar / speaker Level Bonus
     ctx.audio.setMusic(musicLevels(ctx, dt));
 

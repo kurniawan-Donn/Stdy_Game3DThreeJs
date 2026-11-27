@@ -4,6 +4,7 @@
 // Teks langkah ada di levels/level0.js, angka di TUTORIAL (config.js).
 // Pemilik dikendalikan naskah: di luar layar → patroli → mengejar.
 // updateTutorial mengembalikan 'done' satu kali saat latihan selesai.
+import { formatKeys } from '../core/input.js';
 import * as THREE from 'three';
 import { TUTORIAL as T, FURNITURE_LAYOUT, MISCHIEF_LAYOUT, HIDE_BOX } from '../config.js';
 import { currentLevel } from '../core/state.js';
@@ -57,7 +58,7 @@ function setMarker(tut, pos) {
 function showHint(ctx, textKey = 'text') {
   const tut = ctx.tutorial;
   const s = tut.steps[tut.step];
-  if (ctx.tutorialUi) ctx.tutorialUi.show({ index: tut.step + 1, total: tut.steps.length, title: s.title, text: s[textKey] || s.text });
+  if (ctx.tutorialUi) ctx.tutorialUi.show({ index: tut.step + 1, total: tut.steps.length, title: s.title, text: formatKeys((ctx.input && ctx.input.touch && s.touch && s.touch[textKey]) || s[textKey] || s.text, ctx.input) });
 }
 
 function enterStep(ctx, i) {

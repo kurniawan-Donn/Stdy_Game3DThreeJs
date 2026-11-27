@@ -1,5 +1,6 @@
 // Mengeong (GDD §7): tombol Q, cooldown, memancarkan noise besar.
 // Riwayat meongan disimpan untuk status "pemilik jengkel" (dipakai Fase 3).
+import { actionPressed } from '../core/input.js';
 import { MEOW, CAT_ANIM } from '../config.js';
 import { emitNoise } from './noise.js';
 
@@ -30,7 +31,7 @@ export function updateMeow(ctx, dt) {
     meow.history.shift();
   }
 
-  if (input.pressed['KeyQ'] && meow.cooldown <= 0) {
+  if (actionPressed(input, 'meow') && meow.cooldown <= 0) {
     meow.cooldown = MEOW.COOLDOWN;
     meow.history.push(ctx.time);
     cat.meowTimer = CAT_ANIM.MEOW_DURATION;

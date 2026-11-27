@@ -1494,3 +1494,246 @@ body.mode-lobby #clean-rooms {
   opacity: 1;
   transform: translate(-50%, 0);
 }
+
+/* ---------- Kontrol sentuh (HP & tablet, Fase 9.4) ---------- */
+.touch-only {
+  display: none;
+}
+
+body.touch .touch-only {
+  display: revert;
+}
+
+body.touch table.touch-only {
+  display: table;
+}
+
+body.touch .kbd-only {
+  display: none !important;
+}
+
+#touch-ui {
+  display: none;
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 7;
+  -webkit-user-select: none;
+  user-select: none;
+  touch-action: none;
+}
+
+body.touch.mode-play #touch-ui {
+  display: block;
+}
+
+body.touch #interact-prompt {
+  display: none !important;
+}
+
+body.touch #game-canvas {
+  touch-action: none;
+}
+
+.touch-stick {
+  position: fixed;
+  width: 112px;
+  height: 112px;
+  margin: -56px 0 0 -56px;
+  border-radius: 50%;
+  background: rgba(15, 23, 42, 0.35);
+  border: 2px solid rgba(255, 255, 255, 0.35);
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+
+.touch-stick.active {
+  opacity: 1;
+}
+
+.touch-knob {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: rgba(250, 204, 21, 0.85);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+  transform: translate(-50%, -50%);
+}
+
+.touch-btn {
+  position: fixed;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 62px;
+  height: 62px;
+  border-radius: 50%;
+  background: rgba(15, 23, 42, 0.55);
+  border: 2px solid rgba(255, 255, 255, 0.35);
+  color: #f8fafc;
+  font-size: 22px;
+  font-weight: 700;
+  line-height: 1;
+  pointer-events: auto;
+  touch-action: none;
+}
+
+.touch-btn small {
+  font-size: 9px;
+  font-weight: 600;
+  margin-top: 3px;
+  opacity: 0.9;
+}
+
+.touch-btn.down,
+.touch-btn.on {
+  background: rgba(250, 204, 21, 0.75);
+  color: #1f2937;
+  border-color: #facc15;
+}
+
+/* Gugus tombol kanan bawah (jempol kanan) */
+.touch-btn.jump {
+  right: calc(18px + env(safe-area-inset-right));
+  bottom: calc(22px + env(safe-area-inset-bottom));
+  width: 78px;
+  height: 78px;
+}
+
+.touch-btn.interact {
+  right: calc(106px + env(safe-area-inset-right));
+  bottom: calc(34px + env(safe-area-inset-bottom));
+  width: 72px;
+  height: 72px;
+  border-color: rgba(250, 204, 21, 0.8);
+}
+
+.touch-btn.interact.idle {
+  opacity: 0.45;
+}
+
+.touch-btn.interact .e-label {
+  max-width: 88px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  position: absolute;
+  bottom: -16px;
+  color: #facc15;
+  font-size: 10px;
+  text-shadow: 0 1px 2px #000;
+}
+
+.touch-btn.interact.hold::after {
+  content: 'tahan';
+  position: absolute;
+  top: -14px;
+  font-size: 9px;
+  color: #fde68a;
+}
+
+.touch-btn.run {
+  right: calc(26px + env(safe-area-inset-right));
+  bottom: calc(112px + env(safe-area-inset-bottom));
+}
+
+.touch-btn.sneak {
+  right: calc(104px + env(safe-area-inset-right));
+  bottom: calc(124px + env(safe-area-inset-bottom));
+  width: 54px;
+  height: 54px;
+}
+
+.touch-btn.meow {
+  right: calc(188px + env(safe-area-inset-right));
+  bottom: calc(20px + env(safe-area-inset-bottom));
+  width: 52px;
+  height: 52px;
+}
+
+.touch-btn.pause {
+  right: calc(12px + env(safe-area-inset-right));
+  top: calc(10px + env(safe-area-inset-top));
+  width: 44px;
+  height: 44px;
+  font-size: 18px;
+}
+
+body.touch #visit-banner {
+  pointer-events: auto;
+}
+
+/* Anjuran lanskap (HP dalam posisi potret saat bermain) */
+#rotate-hint {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 30;
+  background: rgba(15, 23, 42, 0.92);
+  color: #f8fafc;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 24px;
+}
+
+#rotate-hint .rotate-icon {
+  font-size: 54px;
+  margin-bottom: 12px;
+}
+
+#rotate-hint .btn {
+  margin: 0 auto;
+}
+
+#rotate-hint p {
+  font-size: 17px;
+  margin-bottom: 18px;
+}
+
+@media (orientation: portrait) {
+  body.touch.mode-play:not(.portrait-ok) #rotate-hint {
+    display: flex;
+  }
+}
+
+/* Layar kecil (HP lanskap / potret): HUD & panel menyesuaikan */
+@media (max-height: 480px), (max-width: 640px) {
+  #hud {
+    top: calc(6px + env(safe-area-inset-top));
+    left: calc(6px + env(safe-area-inset-left));
+    transform: scale(0.9);
+    transform-origin: top left;
+  }
+
+  .lobby-panel.side,
+  .lobby-panel.wide {
+    max-height: 92vh;
+    padding: 12px 14px;
+  }
+
+  .lobby-panel {
+    left: 4vw;
+  }
+
+  .lobby-panel.wide {
+    width: calc(100vw - 4vw - 170px); /* sisakan tempat untuk label tabungan */
+  }
+
+  #help-overlay .help-panel {
+    max-height: 90vh;
+    overflow-y: auto;
+  }
+
+  #toast {
+    top: 12px;
+  }
+}
+
+#help-overlay.active {
+  pointer-events: auto; /* ketuk untuk menutup */
+}

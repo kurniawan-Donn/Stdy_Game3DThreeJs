@@ -726,6 +726,6 @@ Checklist:
 - [x] 9.2 Skrip analisis Chaos (`npm run balance`), log playtest F3 (K nyala/mati, J unduh JSON; juga `meongPlaytest` di konsol), tabel usulan penyeimbangan
 - [x] 9.2b Terapkan angka penyeimbangan yang disetujui: ambang bintang per level (Level 2, 3, 5); target, harga, dan kesulitan tidak diubah
 - [x] 9.3 Profil per level (semua ±60 FPS, < 200 draw call), kualitas Otomatis (bawaan save baru), uji 20× ganti level di Chrome tanpa kebocoran
-- [ ] 9.4 Kontrol sentuh, HUD layar kecil & potret/lanskap, kualitas HP
+- [x] 9.4 Kontrol sentuh (joystick mengambang analog, geser/cubit kamera, Lompat, Lari, Endap, tombol aksi berikon + label, Meong, Pause), bantuan & latihan versi sentuh, banner tamu bisa diketuk, layar penuh + kunci lanskap, anjuran lanskap di potret, HUD/panel layar kecil, kualitas Otomatis mulai Rendah di HP; lapisan aksi input (`actionDown/actionPressed`)
 - [ ] 9.5 Aksesibilitas (getaran, kilat, teks HUD, buta warna) & rebind tombol
 - [ ] 9.6 GitHub Pages, README, CHANGELOG, tag v1.0.0

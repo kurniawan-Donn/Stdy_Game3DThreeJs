@@ -28,10 +28,10 @@ export function createMenus(handlers) {
   const cardsEl = document.getElementById('level-cards');
 
   // Cara Bermain: salinan tabel kontrol dari layar bantuan (satu sumber)
-  const helpTable = document.querySelector('#help-overlay table');
+  const helpTables = document.querySelectorAll ? [...document.querySelectorAll('#help-overlay table')] : [];
   const howtoBody = document.getElementById('howto-body');
-  if (helpTable && howtoBody) {
-    howtoBody.appendChild(helpTable.cloneNode(true));
+  if (helpTables.length && howtoBody) {
+    for (const t of helpTables) howtoBody.appendChild(t.cloneNode(true)); // versi keyboard & sentuh (CSS memilih)
     const goal = document.querySelector('#help-overlay .help-goal');
     if (goal) howtoBody.appendChild(goal.cloneNode(true));
   }

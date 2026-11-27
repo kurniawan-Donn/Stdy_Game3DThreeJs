@@ -31,13 +31,24 @@
   <div id="meeting-badge"><span class="dot"></span>SEDANG RAPAT</div>
   <div id="storm-badge"></div>
   <div id="clean-rooms"></div>
-  <div id="visit-banner">🔔 Tamu datang! <span>Enter: lewati</span></div>
+  <div id="visit-banner">🔔 Tamu datang! <span class="kbd-only">Enter: lewati</span><span class="touch-only">Ketuk: lewati</span></div>
   <div id="wake-badge"><span class="zzz">Zzz</span><span class="eye-open">👁</span><span class="wake-bar"><span class="wake-fill"></span></span></div>
-  <div id="help-hint">H: Bantuan · P: Pause</div>
+  <div id="help-hint" class="kbd-only">H: Bantuan · P: Pause</div>
+  <div id="rotate-hint"><div><div class="rotate-icon">📱↻</div><p>Putar HP ke posisi <b>lanskap</b> untuk pengalaman terbaik.</p><button class="btn" data-action="portrait-ok">Tetap main</button></div></div>
   <div id="help-overlay">
     <div class="help-panel">
       <h2>Kontrol</h2>
-      <table>
+      <table class="touch-only touch-help">
+        <tr><td>Joystick kiri</td><td>Gerak (dorong sedikit = mengendap)</td></tr>
+        <tr><td>Geser jari di kanan</td><td>Putar kamera; cubit = zoom</td></tr>
+        <tr><td>Lompat</td><td>Lompat; dengan Lari ditahan = lompat tinggi; turun dari robot</td></tr>
+        <tr><td>Lari (tahan)</td><td>Lari (berisik)</td></tr>
+        <tr><td>Endap</td><td>Mengendap nyala/mati (senyap)</td></tr>
+        <tr><td>Tombol aksi</td><td>Berbuat nakal / kardus / tidur (ikon berganti; tahan untuk tidur)</td></tr>
+        <tr><td>Meong</td><td>Mengeong</td></tr>
+        <tr><td>Ⅱ</td><td>Pause</td></tr>
+      </table>
+      <table class="kbd-only kbd-help">
         <tr><td><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd></td><td>Gerak (relatif kamera)</td></tr>
         <tr><td><kbd>Spasi</kbd></td><td>Lompat</td></tr>
         <tr><td><kbd>Shift</kbd> + <kbd>Spasi</kbd></td><td>Lompat tinggi (stamina)</td></tr>

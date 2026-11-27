@@ -5,6 +5,7 @@
 //   tamu ke toilet sekali (waktu acak di TOILET_WINDOW).
 // - Penutup saat waktu habis: tamu ke pintu & melambai, lalu layar hasil.
 // Hanya aktif di level dengan blok GUEST.
+import { actionPressed } from '../core/input.js';
 import { currentLevel } from '../core/state.js';
 import { resetFrontDoor, setFrontDoorOpen, updateFrontDoor } from '../world/house.js';
 import { ownerVisitActivity } from '../entities/owner/index.js';
@@ -97,7 +98,7 @@ export function updateVisit(ctx, dt) {
       v.entered = true;
       guestDo(ctx, 'enter');
     }
-    const skip = ctx.input.pressed.Enter || ctx.input.pressed.NumpadEnter;
+    const skip = actionPressed(ctx.input, 'skip');
     if (skip || v.t >= G.INTRO_DURATION) endIntro(ctx, !!skip);
     return;
   }

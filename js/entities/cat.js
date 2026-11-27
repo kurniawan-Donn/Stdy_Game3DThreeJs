@@ -1,6 +1,7 @@
 // Kucing pemain: model low-poly, gerakan relatif kamera, lompat, dan animasi.
+import { actionDown, actionPressed } from '../core/input.js';
 import * as THREE from 'three';
-import { PLAYER, PHYSICS, CAT_ANIM, NOISE, OWNER, VACUUM, HIDE_BOX, CATNIP, CUSTOMIZATION, DUSTER_PROP, AUDIO_MIX } from '../config.js';
+import { PLAYER, PHYSICS, CAT_ANIM, NOISE, OWNER, VACUUM, HIDE_BOX, CATNIP, CUSTOMIZATION, DUSTER_PROP, AUDIO_MIX, TOUCH, CONTROLS } from '../config.js';
 import { buildCatModel, disposeCatModel } from './catModel.js';
 import { resolveRoomCollisions, getGroundHeight, pushOutOfCircle, crawlBoxAt } from '../systems/collision.js';
 import { canRun, trySpendHighJump, updateStamina, isExhausted } from '../systems/stamina.js';
@@ -171,15 +172,17 @@ export function resetCat(cat) {
 // Update gerakan, lompat, tabrakan, animasi, dan kedip kebal.
 export function updateCat(ctx, dt) {
   const { cat, input, camera, colliders, audio, state, stamina } = ctx;
-  const keys = input.keys;
   const player = cat.mesh;
   const playerVel = cat.vel;
 
-  const hasMoveInput = !!(keys['KeyW'] || keys['KeyA'] || keys['KeyS'] || keys['KeyD'] ||
-    keys['ArrowUp'] || keys['ArrowDown'] || keys['ArrowLeft'] || keys['ArrowRight'] || keys['Space']);
+  // Joystick sentuh (analog): dorong sedikit = mengendap
+  const stick = input.touch && input.touch.move;
+  const stickMag = stick ? Math.min(1, Math.hypot(stick.x, stick.y)) : 0;
+  const stickActive = stickMag > TOUCH.DEADZONE;
+  const hasMoveInput = stickActive || CONTROLS.MOVE_ACTIONS.some((a) => actionDown(input, a)) || actionDown(input, 'jump');
 
   // Tidur: bangun dengan input gerak, E, atau Q
-  if (cat.sleeping && (hasMoveInput || input.pressed['KeyE'] || input.pressed['KeyQ'])) wake(ctx);
+  if (cat.sleeping && (hasMoveInput || actionPressed(input, 'interact') || actionPressed(input, 'meow'))) wake(ctx);
   // Menumpang robot: posisi mengikuti robot (Spasi = turun)
   if (cat.riding) updateRiding(ctx, dt);
   if (cat.riding || cat.sleeping) {
@@ -192,17 +195,22 @@ export function updateCat(ctx, dt) {
   // Selama aksi kenakalan, kontrol dikunci
   // Keranjang cucian (Level Bonus) tidak bisa digeser: kucing diam di dalamnya
   const locked = !!cat.action || !!(cat.inBox && cat.inBox.fixed);
-  const wantsSneak = !locked && !!keys['KeyC'];
-  const wantsRun = !locked && !!(keys['ShiftLeft'] || keys['ShiftRight']);
+  const wantsSneak = !locked && (actionDown(input, 'sneak') || (stickActive && stickMag < TOUCH.SNEAK_BELOW));
+  const wantsRun = !locked && actionDown(input, 'run');
 
   let inputForward = 0;
   let inputRight = 0;
 
   if (!locked) {
-    if (keys['KeyW'] || keys['ArrowUp']) inputForward += 1;
-    if (keys['KeyS'] || keys['ArrowDown']) inputForward -= 1;
-    if (keys['KeyD'] || keys['ArrowRight']) inputRight += 1;
-    if (keys['KeyA'] || keys['ArrowLeft']) inputRight -= 1;
+    if (actionDown(input, 'forward')) inputForward += 1;
+    if (actionDown(input, 'back')) inputForward -= 1;
+    if (actionDown(input, 'right')) inputRight += 1;
+    if (actionDown(input, 'left')) inputRight -= 1;
+    if (stickActive) {
+      // joystick: y layar ke atas = maju
+      inputForward += -stick.y;
+      inputRight += stick.x;
+    }
   }
 
   // Vektor gerakan relatif terhadap kamera pada bidang XZ
@@ -279,7 +287,7 @@ export function updateCat(ctx, dt) {
   }
 
   // Lompat: Spasi = lompat biasa (gratis); Shift + Spasi = lompat tinggi (pakai stamina)
-  if (!locked && keys['Space'] && cat.isGrounded && !cat.underCrawl && !cat.inBox && !cat.carrying) {
+  if (!locked && actionDown(input, 'jump') && cat.isGrounded && !cat.underCrawl && !cat.inBox && !cat.carrying) {
     const highJump = wantsRun && trySpendHighJump(stamina);
     playerVel.y = highJump ? PLAYER.HIGH_JUMP_FORCE : PLAYER.JUMP_FORCE;
     cat.isGrounded = false;

@@ -15,6 +15,7 @@
 //     hold?: number,                    // tahan E selama ini (detik) untuk menjalankan
 //     onInteract: (ctx) => void
 //   }
+import { actionDown, actionPressed } from '../core/input.js';
 import * as THREE from 'three';
 import { INTERACT, SURFACE_TOLERANCE } from '../config.js';
 
@@ -97,24 +98,24 @@ export function updateInteraction(ctx, dt) {
 
     if (best.hold) {
       // Tahan E: jalankan setelah ditahan best.hold detik (sekali per tekanan)
-      if (ctx.input.keys['KeyE'] && !sys.holdDone) {
+      if (actionDown(ctx.input, 'interact') && !sys.holdDone) {
         sys.holdT += dt;
         if (sys.holdT >= best.hold) {
           sys.holdDone = true;
           sys.holdT = 0;
           best.onInteract(ctx);
         }
-      } else if (!ctx.input.keys['KeyE']) {
+      } else if (!actionDown(ctx.input, 'interact')) {
         sys.holdT = 0;
         sys.holdDone = false;
       }
-    } else if (ctx.input.pressed['KeyE']) {
+    } else if (actionPressed(ctx.input, 'interact')) {
       best.onInteract(ctx);
     }
   } else {
     marker.visible = false;
     sys.holdT = 0;
-    if (!ctx.input.keys['KeyE']) sys.holdDone = false;
+    if (!actionDown(ctx.input, 'interact')) sys.holdDone = false;
   }
 }
 

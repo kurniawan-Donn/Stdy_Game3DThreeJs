@@ -30,7 +30,7 @@ js/
   levels/               Satu file data per level (level0.js Latihan, level1.js Senin Pagi, level2.js Deadline, level3.js Sore Hujan, level4.js Malam Hari, level5.js Kedatangan Tamu, bonus.js Minggu Bersih-bersih) + index.js (daftar, format, levelLabel)
   core/
     renderer.js         Scene, kamera, WebGLRenderer, resize
-    input.js            Keyboard (keys/pressed) + mouse (mouseDX/DY via pointer lock atau drag, wheel)
+    input.js            Keyboard (keys/pressed) + mouse (mouseDX/DY, wheel) + lapisan aksi: actionDown/actionPressed(input, 'jump'), bindings (CONTROLS + rebind), input.touch; keyLabel/formatKeys
     state.js            State bersama: Chaos, combo, waktu, nyawa (createState/resetRunState)
     camera.js           Kamera orbit third-person (camRig): yaw/pitch/zoom, auto-recenter, spring arm, mode KETAHUAN, getaran
     audio.js            Web Audio: mixer (master → efek/suasana/musik), play(nama, pos?) dari AUDIO.SFX / NOISE_SFX (posisional jika pos), loop, musik prosedural (setMusic), info() untuk F3
@@ -114,7 +114,8 @@ js/
     floatingText.js     Teks melayang (+40, COMBO x1.5) yang mengikuti posisi 3D
     screenEffects.js    Efek layar CSS: desaturasi, vignette, teks KETAHUAN!, fade hitam
     ownerIndicator.js   Ikon ?/! + meter curiga di atas kepala pemilik (+ label debug)
-    help.js             Layar bantuan kontrol (H), muncul otomatis 10 detik saat game dibuka
+    help.js             Layar bantuan kontrol (H / ketuk untuk menutup), muncul otomatis 10 detik saat game dibuka
+    touchControls.js    Kontrol sentuh HP/tablet: joystick, geser kamera, cubit zoom, tombol aksi (menulis input.touch)
     debugOverlay.js     Overlay developer (F3): ring noise, interaksi, kerucut pandang, LOS, jalur A*, status kamera
 ```
 
@@ -147,6 +148,7 @@ js/
 - **Kamera** mengorbit kucing (`ctx.camRig`) dan bisa menghadap ke mana saja, jadi objek dan perubahan tampilan harus terlihat dari semua arah. Dinding luar, dinding dalam, plafon, dan pintu tertutup ditangani spring arm (kamera tidak pernah menembus dinding); perabot yang menghalangi memudar lewat `furnitureRefs.fadeables` (diisi otomatis oleh `finish` di `furniture.js`).
 - **Audio** (`core/audio.js`, `systems/soundscape.js`): efek baru = entri di `AUDIO.SFX`/`AUDIO.NOISE_SFX` lalu `ctx.audio.play(nama)`; suara dari sumber di dunia (pemilik, tamu, robot, benda) kirim posisinya: `play(nama, { x, z })` (diredam jarak & beda ruangan, lihat `AUDIO_MIX`). Efek suasana didaftarkan di `AUDIO_MIX.AMBIENT`. Musik dihitung `musicLevels` dan dipanggil tiap frame di semua flow state; level bisa menimpa volume musik tenang lewat `MUSIC_CALM`. Uji headless memakai audio tiruan, jadi fungsi audio opsional (`loop`, `setListener`) dicek dulu sebelum dipanggil di luar `main.js`.
 - Aksi yang berisik memanggil `emitNoise(ctx, { x, z, radius, source })`. Sistem yang perlu "mendengar" mendaftar lewat `onNoise(ctx.noise, fn)`.
+- **Input:** gameplay membaca **aksi** (`actionDown(ctx.input, 'interact')`, `actionPressed(...)`), bukan kode tombol, agar rebind & kontrol sentuh otomatis ikut. Aksi baru = entri di `CONTROLS.ACTIONS` + `CONTROLS.DEFAULT`. Teks yang menyebut tombol memakai penanda `{aksi}` + `formatKeys` (mis. langkah latihan); langkah latihan bisa punya teks `touch`. Uji sentuh di PC: `?touch` (sentuhan sintetis lewat `TouchEvent`).
 - Objek interaktif didaftarkan lewat `registerInteractable(ctx.interaction, item)` (lihat komentar di `interaction.js`).
 - **Pengembangan:** buka `http://localhost:3000/?debug` agar `window.__meongCtx` (dan `__meongDebug.playLevel(i)`) tersedia di konsol (untuk pemeriksaan visual/screenshot; tanpa `?debug` tidak ada efek). Dengan F3 terbuka: `L` = kilat (Level 3), `T` = lompat ke 5 detik terakhir.
 - **Penyeimbangan:** `npm run balance` (`tools/balance.mjs`) menghitung Chaos maksimum & perkiraan santai/mahir per level dari data. Log playtest: F3 → `K` nyala/mati, `J` unduh JSON (kunci localStorage sendiri, bukan save).

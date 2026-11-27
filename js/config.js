@@ -918,9 +918,54 @@ export const MUSIC_BG = {
 // Data level (durasi, target, pencahayaan, pengubah) ada di js/levels/.
 // Level berikutnya terbuka jika level sebelumnya mendapat minimal sekian bintang.
 export const LEVEL_UNLOCK_MIN_STARS = 1;
-// Alur game & lobi
-export const GAME_FLOW = {
-  PAUSE_KEY: 'KeyP'
+// Alur game & lobi (tombol pause = aksi 'pause' di CONTROLS)
+export const GAME_FLOW = {};
+
+// --- Kontrol sentuh (HP & tablet, ui/touchControls.js) ---
+export const TOUCH = {
+  DEADZONE: 0.12, // joystick: dorongan di bawah ini diabaikan
+  SNEAK_BELOW: 0.5, // joystick didorong < 50% = mengendap
+  STICK_RADIUS: 56, // px radius joystick
+  STICK_ZONE: 0.42, // bagian kiri layar untuk joystick (sisanya = putar kamera)
+  LOOK_SENS: 2.2, // pengali geser jari → putar kamera (setara piksel mouse)
+  PINCH_SENS: 4, // pengali cubit → zoom (setara deltaY roda)
+  TAP_MAX_MOVE: 10 // px
+};
+
+// --- Kontrol (Fase 9.4/9.5): aksi → kode tombol keyboard (KeyboardEvent.code).
+// Pemain bisa mengatur ulang di Pengaturan → Kontrol (disimpan di
+// settings.keybinds). Esc & F3 tetap (tidak bisa diatur ulang).
+export const CONTROLS = {
+  ACTIONS: [
+    { id: 'forward', label: 'Maju' },
+    { id: 'back', label: 'Mundur' },
+    { id: 'left', label: 'Kiri' },
+    { id: 'right', label: 'Kanan' },
+    { id: 'jump', label: 'Lompat / turun robot' },
+    { id: 'run', label: 'Lari (tahan)' },
+    { id: 'sneak', label: 'Mengendap (tahan)' },
+    { id: 'interact', label: 'Berbuat nakal / interaksi' },
+    { id: 'meow', label: 'Mengeong' },
+    { id: 'pause', label: 'Pause' },
+    { id: 'help', label: 'Bantuan' },
+    { id: 'skip', label: 'Lewati pembuka (Level 5)' }
+  ],
+  DEFAULT: {
+    forward: ['KeyW', 'ArrowUp'],
+    back: ['KeyS', 'ArrowDown'],
+    left: ['KeyA', 'ArrowLeft'],
+    right: ['KeyD', 'ArrowRight'],
+    jump: ['Space'],
+    run: ['ShiftLeft', 'ShiftRight'],
+    sneak: ['KeyC'],
+    interact: ['KeyE'],
+    meow: ['KeyQ'],
+    pause: ['KeyP'],
+    help: ['KeyH'],
+    skip: ['Enter', 'NumpadEnter']
+  },
+  FIXED: ['Escape', 'F3'], // tidak bisa dipakai untuk aksi lain
+  MOVE_ACTIONS: ['forward', 'back', 'left', 'right']
 };
 // Rating bintang: kelipatan target Chaos untuk 1, 2, 3 bintang
 export const STAR_THRESHOLDS = [1.0, 1.5, 2.0];

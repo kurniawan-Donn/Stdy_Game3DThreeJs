@@ -2,9 +2,8 @@
 // flow.state: 'lobby' | 'select' | 'playing' | 'paused' | 'results'
 // - 'results' diatur oleh endLevel (systems/level.js).
 // - Pause: tombol P, atau otomatis saat kunci mouse lepas ketika bermain.
-import { GAME_FLOW } from '../config.js';
 import { loadLevel, levelAt, highestUnlockedIndex, nextLevelIndex, isLevelUnlocked } from '../systems/levelManager.js';
-import { releasePointerLock } from './input.js';
+import { releasePointerLock, actionPressed } from './input.js';
 import { writeSave } from './save.js';
 import { TUTORIAL_INDEX } from '../levels/index.js';
 import { abortPlaytestSession } from '../systems/playtestLog.js';
@@ -32,6 +31,7 @@ export function enterLobby(ctx) {
   const flow = ctx.flow;
   flow.state = 'lobby';
   abortPlaytestSession(ctx);
+  if (ctx.touchUi) ctx.touchUi.reset();
   silence(ctx);
   releasePointerLock();
   ctx.results.hide();
@@ -57,6 +57,7 @@ export function playLevel(ctx, index) {
   ctx.results.hide();
   ctx.pause.hide();
   setMode(ctx, 'play', !!level.TUTORIAL);
+  if (ctx.touchUi) ctx.touchUi.reset();
   ctx.audio.play('levelStart');
   autoQualityGrace(ctx);
   // Bantuan kontrol muncul otomatis di level pertama yang dimainkan
@@ -117,6 +118,7 @@ export function pauseGame(ctx) {
   silence(ctx);
   releasePointerLock();
   ctx.input.keys = {};
+  if (ctx.touchUi) ctx.touchUi.reset();
   ctx.pause.show(levelAt(ctx.state.levelIndex));
   ctx.audio.play('pause');
   return true;
@@ -135,7 +137,7 @@ export function resumeGame(ctx) {
 
 // Tombol P (dipanggil tiap frame sebelum update dunia)
 export function updateFlowInput(ctx) {
-  if (!ctx.input.pressed[GAME_FLOW.PAUSE_KEY]) return;
+  if (!actionPressed(ctx.input, 'pause')) return;
   if (ctx.flow.state === 'playing') pauseGame(ctx);
   else if (ctx.flow.state === 'paused') resumeGame(ctx);
 }
